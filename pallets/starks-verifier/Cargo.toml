@@ -1,0 +1,40 @@
+[package]
+name = "pallet-starks-verifier"
+version = "0.1.0"
+authors = ["suvi"]
+edition = "2018"
+
+# See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
+
+[dependencies]
+serde = { version = "1.0.101", optional = true }
+codec = { package = "parity-scale-codec", version = "1.3.1", default-features = false, features = ["derive"] }
+sp-std =  { default-features = false, git = "https://github.com/paritytech/substrate" }
+sp-core =  { default-features = false, git = "https://github.com/paritytech/substrate" }
+sp-io =  { default-features = false, git = "https://github.com/paritytech/substrate" }
+sp-application-crypto = { default-features = false, git = "https://github.com/paritytech/substrate" }
+sp-runtime = { default-features = false, git = "https://github.com/paritytech/substrate" }
+frame-support =  { default-features = false, git = "https://github.com/paritytech/substrate" }
+frame-system =  { default-features = false, git = "https://github.com/paritytech/substrate" }
+sp-keystore = { git = "https://github.com/paritytech/substrate", optional = true }
+pallet-session = { default-features = false, git = "https://github.com/paritytech/substrate" }
+
+# starks
+sp-starks = { path = "../../primitives/starks", default-features = false }
+
+[features]
+default = ["std"]
+std = [
+    "serde",
+    "codec/std",
+    "sp-std/std",
+    "sp-core/std",
+    "sp-io/std",
+    "sp-application-crypto/std",
+    "sp-runtime/std",
+    "frame-support/std",
+    "frame-system/std",
+    "sp-starks/std",
+    "sp-keystore",
+    "pallet-session/std",
+]

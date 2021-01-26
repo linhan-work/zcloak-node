@@ -69,7 +69,8 @@ pub struct VerificationReceipt<BlockNumber, Hash> {
     passed: bool,
     submit_at: BlockNumber,
     // submitted by who
-    auth_index: u32
+    auth_index: u32,
+    validators_len: u32
 }
 
 #[derive(Encode, Decode, Default)]
@@ -116,17 +117,20 @@ const DB_PREFIX: &[u8] = b"starksnetwork/verification-tasks/";
 type OffchainResult<T, A> = Result<A, OffchainErr<<T as frame_system::Config>::BlockNumber>>;
 
 
-pub trait Config: frame_system::Config + SendTransactionTypes<Call<Self>> {
+pub trait Config: pallet_session::Config + SendTransactionTypes<Call<Self>> {
     /// The identifier type for an offchain worker.
 	type AuthorityId: Member + Parameter + RuntimeAppPublic + Default + Ord;
 
     type Event: From<Event<Self>> + Into<<Self as frame_system::Config>::Event>;
-    //
-    // /// After a task is verified, it can still be stored on chain for a `StorePeriod` of time
+
+    /// After a task is verified, it can still be stored on chain for a `StorePeriod` of time
     type StorePeriod: Get<Self::BlockNumber>;
-    //
-    // /// The maximum number of tasks that a verifier is allowed to execute every time
-    // type MaxTasks: Get<u16>;
+
+    /// A configuration for base priority of unsigned transactions.
+	///
+	/// This is exposed so that it can be tuned for particular runtime, when
+	/// multiple pallets send unsigned transactions.
+    type UnsignedPriority: Get<TransactionPriority>;
 
 }
 
@@ -334,11 +338,13 @@ impl<T: Config> Module<T> {
     ) -> OffchainResult<T, ()> {
         let is_success: bool = Self::fetch_proof(&task_hash)
             .map(|proof| Self::stark_verify(&task_hash, &proof))??;
+        let validators_len = <pallet_session::Module<T>>::validators().len() as u32;
         let receipt = VerificationReceipt {
             program_hash: task_hash,
             passed: is_success,
             submit_at: block_number,
-            auth_index: auth_index
+            auth_index: auth_index,
+            validators_len
         };
 
         let signature = key.sign(&receipt.encode()).ok_or(OffchainErr::FailedSigning)?;
@@ -497,6 +503,51 @@ impl<T: Config> pallet_session::OneSessionHandler<T::AccountId> for Module<T> {
     }
 }
 
+/// Invalid transaction custom error. Returned when validators_len field in Receipt is incorrect.
+const INVALID_VALIDATORS_LEN: u8 = 10;
 
-// TODO: add ValidateUnsighed impl
+impl<T: Config> frame_support::unsigned::ValidateUnsigned for Module<T> {
+    type Call = Call<T>;
 
+    fn validate_unsigned(
+        _source: TransactionSource,
+        call: &Self::Call
+    ) -> TransactionValidity {
+
+        if let Call::submit_verification(receipt, signature) = call {
+            if receipt.submit_at > <frame_system::Module<T>>::block_number() {
+                return InvalidTransaction::Future.into();
+            }
+
+            // verify that the incoming (unverified) pubkey is actually an authority id
+            let keys = Keys::<T>::get();
+            if keys.len() as u32 != receipt.validators_len {
+                return InvalidTransaction::Custom(INVALID_VALIDATORS_LEN).into();
+            }
+
+            let authority_id = match keys.get(receipt.auth_index as usize) {
+                Some(id) => id,
+                None => return InvalidTransaction::BadProof.into(),
+            };
+
+            // check signature (this is expensive so we do it last).
+            let signature_valid = receipt.using_encoded(|encoded_receipt| {
+                authority_id.verify(&encoded_receipt, &signature)
+            });
+
+            if !signature_valid {
+                return InvalidTransaction::BadProof.into();
+            }
+
+            ValidTransaction::with_tag_prefix("StarksVerifier")
+                .priority(T::UnsignedPriority::get())
+                .and_provides((receipt.program_hash,authority_id))
+                .longevity(5)
+                .propagate(true)
+                .build()
+        } else {
+            InvalidTransaction::Call.into()
+        }
+
+    }
+}

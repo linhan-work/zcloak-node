@@ -17,7 +17,7 @@ use sp_core::crypto::KeyTypeId;
 use frame_support::{
     dispatch::DispatchResult,
     decl_module, decl_event, decl_storage, Parameter, debug, decl_error, ensure,
-    traits::Get,
+    traits::{Get, OneSessionHandler},
 };
 use frame_system::{ensure_signed, ensure_none};
 use frame_system::offchain::{
@@ -25,11 +25,11 @@ use frame_system::offchain::{
     SubmitTransaction,
 };
 
-// #[cfg(all(feature = "std", test))]
-// mod mock;
-//
-// #[cfg(all(feature = "std", test))]
-// mod tests;
+#[cfg(all(feature = "std", test))]
+mod mock;
+
+#[cfg(all(feature = "std", test))]
+mod tests;
 
 /// the key type of which to sign the starks verification transactions
 pub const KEY_TYPE: KeyTypeId = KeyTypeId(*b"zkst");
@@ -55,7 +55,7 @@ pub mod crypto {
 }
 
 /// The status of a given verification task
-#[derive(Encode, Decode, Default)]
+#[derive(Encode, Decode, Default, PartialEq, Eq, RuntimeDebug)]
 pub struct Status {
     pub verifiers: Vec<u32>,
     pub ayes: u32,
@@ -73,7 +73,7 @@ pub struct VerificationReceipt<BlockNumber, Hash> {
     validators_len: u32
 }
 
-#[derive(Encode, Decode, Default)]
+#[derive(Encode, Decode, Default, PartialEq, Eq, RuntimeDebug)]
 pub struct TaskInfo {
     // the id of
     proof_id: Vec<u8>,
@@ -83,7 +83,7 @@ pub struct TaskInfo {
 
 /// Error which may occur while executing the off-chain code.
 #[cfg_attr(test, derive(PartialEq))]
-enum OffchainErr<BlockNumber> {
+pub enum OffchainErr<BlockNumber> {
     NotValidator,
     NoTaskToExecute,
     FailToAcquireLock,
@@ -114,7 +114,7 @@ impl<BlockNumber: sp_std::fmt::Debug> sp_std::fmt::Debug for OffchainErr<BlockNu
 
 const DB_PREFIX: &[u8] = b"starksnetwork/verification-tasks/";
 
-type OffchainResult<T, A> = Result<A, OffchainErr<<T as frame_system::Config>::BlockNumber>>;
+pub type OffchainResult<T, A> = Result<A, OffchainErr<<T as frame_system::Config>::BlockNumber>>;
 
 
 pub trait Config: pallet_session::Config + SendTransactionTypes<Call<Self>> {
@@ -202,6 +202,7 @@ decl_module! {
             // ensure task has not been created
             ensure!(!Self::task_exists(&program_hash), Error::<T>::TaskAlreadyExists);
             <TaskParams<T>>::insert(&program_hash, TaskInfo{proof_id, inputs, outputs});
+            <OngoingTasks<T>>::insert(&program_hash, Status::default());
             Self::deposit_event(RawEvent::TaskCreated(program_hash));
         }
 
@@ -269,7 +270,6 @@ decl_module! {
 					now,
 				)
 			}
-
         }
     }
 }
@@ -297,7 +297,6 @@ impl<T: Config> Module<T> {
             prefix.extend(auth_index.encode());
             prefix
         };
-
         let storage = StorageValueRef::persistent(&storage_key);
 
         let res = storage.mutate(|tasks: Option<Option<Vec<T::Hash>>>| {
@@ -319,7 +318,7 @@ impl<T: Config> Module<T> {
 
         // we got the lock, and do the fetch, verify, sign and send
         let res =  Self::prepare_submission(auth_index, key, block_number, *local_tasks.last().unwrap());
-
+        
         // clear the lock in case we have failed to send transaction.
         if res.is_err() {
             local_tasks.pop();
@@ -336,8 +335,10 @@ impl<T: Config> Module<T> {
         block_number: T::BlockNumber,
         task_hash: T::Hash
     ) -> OffchainResult<T, ()> {
+        
         let is_success: bool = Self::fetch_proof(&task_hash)
             .map(|proof| Self::stark_verify(&task_hash, &proof))??;
+        
         let validators_len = <pallet_session::Module<T>>::validators().len() as u32;
         let receipt = VerificationReceipt {
             program_hash: task_hash,
@@ -346,10 +347,11 @@ impl<T: Config> Module<T> {
             auth_index: auth_index,
             validators_len
         };
+        
 
         let signature = key.sign(&receipt.encode()).ok_or(OffchainErr::FailedSigning)?;
         let call = Call::submit_verification(receipt, signature);
-
+        
         debug::info!(
             target: "starks-verifier",
             "[index: {:?} report verification: {:?},  at block: {:?}]",
@@ -367,10 +369,10 @@ impl<T: Config> Module<T> {
 
     fn fetch_proof(program_hash: &T::Hash) -> OffchainResult<T, Vec<u8>> {
         let proof_id = Self::task_params(program_hash).proof_id;
-        let deadline = sp_io::offchain::timestamp().add(Duration::from_millis(2_000));
+        let deadline = sp_io::offchain::timestamp().add(Duration::from_millis(8_000));
+
         let url = "https://ipfs.infura.io:5001/api/v0/cat?arg=".to_owned() + sp_std::str::from_utf8(&proof_id).unwrap();
         let request = http::Request::get(&url);
-
         let pending = request
             .deadline(deadline)
             .send()
@@ -394,6 +396,7 @@ impl<T: Config> Module<T> {
         // Note that the return object allows you to read the body in chunks as well
         // with a way to control the deadline.
         let body = response.body().collect::<Vec<u8>>();
+    
         debug::native::info!("the body is {:?}", &body);
 
         Ok(body)
@@ -413,13 +416,10 @@ impl<T: Config> Module<T> {
     fn local_authority_keys() -> impl Iterator<Item=(u32, T::AuthorityId)> {
         // on-chain storage
         let authorities = Keys::<T>::get();
-
         // local keystore
-        // All `ImOnline` public (+private) keys currently in the local keystore.
         let mut local_keys = T::AuthorityId::all();
 
         local_keys.sort();
-
         authorities.into_iter()
             .enumerate()
             .filter_map(move |(index, authority)| {
@@ -433,7 +433,7 @@ impl<T: Config> Module<T> {
     // pick an on-chain tasks to execute
     fn task_to_execute(local_tasks: &mut Vec<T::Hash>) -> OffchainResult<T, T::Hash> {
         // on-chain ready-to-verify tasks
-        let ongoing_tasks:  Vec<T::Hash> = OngoingTasks::<T>::iter().map(|(hash, _)| hash).collect::<Vec<T::Hash>>();
+        let ongoing_tasks: Vec<T::Hash> = OngoingTasks::<T>::iter().map(|(hash, _)| hash).collect::<Vec<T::Hash>>();
         local_tasks.sort();
         // find any one task that is not executed
         // TODO： find all tasks that are not executed
@@ -480,7 +480,7 @@ impl<T: Config> sp_runtime::BoundToRuntimeAppPublic for Module<T> {
     type Public = T::AuthorityId;
 }
 
-impl<T: Config> pallet_session::OneSessionHandler<T::AccountId> for Module<T> {
+impl<T: Config> OneSessionHandler<T::AccountId> for Module<T> {
     type Key = T::AuthorityId;
 
     fn on_genesis_session<'a, I: 'a>(validators: I)

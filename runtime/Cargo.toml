@@ -4,7 +4,7 @@ edition = '2018'
 homepage = 'https://substrate.dev'
 license = 'Unlicense'
 name = 'node-template-runtime'
-repository = 'https://github.com/substrate-developer-hub/substrate-node-template/'
+repository = 'https://github.com/Starks-Network/starks-node/'
 version = '2.0.1'
 
 [package.metadata.docs.rs]
@@ -18,7 +18,7 @@ substrate-wasm-builder = '3.0.0'
 default-features = false
 features = ['derive']
 package = 'parity-scale-codec'
-version = '1.3.4'
+version = '2.0.0'
 
 [dependencies]
 hex-literal = { optional = true, version = '0.3.1' }
@@ -28,35 +28,35 @@ serde = { features = ['derive'], optional = true, version = '1.0.119' }
 pallet-template = { path = '../pallets/template', default-features = false }
 
 # runtime 
-frame-benchmarking = { default-features = false, git = "https://github.com/paritytech/substrate", optional = true }
-frame-executive = { default-features = false, git = "https://github.com/paritytech/substrate" }
-frame-support = { default-features = false, git = "https://github.com/paritytech/substrate" }
-frame-system = { default-features = false, git = "https://github.com/paritytech/substrate" }
-frame-system-benchmarking = { default-features = false, git = "https://github.com/paritytech/substrate", optional = true }
-frame-system-rpc-runtime-api = { default-features = false, git = "https://github.com/paritytech/substrate" }
-sp-api = { default-features = false, git = "https://github.com/paritytech/substrate" }
+frame-benchmarking = { default-features = false, git = "https://github.com/Starks-Network/substrate", optional = true }
+frame-executive = { default-features = false, git = "https://github.com/Starks-Network/substrate" }
+frame-support = { default-features = false, git = "https://github.com/Starks-Network/substrate" }
+frame-system = { default-features = false, git = "https://github.com/Starks-Network/substrate" }
+frame-system-benchmarking = { default-features = false, git = "https://github.com/Starks-Network/substrate", optional = true }
+frame-system-rpc-runtime-api = { default-features = false, git = "https://github.com/Starks-Network/substrate" }
+sp-api = { default-features = false, git = "https://github.com/Starks-Network/substrate" }
 
 # primitives 
-sp-block-builder = { default-features = false, git = "https://github.com/paritytech/substrate" }
-sp-consensus-aura = { default-features = false, git = "https://github.com/paritytech/substrate" }
-sp-core = { default-features = false, git = "https://github.com/paritytech/substrate" }
-sp-inherents = { default-features = false, git = "https://github.com/paritytech/substrate" }
-sp-offchain = { default-features = false, git = "https://github.com/paritytech/substrate" }
-sp-runtime = { default-features = false, git = "https://github.com/paritytech/substrate" }
-sp-session = { default-features = false, git = "https://github.com/paritytech/substrate" }
-sp-std = { default-features = false, git = "https://github.com/paritytech/substrate" }
-sp-transaction-pool = { default-features = false, git = "https://github.com/paritytech/substrate" }
-sp-version = { default-features = false, git = "https://github.com/paritytech/substrate" }
+sp-block-builder = { default-features = false, git = "https://github.com/Starks-Network/substrate" }
+sp-consensus-aura = { default-features = false, git = "https://github.com/Starks-Network/substrate" }
+sp-core = { default-features = false, git = "https://github.com/Starks-Network/substrate" }
+sp-inherents = { default-features = false, git = "https://github.com/Starks-Network/substrate" }
+sp-offchain = { default-features = false, git = "https://github.com/Starks-Network/substrate" }
+sp-runtime = { default-features = false, git = "https://github.com/Starks-Network/substrate" }
+sp-session = { default-features = false, git = "https://github.com/Starks-Network/substrate" }
+sp-std = { default-features = false, git = "https://github.com/Starks-Network/substrate" }
+sp-transaction-pool = { default-features = false, git = "https://github.com/Starks-Network/substrate" }
+sp-version = { default-features = false, git = "https://github.com/Starks-Network/substrate" }
 
 # pallets
-pallet-aura = { default-features = false, git = "https://github.com/paritytech/substrate" }
-pallet-balances = { default-features = false, git = "https://github.com/paritytech/substrate" }
-pallet-grandpa = { default-features = false, git = "https://github.com/paritytech/substrate" }
-pallet-randomness-collective-flip = { default-features = false, git = "https://github.com/paritytech/substrate" }
-pallet-sudo = { default-features = false, git = "https://github.com/paritytech/substrate" }
-pallet-timestamp = { default-features = false, git = "https://github.com/paritytech/substrate" }
-pallet-transaction-payment = { default-features = false, git = "https://github.com/paritytech/substrate" }
-pallet-transaction-payment-rpc-runtime-api = { default-features = false, git = "https://github.com/paritytech/substrate" }
+pallet-aura = { default-features = false, git = "https://github.com/Starks-Network/substrate" }
+pallet-balances = { default-features = false, git = "https://github.com/Starks-Network/substrate" }
+pallet-grandpa = { default-features = false, git = "https://github.com/Starks-Network/substrate" }
+pallet-randomness-collective-flip = { default-features = false, git = "https://github.com/Starks-Network/substrate" }
+pallet-sudo = { default-features = false, git = "https://github.com/Starks-Network/substrate" }
+pallet-timestamp = { default-features = false, git = "https://github.com/Starks-Network/substrate" }
+pallet-transaction-payment = { default-features = false, git = "https://github.com/Starks-Network/substrate" }
+pallet-transaction-payment-rpc-runtime-api = { default-features = false, git = "https://github.com/Starks-Network/substrate" }
 #pallet-starks-verifier = { default-features = false, path = "../pallets/starks-verifier" }
 
 [features]

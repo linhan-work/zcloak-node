@@ -1,58 +1,248 @@
+use core::slice;
+use std::convert::TryInto;
+
 use super::*;
-use crate::mock::{Verifier, new_test_ext};
-use std::sync::Arc;
-use codec::{Encode, Decode};
-use frame_support::{
-	assert_ok, impl_outer_origin, parameter_types,
+use crate::mock::*;
+use sp_core::OpaquePeerId;
+use sp_core::offchain::{
+	OffchainExt,
+	TransactionPoolExt,
+	testing::{self as testing, TestOffchainExt, TestTransactionPoolExt},
 };
-use sp_core::{
-	H256,
-	offchain::{OffchainExt, TransactionPoolExt, testing},
-	sr25519::{Pair as Sr25519Pair, Signature},
-};
-
-use sp_runtime::testing::UintAuthorityId;
-use sp_keystore::{
-	{KeystoreExt, SyncCryptoStore},
-	testing::KeyStore,
-};
-use sp_runtime::{
-	RuntimeAppPublic,
-	testing::{Header, TestXt},
-	traits::{
-		BlakeTwo256, IdentityLookup, Extrinsic as ExtrinsicT,
-		IdentifyAccount, Verify,
-	},
-};
-
-
+use sp_core::H256;
+use frame_support::{dispatch, assert_ok, assert_noop};
+use sp_runtime::{testing::UintAuthorityId, transaction_validity::TransactionValidityError};
+use frame_support::traits::OffchainWorker;
+use sp_runtime::testing::TestSignature;
 
 #[test]
-fn it_works() {
+fn set_key_works() {
+	new_test_ext().execute_with(|| {
+		advance_session();
+		VALIDATORS.with(|l| *l.borrow_mut() = Some(vec![1, 2, 3, 4, 5, 6]));
+		assert_eq!(Session::validators(), Vec::<u64>::new());
+		// enact the change and buffer another one
+		advance_session();
 
-	let (offchain, offchain_state) = testing::TestOffchainExt::new();
-	let (pool, pool_state) = testing::TestTransactionPoolExt::new();
-	let keystore = KeyStore::new();
-	let public = SyncCryptoStore::sr25519_generate_new(
-		&keystore,
-		crate::crypto::app_sr25519::Public::ID,
-		Some(&format!("{}/hunter1", PHRASE))
-	).unwrap();
+		assert_eq!(Session::current_index(), 2);
+		assert_eq!(Session::validators(), vec![1, 2, 3]);
+	});
+}
 
-	let mut t = new_test_ext();
-	t.register_extension(OffchainExt::new(offchain));
-	t.register_extension(TransactionPoolExt::new(pool));
-	t.register_extension(KeystoreExt(Arc::new(keystore)));
+#[test]
+fn should_rotate_keys() {
+	let mut ext = new_test_ext();
+	ext.execute_with( || {
+		System::set_block_number(1);
+		advance_session();
+		assert_eq!(Session::validators(), Vec::<u64>::new());
 
-	t.execute_with(|| {
+		advance_session();
+		assert_eq!(Session::validators(), vec![1, 2, 3]);
+		assert_eq!(Verifier::keys(), vec![UintAuthorityId(1), UintAuthorityId(2), UintAuthorityId(3)]);
 
+		VALIDATORS.with(|l| *l.borrow_mut() = Some(vec![1, 2, 3, 4, 5, 6]));
+		assert_eq!(Session::validators(), vec![1, 2, 3]);
+ 	});
+}
 
+#[test]
+fn should_create_task() {
+	let mut ext = new_test_ext();
+
+	ext.execute_with( || {
+		let (progam_hash, inputs, outputs, proof_id) = task_params();
+		Verifier::create_task(Origin::signed(1), progam_hash, inputs.clone(), outputs.clone(), proof_id.clone());
+		assert_eq!(
+			Verifier::task_params(&progam_hash),
+			TaskInfo {
+				proof_id: b"QmSmn1rSSXmu1PyFFTosBtcL2KGzEssetk9MVFYyDHoCGa".to_vec(),
+				inputs,
+				outputs
+			}
+		);
+
+		assert_eq!(
+			Verifier::ongoing_tasks(&progam_hash),
+			Status {
+				verifiers: Vec::<u32>::new(),
+				ayes: 0,
+				nays: 0
+			}
+		);
 	})
+}
 
+#[test]
+fn should_parse_http_response() {
+	let (offchain, offchain_state) = TestOffchainExt::new();
+	let mut ext = sp_io::TestExternalities::default();
+	ext.register_extension(OffchainExt::new(offchain));
 
+	let (program_hash, inputs, outputs, proof_id) = task_params();
 
+	{
+		let mut state = offchain_state.write();
+		let uri = "https://ipfs.infura.io:5001/api/v0/cat?arg=".to_owned() + sp_std::str::from_utf8(&proof_id[..]).unwrap();
+		state.expect_request(testing::PendingRequest {
+			method: "GET".into(),
+			uri: uri.clone(),
+			response: new_proof().ok(),
+			sent: true,
+			..Default::default()
+		});
+	}
 
+	ext.execute_with(|| {
+		set_key_and_tasks();
+		let proof = Verifier::fetch_proof(&program_hash);
+		assert_eq!(proof.unwrap(), new_proof().unwrap());
+	});
 }
 
 
+#[test]
+fn basic_starks_verifier_works() {
+	new_test_ext().execute_with(|| {
+		// get proof
+		let proof = new_proof().unwrap();
+		let (program_hash, inputs, outputs, proof_id) = task_params();
+		let program_hash = [19, 23, 145, 150, 7, 226, 183, 94, 42, 36, 220, 169, 148, 89, 125, 153, 113, 250, 202, 142, 187, 167, 14, 144, 186, 217, 89, 214, 222, 234, 43, 214];
+		let res = sp_starks::starks::verify(&program_hash, &inputs, &outputs, &proof);
+		assert!(res.is_ok());
+	});
+}
+
+
+#[test]
+fn should_send_extrinsic() {
+	let (offchain, offchain_state) = TestOffchainExt::new();
+	let (pool, pool_state) = TestTransactionPoolExt::new();
+	let mut ext = sp_io::TestExternalities::default();
+	ext.register_extension(TransactionPoolExt::new(pool));
+	ext.register_extension(OffchainExt::new(offchain));
+
+	let (program_hash, inputs, outputs, proof_id) = task_params();
+	three_http_request(&mut offchain_state.write());
+
+	ext.execute_with(|| {
+		UintAuthorityId::set_all_keys(vec![1, 2, 3]);
+		set_key_and_tasks();
+		assert_eq!(Session::validators(), vec![1, 2, 3]);
+		assert_eq!(Verifier::keys(), vec![UintAuthorityId(1), UintAuthorityId(2), UintAuthorityId(3)]);
+	
+		// Offchain worker
+		Verifier::offchain_worker(System::block_number());
+
+		// then
+		let transaction = pool_state.write().transactions.pop().unwrap();
+		// All validators have `0` as their session key, so we generate 2 transactions.
+		assert_eq!(pool_state.read().transactions.len(), 2);
+
+		// check the transaction
+		let ex: Extrinsic = Decode::decode(&mut &*transaction).unwrap();
+		let receipt = match ex.call {
+			crate::mock::Call::Verifier(crate::Call::submit_verification(r, ..)) => r,
+			e => panic!("Unexpected call: {:?}", e),
+		};
+
+		// pop the last one
+		assert_eq!(receipt, VerificationReceipt {
+			program_hash: program_hash,
+    		passed: true,
+    		submit_at: System::block_number(),
+    		auth_index: 2,
+    		validators_len: 3
+		});
+	});
+}
+
+fn set_key_and_tasks() {
+
+	// set keys
+	System::set_block_number(1);
+	advance_session();
+	assert_eq!(Session::validators(), Vec::<u64>::new());
+
+	advance_session();
+	assert_eq!(Session::validators(), vec![1, 2, 3]);
+	assert_eq!(Verifier::keys(), vec![UintAuthorityId(1), UintAuthorityId(2), UintAuthorityId(3)]);
+	// craete task
+	let (progam_hash, inputs, outputs, proof_id) = task_params();
+	Verifier::create_task(Origin::signed(1), progam_hash.clone(), inputs.clone(), outputs.clone(), proof_id.clone());
+}
+
+// return program_hash, inputs, outputs, proof_id
+fn task_params() -> (H256, Vec<u128>, Vec<u128>, Vec<u8>) {
+	(
+		[19, 23, 145, 150, 7, 226, 183, 94, 42, 36, 220, 169, 148, 89, 125, 153, 113, 250, 202, 142, 187, 167, 14, 144, 186, 217, 89, 214, 222, 234, 43, 214].into(),
+		vec![1u128, 0u128],
+		vec![8u128],
+		b"QmSmn1rSSXmu1PyFFTosBtcL2KGzEssetk9MVFYyDHoCGa".to_vec()
+	)
+}
+
+fn three_http_request(state: &mut testing::OffchainState)  {
+	let (program_hash, inputs, outputs, proof_id) = task_params();
+	let uri = "https://ipfs.infura.io:5001/api/v0/cat?arg=".to_owned() + sp_std::str::from_utf8(&proof_id[..]).unwrap();
+	state.expect_request(testing::PendingRequest {
+		method: "GET".into(),
+		uri: uri.clone(),
+		response: new_proof().ok(),
+		sent: true,
+		..Default::default()
+	});
+
+	state.expect_request(testing::PendingRequest {
+		method: "GET".into(),
+		uri: uri.clone(),
+		response: new_proof().ok(),
+		sent: true,
+		..Default::default()
+	});
+
+	state.expect_request(testing::PendingRequest {
+		method: "GET".into(),
+		uri: uri.clone(),
+		response: new_proof().ok(),
+		sent: true,
+		..Default::default()
+	});
+}
+
+fn prepare_submission(
+	block_number: u64,
+	auth_index: u32,
+	id: UintAuthorityId,
+	hash: H256,
+	validators: Vec<u64>
+) -> dispatch::DispatchResult {
+	use frame_support::unsigned::ValidateUnsigned;
+
+	let verification_receipt = VerificationReceipt {
+		program_hash: hash,
+		// when a task is passed or not
+		passed: true,
+		submit_at: block_number,
+		// submitted by who
+		auth_index: auth_index,
+		validators_len: validators.len() as u32,
+	};
+
+	let signature = id.sign(&verification_receipt.encode()).unwrap();
+	
+	Verifier::pre_dispatch(&crate::Call::submit_verification(verification_receipt.clone(), signature.clone()))
+		.map_err(|e| match e {
+			TransactionValidityError::Invalid(InvalidTransaction::Custom(INVALID_VALIDATORS_LEN)) =>
+				"invalid validators len",
+			e @ _ => <&'static str>::from(e),
+	})?;
+
+	Verifier::submit_verification(Origin::none(), verification_receipt, signature)
+}
+
+
+
+
+ 
 

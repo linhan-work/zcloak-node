@@ -26,31 +26,31 @@ structopt = '0.3.8'
 node-template-runtime = { path = '../runtime' }
 
 # Substrate dependencies
-frame-benchmarking = {git = "https://github.com/paritytech/substrate"}
-frame-benchmarking-cli = { git = "https://github.com/paritytech/substrate"}
-pallet-transaction-payment-rpc = { git = "https://github.com/paritytech/substrate"}
-sc-basic-authorship = { git = "https://github.com/paritytech/substrate"}
-sc-cli = { features = ['wasmtime'],  git = "https://github.com/paritytech/substrate" }
-sc-client-api = {git = "https://github.com/paritytech/substrate" }
-sc-consensus = { git = "https://github.com/paritytech/substrate" }
-sc-consensus-aura = { git = "https://github.com/paritytech/substrate" }
-sc-executor = { features = ['wasmtime'],  git = "https://github.com/paritytech/substrate" }
-sc-finality-grandpa = { git = "https://github.com/paritytech/substrate" }
-sc-rpc = {git = "https://github.com/paritytech/substrate" }
-sc-rpc-api = { git = "https://github.com/paritytech/substrate" }
-sc-service = { features = ['wasmtime'],git = "https://github.com/paritytech/substrate" }
-sc-transaction-pool = {git = "https://github.com/paritytech/substrate" }
-sp-api = {git = "https://github.com/paritytech/substrate" }
-sp-block-builder = {git = "https://github.com/paritytech/substrate" }
-sp-blockchain = {git = "https://github.com/paritytech/substrate" }
-sp-consensus = { git = "https://github.com/paritytech/substrate" }
-sp-consensus-aura = { git = "https://github.com/paritytech/substrate" }
-sp-core = {git = "https://github.com/paritytech/substrate" }
-sp-finality-grandpa = { git = "https://github.com/paritytech/substrate" }
-sp-inherents = { git = "https://github.com/paritytech/substrate" }
-sp-runtime = { git = "https://github.com/paritytech/substrate" }
-sp-transaction-pool = { git = "https://github.com/paritytech/substrate" }
-substrate-frame-rpc-system = { git = "https://github.com/paritytech/substrate" }
+frame-benchmarking = {git = "https://github.com/Starks-Network/substrate"}
+frame-benchmarking-cli = { git = "https://github.com/Starks-Network/substrate"}
+pallet-transaction-payment-rpc = { git = "https://github.com/Starks-Network/substrate"}
+sc-basic-authorship = { git = "https://github.com/Starks-Network/substrate"}
+sc-cli = { features = ['wasmtime'],  git = "https://github.com/Starks-Network/substrate" }
+sc-client-api = {git = "https://github.com/Starks-Network/substrate" }
+sc-consensus = { git = "https://github.com/Starks-Network/substrate" }
+sc-consensus-aura = { git = "https://github.com/Starks-Network/substrate" }
+sc-executor = { features = ['wasmtime'],  git = "https://github.com/Starks-Network/substrate" }
+sc-finality-grandpa = { git = "https://github.com/Starks-Network/substrate" }
+sc-rpc = {git = "https://github.com/Starks-Network/substrate" }
+sc-rpc-api = { git = "https://github.com/Starks-Network/substrate" }
+sc-service = { features = ['wasmtime'],git = "https://github.com/Starks-Network/substrate" }
+sc-transaction-pool = {git = "https://github.com/Starks-Network/substrate" }
+sp-api = {git = "https://github.com/Starks-Network/substrate" }
+sp-block-builder = {git = "https://github.com/Starks-Network/substrate" }
+sp-blockchain = {git = "https://github.com/Starks-Network/substrate" }
+sp-consensus = { git = "https://github.com/Starks-Network/substrate" }
+sp-consensus-aura = { git = "https://github.com/Starks-Network/substrate" }
+sp-core = {git = "https://github.com/Starks-Network/substrate" }
+sp-finality-grandpa = { git = "https://github.com/Starks-Network/substrate" }
+sp-inherents = { git = "https://github.com/Starks-Network/substrate" }
+sp-runtime = { git = "https://github.com/Starks-Network/substrate" }
+sp-transaction-pool = { git = "https://github.com/Starks-Network/substrate" }
+substrate-frame-rpc-system = { git = "https://github.com/Starks-Network/substrate" }
 
 [features]
 default = []

@@ -213,7 +213,6 @@ decl_module! {
             _signature: <T::AuthorityId as RuntimeAppPublic>::Signature,
         ) {
             ensure_none(origin)?;
-
             <OngoingTasks<T>>::try_mutate_exists(
                 &receipt.program_hash,
                 |last_status| -> DispatchResult {
@@ -347,11 +346,10 @@ impl<T: Config> Module<T> {
             auth_index: auth_index,
             validators_len
         };
-        
 
         let signature = key.sign(&receipt.encode()).ok_or(OffchainErr::FailedSigning)?;
         let call = Call::submit_verification(receipt, signature);
-        
+   
         debug::info!(
             target: "starks-verifier",
             "[index: {:?} report verification: {:?},  at block: {:?}]",
@@ -362,7 +360,7 @@ impl<T: Config> Module<T> {
 
         SubmitTransaction::<T, Call<T>>::submit_unsigned_transaction(call.into())
             .map_err(|_| OffchainErr::SubmitTransaction(block_number))?;
-
+        
         Ok(())
     }
 
@@ -471,7 +469,6 @@ impl<T: Config> Module<T> {
     fn set_keys(keys: Vec<T::AuthorityId>) {
         Keys::<T>::put(&keys)
     }
-
 }
 
 
@@ -524,7 +521,7 @@ impl<T: Config> frame_support::unsigned::ValidateUnsigned for Module<T> {
             if keys.len() as u32 != receipt.validators_len {
                 return InvalidTransaction::Custom(INVALID_VALIDATORS_LEN).into();
             }
-
+           
             let authority_id = match keys.get(receipt.auth_index as usize) {
                 Some(id) => id,
                 None => return InvalidTransaction::BadProof.into(),
@@ -534,7 +531,7 @@ impl<T: Config> frame_support::unsigned::ValidateUnsigned for Module<T> {
             let signature_valid = receipt.using_encoded(|encoded_receipt| {
                 authority_id.verify(&encoded_receipt, &signature)
             });
-
+            
             if !signature_valid {
                 return InvalidTransaction::BadProof.into();
             }

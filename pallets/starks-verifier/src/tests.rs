@@ -154,6 +154,24 @@ fn should_send_extrinsic() {
     		auth_index: 2,
     		validators_len: 3
 		});
+		// test ValidateUnsigned
+		let signature = UintAuthorityId(3).sign(&receipt.encode()).unwrap();
+		let call = crate::Call::submit_verification(receipt, signature);
+		assert_ok!(
+			<Verifier as sp_runtime::traits::ValidateUnsigned>::validate_unsigned(
+				TransactionSource::External,
+				&call
+			)
+		);
+
+		// // check the online status
+		// let status = Verifier::ongoing_tasks(&program_hash);
+		// assert_eq!(status, Status {
+		// 	verifiers: vec![2],
+		// 	ayes: 1,
+		// 	nays: 0
+		// });
+
 	});
 }
 

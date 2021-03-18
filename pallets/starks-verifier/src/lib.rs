@@ -170,7 +170,7 @@ decl_storage! {
 
         /// Record the verification tasks(the proofs) that are about to be verified or under verifying.
         /// the key is program hash
-		OngoingTasks get(fn ongoing_tasks): map hasher(identity) T::Hash => Status;
+		OngoingTasks get(fn ongoing_tasks): map hasher(identity) T::Hash => Option<Status>;
 
         /// Completed proof tasks, will be stored onchain for a short period to be challenged
         SettledTasks get(fn settled_tasks): double_map
@@ -216,11 +216,13 @@ decl_module! {
             <OngoingTasks<T>>::try_mutate_exists(
                 &receipt.program_hash,
                 |last_status| -> DispatchResult {
+             
                     let mut status = last_status.take().ok_or(Error::<T>::TaskNotExists)?;
                     // A verifier can not submit more than once
                     ensure!(!status.verifiers.contains(&receipt.auth_index),
                         Error::<T>::DuplicatedSubmission);
-
+                    // update the verifier list
+                    status.verifiers.push(receipt.auth_index);
                     // > 50%
                     let threshold = (Self::authority_len() + 1) / 2;
 
@@ -229,17 +231,17 @@ decl_module! {
                     } else {
                         status.nays += 1;
                     }
-
+       
                     let expiration = receipt.submit_at + T::StorePeriod::get();
-                    // preset to None to delete the item
-                    *last_status = None;
-
-                    if status.ayes > threshold {
+                 
+                    if status.ayes >= threshold {
                         // pass the verification
                         SettledTasks::<T>::insert(expiration, receipt.program_hash, true);
-                    } else if status.nays > threshold {
+                        *last_status = None;
+                    } else if status.nays >= threshold {
                          // fail the verification
                         SettledTasks::<T>::insert(expiration, receipt.program_hash, false);
+                        *last_status = None;
                     } else {
                         // update the task status
                         *last_status = Some(status);
@@ -269,6 +271,10 @@ decl_module! {
 					now,
 				)
 			}
+        }
+
+        fn on_finalize(block: T::BlockNumber) {
+            SettledTasks::<T>::remove_prefix(block);
         }
     }
 }
@@ -348,6 +354,7 @@ impl<T: Config> Module<T> {
         };
 
         let signature = key.sign(&receipt.encode()).ok_or(OffchainErr::FailedSigning)?;
+
         let call = Call::submit_verification(receipt, signature);
    
         debug::info!(
@@ -531,7 +538,7 @@ impl<T: Config> frame_support::unsigned::ValidateUnsigned for Module<T> {
             let signature_valid = receipt.using_encoded(|encoded_receipt| {
                 authority_id.verify(&encoded_receipt, &signature)
             });
-            
+
             if !signature_valid {
                 return InvalidTransaction::BadProof.into();
             }

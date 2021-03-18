@@ -10,7 +10,7 @@ use sp_core::offchain::{
 	testing::{self as testing, TestOffchainExt, TestTransactionPoolExt},
 };
 use sp_core::H256;
-use frame_support::{dispatch, assert_ok, assert_noop};
+use frame_support::{dispatch, assert_ok, assert_noop, traits::OnFinalize};
 use sp_runtime::{testing::UintAuthorityId, transaction_validity::TransactionValidityError};
 use frame_support::traits::OffchainWorker;
 use sp_runtime::testing::TestSignature;
@@ -64,11 +64,11 @@ fn should_create_task() {
 
 		assert_eq!(
 			Verifier::ongoing_tasks(&progam_hash),
-			Status {
+			Some(Status {
 				verifiers: Vec::<u32>::new(),
 				ayes: 0,
 				nays: 0
-			}
+			})
 		);
 	})
 }
@@ -127,6 +127,7 @@ fn should_send_extrinsic() {
 
 	ext.execute_with(|| {
 		UintAuthorityId::set_all_keys(vec![1, 2, 3]);
+		assert_eq!(Verifier::ongoing_tasks(&program_hash), None);
 		set_key_and_tasks();
 		assert_eq!(Session::validators(), vec![1, 2, 3]);
 		assert_eq!(Verifier::keys(), vec![UintAuthorityId(1), UintAuthorityId(2), UintAuthorityId(3)]);
@@ -147,7 +148,7 @@ fn should_send_extrinsic() {
 		};
 
 		// pop the last one
-		assert_eq!(receipt, VerificationReceipt {
+		assert_eq!(receipt.clone(), VerificationReceipt {
 			program_hash: program_hash,
     		passed: true,
     		submit_at: System::block_number(),
@@ -155,8 +156,8 @@ fn should_send_extrinsic() {
     		validators_len: 3
 		});
 		// test ValidateUnsigned
-		let signature = UintAuthorityId(3).sign(&receipt.encode()).unwrap();
-		let call = crate::Call::submit_verification(receipt, signature);
+		let signature = UintAuthorityId(3).sign(&receipt.clone().encode()).unwrap();
+		let call = crate::Call::submit_verification(receipt.clone(), signature.clone());
 		assert_ok!(
 			<Verifier as sp_runtime::traits::ValidateUnsigned>::validate_unsigned(
 				TransactionSource::External,
@@ -164,13 +165,60 @@ fn should_send_extrinsic() {
 			)
 		);
 
-		// // check the online status
-		// let status = Verifier::ongoing_tasks(&program_hash);
-		// assert_eq!(status, Status {
-		// 	verifiers: vec![2],
-		// 	ayes: 1,
-		// 	nays: 0
-		// });
+		let _ = Verifier::submit_verification(Origin::none(), receipt, signature);
+
+		// check the online status
+		let status = Verifier::ongoing_tasks(&program_hash);
+		assert_eq!(status, Some(Status {
+			verifiers: vec![2],
+			ayes: 1,
+			nays: 0
+		}));
+
+
+			// then
+			let transaction_1 = pool_state.write().transactions.pop().unwrap();
+			assert_eq!(pool_state.read().transactions.len(), 1);
+
+
+		// check the transaction
+		let ex: Extrinsic = Decode::decode(&mut &*transaction_1).unwrap();
+		let receipt = match ex.call {
+			crate::mock::Call::Verifier(crate::Call::submit_verification(r, ..)) => r,
+			e => panic!("Unexpected call: {:?}", e),
+		};
+
+		// pop the last one
+		assert_eq!(receipt.clone(), VerificationReceipt {
+			program_hash: program_hash,
+    		passed: true,
+    		submit_at: System::block_number(),
+    		auth_index: 1,
+    		validators_len: 3
+		});
+		// test ValidateUnsigned
+		let signature = UintAuthorityId(2).sign(&receipt.clone().encode()).unwrap();
+		let call = crate::Call::submit_verification(receipt.clone(), signature.clone());
+		assert_ok!(
+			<Verifier as sp_runtime::traits::ValidateUnsigned>::validate_unsigned(
+				TransactionSource::External,
+				&call
+			)
+		);
+
+		let _ = Verifier::submit_verification(Origin::none(), receipt, signature);
+
+		let block_number = System::block_number() + 20;
+		// check the online status, should be removed
+		let status = Verifier::ongoing_tasks(&program_hash);
+		assert_eq!(status, None);
+		let settled_task = Verifier::settled_tasks(&block_number, &program_hash);
+		assert_eq!(settled_task, true);
+
+		Verifier::on_finalize(block_number);
+		
+		assert_eq!(Verifier::settled_tasks(&block_number, &program_hash), false);
+
 
 	});
 }

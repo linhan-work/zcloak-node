@@ -1,4 +1,5 @@
 # zCloak Network
+[https://img.shields.io/github/issues/zcloak-network/zcloak-node] [https://img.shields.io/github/forks/zcloak-network/zcloak-node] [https://img.shields.io/github/license/zcloak-network/zcloak-node]
 
 zCloak Network provides Zero-Knowledge Proof as a Service for the Polkadot Network.
 

@@ -1497,17 +1497,35 @@ name = "frame-benchmarking"
 version = "2.0.1"
 source = "git+https://github.com/Starks-Network/substrate#df6d799a51b8b1216812ffab2754382aad5e271f"
 dependencies = [
- "frame-support",
- "frame-system",
+ "frame-support 2.0.1 (git+https://github.com/Starks-Network/substrate)",
+ "frame-system 2.0.1 (git+https://github.com/Starks-Network/substrate)",
  "linregress",
  "parity-scale-codec",
  "paste 1.0.4",
- "sp-api",
- "sp-io",
- "sp-runtime",
- "sp-runtime-interface",
- "sp-std",
- "sp-storage",
+ "sp-api 2.0.1 (git+https://github.com/Starks-Network/substrate)",
+ "sp-io 2.0.1 (git+https://github.com/Starks-Network/substrate)",
+ "sp-runtime 2.0.1 (git+https://github.com/Starks-Network/substrate)",
+ "sp-runtime-interface 2.0.1 (git+https://github.com/Starks-Network/substrate)",
+ "sp-std 2.0.1 (git+https://github.com/Starks-Network/substrate)",
+ "sp-storage 2.0.1 (git+https://github.com/Starks-Network/substrate)",
+]
+
+[[package]]
+name = "frame-benchmarking"
+version = "2.0.1"
+source = "git+https://github.com/zCloak-Network/substrate#df6d799a51b8b1216812ffab2754382aad5e271f"
+dependencies = [
+ "frame-support 2.0.1 (git+https://github.com/zCloak-Network/substrate)",
+ "frame-system 2.0.1 (git+https://github.com/zCloak-Network/substrate)",
+ "linregress",
+ "parity-scale-codec",
+ "paste 1.0.4",
+ "sp-api 2.0.1 (git+https://github.com/zCloak-Network/substrate)",
+ "sp-io 2.0.1 (git+https://github.com/zCloak-Network/substrate)",
+ "sp-runtime 2.0.1 (git+https://github.com/zCloak-Network/substrate)",
+ "sp-runtime-interface 2.0.1 (git+https://github.com/zCloak-Network/substrate)",
+ "sp-std 2.0.1 (git+https://github.com/zCloak-Network/substrate)",
+ "sp-storage 2.0.1 (git+https://github.com/zCloak-Network/substrate)",
 ]
 
 [[package]]
@@ -1517,7 +1535,7 @@ source = "git+https://github.com/Starks-Network/substrate#df6d799a51b8b1216812ff
 dependencies = [
  "Inflector",
  "chrono",
- "frame-benchmarking",
+ "frame-benchmarking 2.0.1 (git+https://github.com/Starks-Network/substrate)",
  "handlebars",
  "parity-scale-codec",
  "sc-cli",
@@ -1525,11 +1543,11 @@ dependencies = [
  "sc-executor",
  "sc-service",
  "serde",
- "sp-core",
- "sp-externalities",
- "sp-keystore",
- "sp-runtime",
- "sp-state-machine",
+ "sp-core 2.0.1 (git+https://github.com/Starks-Network/substrate)",
+ "sp-externalities 0.8.1 (git+https://github.com/Starks-Network/substrate)",
+ "sp-keystore 0.8.0 (git+https://github.com/Starks-Network/substrate)",
+ "sp-runtime 2.0.1 (git+https://github.com/Starks-Network/substrate)",
+ "sp-state-machine 0.8.1 (git+https://github.com/Starks-Network/substrate)",
  "structopt",
 ]
 
@@ -1538,15 +1556,15 @@ name = "frame-executive"
 version = "2.0.1"
 source = "git+https://github.com/Starks-Network/substrate#df6d799a51b8b1216812ffab2754382aad5e271f"
 dependencies = [
- "frame-support",
- "frame-system",
+ "frame-support 2.0.1 (git+https://github.com/Starks-Network/substrate)",
+ "frame-system 2.0.1 (git+https://github.com/Starks-Network/substrate)",
  "parity-scale-codec",
  "serde",
- "sp-core",
- "sp-io",
- "sp-runtime",
- "sp-std",
- "sp-tracing",
+ "sp-core 2.0.1 (git+https://github.com/Starks-Network/substrate)",
+ "sp-io 2.0.1 (git+https://github.com/Starks-Network/substrate)",
+ "sp-runtime 2.0.1 (git+https://github.com/Starks-Network/substrate)",
+ "sp-std 2.0.1 (git+https://github.com/Starks-Network/substrate)",
+ "sp-tracing 2.0.1 (git+https://github.com/Starks-Network/substrate)",
 ]
 
 [[package]]
@@ -1556,8 +1574,19 @@ source = "git+https://github.com/Starks-Network/substrate#df6d799a51b8b1216812ff
 dependencies = [
  "parity-scale-codec",
  "serde",
- "sp-core",
- "sp-std",
+ "sp-core 2.0.1 (git+https://github.com/Starks-Network/substrate)",
+ "sp-std 2.0.1 (git+https://github.com/Starks-Network/substrate)",
+]
+
+[[package]]
+name = "frame-metadata"
+version = "12.0.1"
+source = "git+https://github.com/zCloak-Network/substrate#df6d799a51b8b1216812ffab2754382aad5e271f"
+dependencies = [
+ "parity-scale-codec",
+ "serde",
+ "sp-core 2.0.1 (git+https://github.com/zCloak-Network/substrate)",
+ "sp-std 2.0.1 (git+https://github.com/zCloak-Network/substrate)",
 ]
 
 [[package]]
@@ -1566,8 +1595,8 @@ version = "2.0.1"
 source = "git+https://github.com/Starks-Network/substrate#df6d799a51b8b1216812ffab2754382aad5e271f"
 dependencies = [
  "bitflags",
- "frame-metadata",
- "frame-support-procedural",
+ "frame-metadata 12.0.1 (git+https://github.com/Starks-Network/substrate)",
+ "frame-support-procedural 2.0.1 (git+https://github.com/Starks-Network/substrate)",
  "impl-trait-for-tuples 0.2.0",
  "log",
  "once_cell",
@@ -1575,15 +1604,41 @@ dependencies = [
  "paste 1.0.4",
  "serde",
  "smallvec 1.6.1",
- "sp-arithmetic",
- "sp-core",
- "sp-inherents",
- "sp-io",
- "sp-runtime",
- "sp-staking",
- "sp-state-machine",
- "sp-std",
- "sp-tracing",
+ "sp-arithmetic 2.0.1 (git+https://github.com/Starks-Network/substrate)",
+ "sp-core 2.0.1 (git+https://github.com/Starks-Network/substrate)",
+ "sp-inherents 2.0.1 (git+https://github.com/Starks-Network/substrate)",
+ "sp-io 2.0.1 (git+https://github.com/Starks-Network/substrate)",
+ "sp-runtime 2.0.1 (git+https://github.com/Starks-Network/substrate)",
+ "sp-staking 2.0.1 (git+https://github.com/Starks-Network/substrate)",
+ "sp-state-machine 0.8.1 (git+https://github.com/Starks-Network/substrate)",
+ "sp-std 2.0.1 (git+https://github.com/Starks-Network/substrate)",
+ "sp-tracing 2.0.1 (git+https://github.com/Starks-Network/substrate)",
+]
+
+[[package]]
+name = "frame-support"
+version = "2.0.1"
+source = "git+https://github.com/zCloak-Network/substrate#df6d799a51b8b1216812ffab2754382aad5e271f"
+dependencies = [
+ "bitflags",
+ "frame-metadata 12.0.1 (git+https://github.com/zCloak-Network/substrate)",
+ "frame-support-procedural 2.0.1 (git+https://github.com/zCloak-Network/substrate)",
+ "impl-trait-for-tuples 0.2.0",
+ "log",
+ "once_cell",
+ "parity-scale-codec",
+ "paste 1.0.4",
+ "serde",
+ "smallvec 1.6.1",
+ "sp-arithmetic 2.0.1 (git+https://github.com/zCloak-Network/substrate)",
+ "sp-core 2.0.1 (git+https://github.com/zCloak-Network/substrate)",
+ "sp-inherents 2.0.1 (git+https://github.com/zCloak-Network/substrate)",
+ "sp-io 2.0.1 (git+https://github.com/zCloak-Network/substrate)",
+ "sp-runtime 2.0.1 (git+https://github.com/zCloak-Network/substrate)",
+ "sp-staking 2.0.1 (git+https://github.com/zCloak-Network/substrate)",
+ "sp-state-machine 0.8.1 (git+https://github.com/zCloak-Network/substrate)",
+ "sp-std 2.0.1 (git+https://github.com/zCloak-Network/substrate)",
+ "sp-tracing 2.0.1 (git+https://github.com/zCloak-Network/substrate)",
 ]
 
 [[package]]
@@ -1592,7 +1647,19 @@ version = "2.0.1"
 source = "git+https://github.com/Starks-Network/substrate#df6d799a51b8b1216812ffab2754382aad5e271f"
 dependencies = [
  "Inflector",
- "frame-support-procedural-tools",
+ "frame-support-procedural-tools 2.0.1 (git+https://github.com/Starks-Network/substrate)",
+ "proc-macro2",
+ "quote",
+ "syn",
+]
+
+[[package]]
+name = "frame-support-procedural"
+version = "2.0.1"
+source = "git+https://github.com/zCloak-Network/substrate#df6d799a51b8b1216812ffab2754382aad5e271f"
+dependencies = [
+ "Inflector",
+ "frame-support-procedural-tools 2.0.1 (git+https://github.com/zCloak-Network/substrate)",
  "proc-macro2",
  "quote",
  "syn",
@@ -1603,7 +1670,19 @@ name = "frame-support-procedural-tools"
 version = "2.0.1"
 source = "git+https://github.com/Starks-Network/substrate#df6d799a51b8b1216812ffab2754382aad5e271f"
 dependencies = [
- "frame-support-procedural-tools-derive",
+ "frame-support-procedural-tools-derive 2.0.1 (git+https://github.com/Starks-Network/substrate)",
+ "proc-macro-crate",
+ "proc-macro2",
+ "quote",
+ "syn",
+]
+
+[[package]]
+name = "frame-support-procedural-tools"
+version = "2.0.1"
+source = "git+https://github.com/zCloak-Network/substrate#df6d799a51b8b1216812ffab2754382aad5e271f"
+dependencies = [
+ "frame-support-procedural-tools-derive 2.0.1 (git+https://github.com/zCloak-Network/substrate)",
  "proc-macro-crate",
  "proc-macro2",
  "quote",
@@ -1621,19 +1700,45 @@ dependencies = [
 ]
 
 [[package]]
+name = "frame-support-procedural-tools-derive"
+version = "2.0.1"
+source = "git+https://github.com/zCloak-Network/substrate#df6d799a51b8b1216812ffab2754382aad5e271f"
+dependencies = [
+ "proc-macro2",
+ "quote",
+ "syn",
+]
+
+[[package]]
 name = "frame-system"
 version = "2.0.1"
 source = "git+https://github.com/Starks-Network/substrate#df6d799a51b8b1216812ffab2754382aad5e271f"
 dependencies = [
- "frame-support",
+ "frame-support 2.0.1 (git+https://github.com/Starks-Network/substrate)",
  "impl-trait-for-tuples 0.2.0",
  "parity-scale-codec",
  "serde",
- "sp-core",
- "sp-io",
- "sp-runtime",
- "sp-std",
- "sp-version",
+ "sp-core 2.0.1 (git+https://github.com/Starks-Network/substrate)",
+ "sp-io 2.0.1 (git+https://github.com/Starks-Network/substrate)",
+ "sp-runtime 2.0.1 (git+https://github.com/Starks-Network/substrate)",
+ "sp-std 2.0.1 (git+https://github.com/Starks-Network/substrate)",
+ "sp-version 2.0.1 (git+https://github.com/Starks-Network/substrate)",
+]
+
+[[package]]
+name = "frame-system"
+version = "2.0.1"
+source = "git+https://github.com/zCloak-Network/substrate#df6d799a51b8b1216812ffab2754382aad5e271f"
+dependencies = [
+ "frame-support 2.0.1 (git+https://github.com/zCloak-Network/substrate)",
+ "impl-trait-for-tuples 0.2.0",
+ "parity-scale-codec",
+ "serde",
+ "sp-core 2.0.1 (git+https://github.com/zCloak-Network/substrate)",
+ "sp-io 2.0.1 (git+https://github.com/zCloak-Network/substrate)",
+ "sp-runtime 2.0.1 (git+https://github.com/zCloak-Network/substrate)",
+ "sp-std 2.0.1 (git+https://github.com/zCloak-Network/substrate)",
+ "sp-version 2.0.1 (git+https://github.com/zCloak-Network/substrate)",
 ]
 
 [[package]]
@@ -1641,13 +1746,13 @@ name = "frame-system-benchmarking"
 version = "2.0.1"
 source = "git+https://github.com/Starks-Network/substrate#df6d799a51b8b1216812ffab2754382aad5e271f"
 dependencies = [
- "frame-benchmarking",
- "frame-support",
- "frame-system",
+ "frame-benchmarking 2.0.1 (git+https://github.com/Starks-Network/substrate)",
+ "frame-support 2.0.1 (git+https://github.com/Starks-Network/substrate)",
+ "frame-system 2.0.1 (git+https://github.com/Starks-Network/substrate)",
  "parity-scale-codec",
- "sp-core",
- "sp-runtime",
- "sp-std",
+ "sp-core 2.0.1 (git+https://github.com/Starks-Network/substrate)",
+ "sp-runtime 2.0.1 (git+https://github.com/Starks-Network/substrate)",
+ "sp-std 2.0.1 (git+https://github.com/Starks-Network/substrate)",
 ]
 
 [[package]]
@@ -1656,7 +1761,7 @@ version = "2.0.1"
 source = "git+https://github.com/Starks-Network/substrate#df6d799a51b8b1216812ffab2754382aad5e271f"
 dependencies = [
  "parity-scale-codec",
- "sp-api",
+ "sp-api 2.0.1 (git+https://github.com/Starks-Network/substrate)",
 ]
 
 [[package]]
@@ -3511,48 +3616,13 @@ dependencies = [
 ]
 
 [[package]]
-name = "node-template"
-version = "2.0.1"
-dependencies = [
- "frame-benchmarking",
- "frame-benchmarking-cli",
- "jsonrpc-core",
- "node-template-runtime",
- "pallet-transaction-payment-rpc",
- "sc-basic-authorship",
- "sc-cli",
- "sc-client-api",
- "sc-consensus",
- "sc-consensus-aura",
- "sc-executor",
- "sc-finality-grandpa",
- "sc-rpc",
- "sc-rpc-api",
- "sc-service",
- "sc-transaction-pool",
- "sp-api",
- "sp-block-builder",
- "sp-blockchain",
- "sp-consensus",
- "sp-consensus-aura",
- "sp-core",
- "sp-finality-grandpa",
- "sp-inherents",
- "sp-runtime",
- "sp-transaction-pool",
- "structopt",
- "substrate-build-script-utils",
- "substrate-frame-rpc-system",
-]
-
-[[package]]
 name = "node-template-runtime"
 version = "2.0.1"
 dependencies = [
- "frame-benchmarking",
+ "frame-benchmarking 2.0.1 (git+https://github.com/Starks-Network/substrate)",
  "frame-executive",
- "frame-support",
- "frame-system",
+ "frame-support 2.0.1 (git+https://github.com/Starks-Network/substrate)",
+ "frame-system 2.0.1 (git+https://github.com/Starks-Network/substrate)",
  "frame-system-benchmarking",
  "frame-system-rpc-runtime-api",
  "hex-literal",
@@ -3562,22 +3632,22 @@ dependencies = [
  "pallet-randomness-collective-flip",
  "pallet-sudo",
  "pallet-template",
- "pallet-timestamp",
+ "pallet-timestamp 2.0.1 (git+https://github.com/Starks-Network/substrate)",
  "pallet-transaction-payment",
  "pallet-transaction-payment-rpc-runtime-api",
  "parity-scale-codec",
  "serde",
- "sp-api",
+ "sp-api 2.0.1 (git+https://github.com/Starks-Network/substrate)",
  "sp-block-builder",
  "sp-consensus-aura",
- "sp-core",
- "sp-inherents",
+ "sp-core 2.0.1 (git+https://github.com/Starks-Network/substrate)",
+ "sp-inherents 2.0.1 (git+https://github.com/Starks-Network/substrate)",
  "sp-offchain",
- "sp-runtime",
- "sp-session",
- "sp-std",
+ "sp-runtime 2.0.1 (git+https://github.com/Starks-Network/substrate)",
+ "sp-session 2.0.1 (git+https://github.com/Starks-Network/substrate)",
+ "sp-std 2.0.1 (git+https://github.com/Starks-Network/substrate)",
  "sp-transaction-pool",
- "sp-version",
+ "sp-version 2.0.1 (git+https://github.com/Starks-Network/substrate)",
  "substrate-wasm-builder",
 ]
 
@@ -3723,17 +3793,17 @@ name = "pallet-aura"
 version = "2.0.1"
 source = "git+https://github.com/Starks-Network/substrate#df6d799a51b8b1216812ffab2754382aad5e271f"
 dependencies = [
- "frame-support",
- "frame-system",
- "pallet-session",
- "pallet-timestamp",
+ "frame-support 2.0.1 (git+https://github.com/Starks-Network/substrate)",
+ "frame-system 2.0.1 (git+https://github.com/Starks-Network/substrate)",
+ "pallet-session 2.0.1 (git+https://github.com/Starks-Network/substrate)",
+ "pallet-timestamp 2.0.1 (git+https://github.com/Starks-Network/substrate)",
  "parity-scale-codec",
  "serde",
- "sp-application-crypto",
+ "sp-application-crypto 2.0.1 (git+https://github.com/Starks-Network/substrate)",
  "sp-consensus-aura",
- "sp-runtime",
- "sp-std",
- "sp-timestamp",
+ "sp-runtime 2.0.1 (git+https://github.com/Starks-Network/substrate)",
+ "sp-std 2.0.1 (git+https://github.com/Starks-Network/substrate)",
+ "sp-timestamp 2.0.1 (git+https://github.com/Starks-Network/substrate)",
 ]
 
 [[package]]
@@ -3741,14 +3811,14 @@ name = "pallet-authorship"
 version = "2.0.1"
 source = "git+https://github.com/Starks-Network/substrate#df6d799a51b8b1216812ffab2754382aad5e271f"
 dependencies = [
- "frame-support",
- "frame-system",
+ "frame-support 2.0.1 (git+https://github.com/Starks-Network/substrate)",
+ "frame-system 2.0.1 (git+https://github.com/Starks-Network/substrate)",
  "impl-trait-for-tuples 0.2.0",
  "parity-scale-codec",
  "sp-authorship",
- "sp-inherents",
- "sp-runtime",
- "sp-std",
+ "sp-inherents 2.0.1 (git+https://github.com/Starks-Network/substrate)",
+ "sp-runtime 2.0.1 (git+https://github.com/Starks-Network/substrate)",
+ "sp-std 2.0.1 (git+https://github.com/Starks-Network/substrate)",
 ]
 
 [[package]]
@@ -3756,13 +3826,13 @@ name = "pallet-balances"
 version = "2.0.1"
 source = "git+https://github.com/Starks-Network/substrate#df6d799a51b8b1216812ffab2754382aad5e271f"
 dependencies = [
- "frame-benchmarking",
- "frame-support",
- "frame-system",
+ "frame-benchmarking 2.0.1 (git+https://github.com/Starks-Network/substrate)",
+ "frame-support 2.0.1 (git+https://github.com/Starks-Network/substrate)",
+ "frame-system 2.0.1 (git+https://github.com/Starks-Network/substrate)",
  "parity-scale-codec",
  "serde",
- "sp-runtime",
- "sp-std",
+ "sp-runtime 2.0.1 (git+https://github.com/Starks-Network/substrate)",
+ "sp-std 2.0.1 (git+https://github.com/Starks-Network/substrate)",
 ]
 
 [[package]]
@@ -3770,20 +3840,20 @@ name = "pallet-grandpa"
 version = "2.0.1"
 source = "git+https://github.com/Starks-Network/substrate#df6d799a51b8b1216812ffab2754382aad5e271f"
 dependencies = [
- "frame-benchmarking",
- "frame-support",
- "frame-system",
+ "frame-benchmarking 2.0.1 (git+https://github.com/Starks-Network/substrate)",
+ "frame-support 2.0.1 (git+https://github.com/Starks-Network/substrate)",
+ "frame-system 2.0.1 (git+https://github.com/Starks-Network/substrate)",
  "pallet-authorship",
- "pallet-session",
+ "pallet-session 2.0.1 (git+https://github.com/Starks-Network/substrate)",
  "parity-scale-codec",
  "serde",
- "sp-application-crypto",
- "sp-core",
+ "sp-application-crypto 2.0.1 (git+https://github.com/Starks-Network/substrate)",
+ "sp-core 2.0.1 (git+https://github.com/Starks-Network/substrate)",
  "sp-finality-grandpa",
- "sp-runtime",
- "sp-session",
- "sp-staking",
- "sp-std",
+ "sp-runtime 2.0.1 (git+https://github.com/Starks-Network/substrate)",
+ "sp-session 2.0.1 (git+https://github.com/Starks-Network/substrate)",
+ "sp-staking 2.0.1 (git+https://github.com/Starks-Network/substrate)",
+ "sp-std 2.0.1 (git+https://github.com/Starks-Network/substrate)",
 ]
 
 [[package]]
@@ -3791,12 +3861,12 @@ name = "pallet-randomness-collective-flip"
 version = "2.0.1"
 source = "git+https://github.com/Starks-Network/substrate#df6d799a51b8b1216812ffab2754382aad5e271f"
 dependencies = [
- "frame-support",
- "frame-system",
+ "frame-support 2.0.1 (git+https://github.com/Starks-Network/substrate)",
+ "frame-system 2.0.1 (git+https://github.com/Starks-Network/substrate)",
  "parity-scale-codec",
  "safe-mix",
- "sp-runtime",
- "sp-std",
+ "sp-runtime 2.0.1 (git+https://github.com/Starks-Network/substrate)",
+ "sp-std 2.0.1 (git+https://github.com/Starks-Network/substrate)",
 ]
 
 [[package]]
@@ -3804,38 +3874,77 @@ name = "pallet-session"
 version = "2.0.1"
 source = "git+https://github.com/Starks-Network/substrate#df6d799a51b8b1216812ffab2754382aad5e271f"
 dependencies = [
- "frame-support",
- "frame-system",
+ "frame-support 2.0.1 (git+https://github.com/Starks-Network/substrate)",
+ "frame-system 2.0.1 (git+https://github.com/Starks-Network/substrate)",
  "impl-trait-for-tuples 0.1.3",
- "pallet-timestamp",
+ "pallet-timestamp 2.0.1 (git+https://github.com/Starks-Network/substrate)",
  "parity-scale-codec",
  "serde",
- "sp-core",
- "sp-io",
- "sp-runtime",
- "sp-session",
- "sp-staking",
- "sp-std",
- "sp-trie",
+ "sp-core 2.0.1 (git+https://github.com/Starks-Network/substrate)",
+ "sp-io 2.0.1 (git+https://github.com/Starks-Network/substrate)",
+ "sp-runtime 2.0.1 (git+https://github.com/Starks-Network/substrate)",
+ "sp-session 2.0.1 (git+https://github.com/Starks-Network/substrate)",
+ "sp-staking 2.0.1 (git+https://github.com/Starks-Network/substrate)",
+ "sp-std 2.0.1 (git+https://github.com/Starks-Network/substrate)",
+ "sp-trie 2.0.1 (git+https://github.com/Starks-Network/substrate)",
+]
+
+[[package]]
+name = "pallet-session"
+version = "2.0.1"
+source = "git+https://github.com/zCloak-Network/substrate#df6d799a51b8b1216812ffab2754382aad5e271f"
+dependencies = [
+ "frame-support 2.0.1 (git+https://github.com/zCloak-Network/substrate)",
+ "frame-system 2.0.1 (git+https://github.com/zCloak-Network/substrate)",
+ "impl-trait-for-tuples 0.1.3",
+ "pallet-timestamp 2.0.1 (git+https://github.com/zCloak-Network/substrate)",
+ "parity-scale-codec",
+ "serde",
+ "sp-core 2.0.1 (git+https://github.com/zCloak-Network/substrate)",
+ "sp-io 2.0.1 (git+https://github.com/zCloak-Network/substrate)",
+ "sp-runtime 2.0.1 (git+https://github.com/zCloak-Network/substrate)",
+ "sp-session 2.0.1 (git+https://github.com/zCloak-Network/substrate)",
+ "sp-staking 2.0.1 (git+https://github.com/zCloak-Network/substrate)",
+ "sp-std 2.0.1 (git+https://github.com/zCloak-Network/substrate)",
+ "sp-trie 2.0.1 (git+https://github.com/zCloak-Network/substrate)",
 ]
 
 [[package]]
 name = "pallet-starks-verifier"
 version = "0.1.0"
 dependencies = [
- "frame-support",
- "frame-system",
- "pallet-session",
+ "frame-support 2.0.1 (git+https://github.com/zCloak-Network/substrate)",
+ "frame-system 2.0.1 (git+https://github.com/zCloak-Network/substrate)",
+ "pallet-session 2.0.1 (git+https://github.com/zCloak-Network/substrate)",
  "parity-scale-codec",
  "serde",
- "sp-application-crypto",
- "sp-core",
- "sp-io",
- "sp-keystore",
- "sp-runtime",
- "sp-staking",
+ "sp-application-crypto 2.0.1 (git+https://github.com/zCloak-Network/substrate)",
+ "sp-core 2.0.1 (git+https://github.com/zCloak-Network/substrate)",
+ "sp-io 2.0.1 (git+https://github.com/zCloak-Network/substrate)",
+ "sp-keystore 0.8.0 (git+https://github.com/zCloak-Network/substrate)",
+ "sp-runtime 2.0.1 (git+https://github.com/zCloak-Network/substrate)",
+ "sp-staking 2.0.1 (git+https://github.com/zCloak-Network/substrate)",
  "sp-starks",
- "sp-std",
+ "sp-std 2.0.1 (git+https://github.com/zCloak-Network/substrate)",
+]
+
+[[package]]
+name = "pallet-starks-verifier-v2"
+version = "0.1.0"
+dependencies = [
+ "frame-support 2.0.1 (git+https://github.com/zCloak-Network/substrate)",
+ "frame-system 2.0.1 (git+https://github.com/zCloak-Network/substrate)",
+ "pallet-session 2.0.1 (git+https://github.com/zCloak-Network/substrate)",
+ "parity-scale-codec",
+ "serde",
+ "sp-application-crypto 2.0.1 (git+https://github.com/zCloak-Network/substrate)",
+ "sp-core 2.0.1 (git+https://github.com/zCloak-Network/substrate)",
+ "sp-io 2.0.1 (git+https://github.com/zCloak-Network/substrate)",
+ "sp-keystore 0.8.0 (git+https://github.com/zCloak-Network/substrate)",
+ "sp-runtime 2.0.1 (git+https://github.com/zCloak-Network/substrate)",
+ "sp-staking 2.0.1 (git+https://github.com/zCloak-Network/substrate)",
+ "sp-starks",
+ "sp-std 2.0.1 (git+https://github.com/zCloak-Network/substrate)",
 ]
 
 [[package]]
@@ -3843,25 +3952,25 @@ name = "pallet-sudo"
 version = "2.0.1"
 source = "git+https://github.com/Starks-Network/substrate#df6d799a51b8b1216812ffab2754382aad5e271f"
 dependencies = [
- "frame-support",
- "frame-system",
+ "frame-support 2.0.1 (git+https://github.com/Starks-Network/substrate)",
+ "frame-system 2.0.1 (git+https://github.com/Starks-Network/substrate)",
  "parity-scale-codec",
  "serde",
- "sp-io",
- "sp-runtime",
- "sp-std",
+ "sp-io 2.0.1 (git+https://github.com/Starks-Network/substrate)",
+ "sp-runtime 2.0.1 (git+https://github.com/Starks-Network/substrate)",
+ "sp-std 2.0.1 (git+https://github.com/Starks-Network/substrate)",
 ]
 
 [[package]]
 name = "pallet-template"
 version = "2.0.1"
 dependencies = [
- "frame-support",
- "frame-system",
+ "frame-support 2.0.1 (git+https://github.com/Starks-Network/substrate)",
+ "frame-system 2.0.1 (git+https://github.com/Starks-Network/substrate)",
  "parity-scale-codec",
- "sp-core",
- "sp-io",
- "sp-runtime",
+ "sp-core 2.0.1 (git+https://github.com/Starks-Network/substrate)",
+ "sp-io 2.0.1 (git+https://github.com/Starks-Network/substrate)",
+ "sp-runtime 2.0.1 (git+https://github.com/Starks-Network/substrate)",
 ]
 
 [[package]]
@@ -3869,17 +3978,34 @@ name = "pallet-timestamp"
 version = "2.0.1"
 source = "git+https://github.com/Starks-Network/substrate#df6d799a51b8b1216812ffab2754382aad5e271f"
 dependencies = [
- "frame-benchmarking",
- "frame-support",
- "frame-system",
+ "frame-benchmarking 2.0.1 (git+https://github.com/Starks-Network/substrate)",
+ "frame-support 2.0.1 (git+https://github.com/Starks-Network/substrate)",
+ "frame-system 2.0.1 (git+https://github.com/Starks-Network/substrate)",
  "impl-trait-for-tuples 0.2.0",
  "parity-scale-codec",
  "serde",
- "sp-inherents",
- "sp-io",
- "sp-runtime",
- "sp-std",
- "sp-timestamp",
+ "sp-inherents 2.0.1 (git+https://github.com/Starks-Network/substrate)",
+ "sp-io 2.0.1 (git+https://github.com/Starks-Network/substrate)",
+ "sp-runtime 2.0.1 (git+https://github.com/Starks-Network/substrate)",
+ "sp-std 2.0.1 (git+https://github.com/Starks-Network/substrate)",
+ "sp-timestamp 2.0.1 (git+https://github.com/Starks-Network/substrate)",
+]
+
+[[package]]
+name = "pallet-timestamp"
+version = "2.0.1"
+source = "git+https://github.com/zCloak-Network/substrate#df6d799a51b8b1216812ffab2754382aad5e271f"
+dependencies = [
+ "frame-benchmarking 2.0.1 (git+https://github.com/zCloak-Network/substrate)",
+ "frame-support 2.0.1 (git+https://github.com/zCloak-Network/substrate)",
+ "frame-system 2.0.1 (git+https://github.com/zCloak-Network/substrate)",
+ "impl-trait-for-tuples 0.2.0",
+ "parity-scale-codec",
+ "serde",
+ "sp-inherents 2.0.1 (git+https://github.com/zCloak-Network/substrate)",
+ "sp-runtime 2.0.1 (git+https://github.com/zCloak-Network/substrate)",
+ "sp-std 2.0.1 (git+https://github.com/zCloak-Network/substrate)",
+ "sp-timestamp 2.0.1 (git+https://github.com/zCloak-Network/substrate)",
 ]
 
 [[package]]
@@ -3887,15 +4013,15 @@ name = "pallet-transaction-payment"
 version = "2.0.1"
 source = "git+https://github.com/Starks-Network/substrate#df6d799a51b8b1216812ffab2754382aad5e271f"
 dependencies = [
- "frame-support",
- "frame-system",
+ "frame-support 2.0.1 (git+https://github.com/Starks-Network/substrate)",
+ "frame-system 2.0.1 (git+https://github.com/Starks-Network/substrate)",
  "parity-scale-codec",
  "serde",
  "smallvec 1.6.1",
- "sp-core",
- "sp-io",
- "sp-runtime",
- "sp-std",
+ "sp-core 2.0.1 (git+https://github.com/Starks-Network/substrate)",
+ "sp-io 2.0.1 (git+https://github.com/Starks-Network/substrate)",
+ "sp-runtime 2.0.1 (git+https://github.com/Starks-Network/substrate)",
+ "sp-std 2.0.1 (git+https://github.com/Starks-Network/substrate)",
 ]
 
 [[package]]
@@ -3908,11 +4034,11 @@ dependencies = [
  "jsonrpc-derive",
  "pallet-transaction-payment-rpc-runtime-api",
  "parity-scale-codec",
- "sp-api",
+ "sp-api 2.0.1 (git+https://github.com/Starks-Network/substrate)",
  "sp-blockchain",
- "sp-core",
+ "sp-core 2.0.1 (git+https://github.com/Starks-Network/substrate)",
  "sp-rpc",
- "sp-runtime",
+ "sp-runtime 2.0.1 (git+https://github.com/Starks-Network/substrate)",
 ]
 
 [[package]]
@@ -3922,8 +4048,8 @@ source = "git+https://github.com/Starks-Network/substrate#df6d799a51b8b1216812ff
 dependencies = [
  "pallet-transaction-payment",
  "parity-scale-codec",
- "sp-api",
- "sp-runtime",
+ "sp-api 2.0.1 (git+https://github.com/Starks-Network/substrate)",
+ "sp-runtime 2.0.1 (git+https://github.com/Starks-Network/substrate)",
 ]
 
 [[package]]
@@ -5051,12 +5177,12 @@ dependencies = [
  "sc-client-api",
  "sc-proposer-metrics",
  "sc-telemetry",
- "sp-api",
+ "sp-api 2.0.1 (git+https://github.com/Starks-Network/substrate)",
  "sp-blockchain",
  "sp-consensus",
- "sp-core",
- "sp-inherents",
- "sp-runtime",
+ "sp-core 2.0.1 (git+https://github.com/Starks-Network/substrate)",
+ "sp-inherents 2.0.1 (git+https://github.com/Starks-Network/substrate)",
+ "sp-runtime 2.0.1 (git+https://github.com/Starks-Network/substrate)",
  "sp-transaction-pool",
  "substrate-prometheus-endpoint",
 ]
@@ -5068,14 +5194,14 @@ source = "git+https://github.com/Starks-Network/substrate#df6d799a51b8b1216812ff
 dependencies = [
  "parity-scale-codec",
  "sc-client-api",
- "sp-api",
+ "sp-api 2.0.1 (git+https://github.com/Starks-Network/substrate)",
  "sp-block-builder",
  "sp-blockchain",
  "sp-consensus",
- "sp-core",
- "sp-inherents",
- "sp-runtime",
- "sp-state-machine",
+ "sp-core 2.0.1 (git+https://github.com/Starks-Network/substrate)",
+ "sp-inherents 2.0.1 (git+https://github.com/Starks-Network/substrate)",
+ "sp-runtime 2.0.1 (git+https://github.com/Starks-Network/substrate)",
+ "sp-state-machine 0.8.1 (git+https://github.com/Starks-Network/substrate)",
 ]
 
 [[package]]
@@ -5095,8 +5221,8 @@ dependencies = [
  "serde_json",
  "sp-chain-spec",
  "sp-consensus-babe",
- "sp-core",
- "sp-runtime",
+ "sp-core 2.0.1 (git+https://github.com/Starks-Network/substrate)",
+ "sp-runtime 2.0.1 (git+https://github.com/Starks-Network/substrate)",
 ]
 
 [[package]]
@@ -5135,13 +5261,13 @@ dependencies = [
  "serde",
  "serde_json",
  "sp-blockchain",
- "sp-core",
+ "sp-core 2.0.1 (git+https://github.com/Starks-Network/substrate)",
  "sp-keyring",
- "sp-keystore",
- "sp-panic-handler",
- "sp-runtime",
+ "sp-keystore 0.8.0 (git+https://github.com/Starks-Network/substrate)",
+ "sp-panic-handler 2.0.1 (git+https://github.com/Starks-Network/substrate)",
+ "sp-runtime 2.0.1 (git+https://github.com/Starks-Network/substrate)",
  "sp-utils",
- "sp-version",
+ "sp-version 2.0.1 (git+https://github.com/Starks-Network/substrate)",
  "structopt",
  "thiserror",
  "tiny-bip39",
@@ -5163,22 +5289,22 @@ dependencies = [
  "parity-scale-codec",
  "parking_lot 0.11.1",
  "sc-executor",
- "sp-api",
+ "sp-api 2.0.1 (git+https://github.com/Starks-Network/substrate)",
  "sp-blockchain",
  "sp-consensus",
- "sp-core",
+ "sp-core 2.0.1 (git+https://github.com/Starks-Network/substrate)",
  "sp-database",
- "sp-externalities",
- "sp-inherents",
- "sp-keystore",
- "sp-runtime",
- "sp-state-machine",
- "sp-std",
- "sp-storage",
+ "sp-externalities 0.8.1 (git+https://github.com/Starks-Network/substrate)",
+ "sp-inherents 2.0.1 (git+https://github.com/Starks-Network/substrate)",
+ "sp-keystore 0.8.0 (git+https://github.com/Starks-Network/substrate)",
+ "sp-runtime 2.0.1 (git+https://github.com/Starks-Network/substrate)",
+ "sp-state-machine 0.8.1 (git+https://github.com/Starks-Network/substrate)",
+ "sp-std 2.0.1 (git+https://github.com/Starks-Network/substrate)",
+ "sp-storage 2.0.1 (git+https://github.com/Starks-Network/substrate)",
  "sp-transaction-pool",
- "sp-trie",
+ "sp-trie 2.0.1 (git+https://github.com/Starks-Network/substrate)",
  "sp-utils",
- "sp-version",
+ "sp-version 2.0.1 (git+https://github.com/Starks-Network/substrate)",
  "substrate-prometheus-endpoint",
 ]
 
@@ -5201,14 +5327,14 @@ dependencies = [
  "sc-client-api",
  "sc-executor",
  "sc-state-db",
- "sp-arithmetic",
+ "sp-arithmetic 2.0.1 (git+https://github.com/Starks-Network/substrate)",
  "sp-blockchain",
  "sp-consensus",
- "sp-core",
+ "sp-core 2.0.1 (git+https://github.com/Starks-Network/substrate)",
  "sp-database",
- "sp-runtime",
- "sp-state-machine",
- "sp-trie",
+ "sp-runtime 2.0.1 (git+https://github.com/Starks-Network/substrate)",
+ "sp-state-machine 0.8.1 (git+https://github.com/Starks-Network/substrate)",
+ "sp-trie 2.0.1 (git+https://github.com/Starks-Network/substrate)",
  "substrate-prometheus-endpoint",
 ]
 
@@ -5220,7 +5346,7 @@ dependencies = [
  "sc-client-api",
  "sp-blockchain",
  "sp-consensus",
- "sp-runtime",
+ "sp-runtime 2.0.1 (git+https://github.com/Starks-Network/substrate)",
 ]
 
 [[package]]
@@ -5238,20 +5364,20 @@ dependencies = [
  "sc-client-api",
  "sc-consensus-slots",
  "sc-telemetry",
- "sp-api",
- "sp-application-crypto",
+ "sp-api 2.0.1 (git+https://github.com/Starks-Network/substrate)",
+ "sp-application-crypto 2.0.1 (git+https://github.com/Starks-Network/substrate)",
  "sp-block-builder",
  "sp-blockchain",
  "sp-consensus",
  "sp-consensus-aura",
  "sp-consensus-slots",
- "sp-core",
- "sp-inherents",
- "sp-io",
- "sp-keystore",
- "sp-runtime",
- "sp-timestamp",
- "sp-version",
+ "sp-core 2.0.1 (git+https://github.com/Starks-Network/substrate)",
+ "sp-inherents 2.0.1 (git+https://github.com/Starks-Network/substrate)",
+ "sp-io 2.0.1 (git+https://github.com/Starks-Network/substrate)",
+ "sp-keystore 0.8.0 (git+https://github.com/Starks-Network/substrate)",
+ "sp-runtime 2.0.1 (git+https://github.com/Starks-Network/substrate)",
+ "sp-timestamp 2.0.1 (git+https://github.com/Starks-Network/substrate)",
+ "sp-version 2.0.1 (git+https://github.com/Starks-Network/substrate)",
  "substrate-prometheus-endpoint",
 ]
 
@@ -5282,22 +5408,22 @@ dependencies = [
  "sc-telemetry",
  "schnorrkel",
  "serde",
- "sp-api",
- "sp-application-crypto",
+ "sp-api 2.0.1 (git+https://github.com/Starks-Network/substrate)",
+ "sp-application-crypto 2.0.1 (git+https://github.com/Starks-Network/substrate)",
  "sp-block-builder",
  "sp-blockchain",
  "sp-consensus",
  "sp-consensus-babe",
  "sp-consensus-slots",
  "sp-consensus-vrf",
- "sp-core",
- "sp-inherents",
- "sp-io",
- "sp-keystore",
- "sp-runtime",
- "sp-timestamp",
+ "sp-core 2.0.1 (git+https://github.com/Starks-Network/substrate)",
+ "sp-inherents 2.0.1 (git+https://github.com/Starks-Network/substrate)",
+ "sp-io 2.0.1 (git+https://github.com/Starks-Network/substrate)",
+ "sp-keystore 0.8.0 (git+https://github.com/Starks-Network/substrate)",
+ "sp-runtime 2.0.1 (git+https://github.com/Starks-Network/substrate)",
+ "sp-timestamp 2.0.1 (git+https://github.com/Starks-Network/substrate)",
  "sp-utils",
- "sp-version",
+ "sp-version 2.0.1 (git+https://github.com/Starks-Network/substrate)",
  "substrate-prometheus-endpoint",
 ]
 
@@ -5311,7 +5437,7 @@ dependencies = [
  "parking_lot 0.11.1",
  "sc-client-api",
  "sp-blockchain",
- "sp-runtime",
+ "sp-runtime 2.0.1 (git+https://github.com/Starks-Network/substrate)",
 ]
 
 [[package]]
@@ -5326,17 +5452,17 @@ dependencies = [
  "parking_lot 0.11.1",
  "sc-client-api",
  "sc-telemetry",
- "sp-api",
- "sp-application-crypto",
- "sp-arithmetic",
+ "sp-api 2.0.1 (git+https://github.com/Starks-Network/substrate)",
+ "sp-application-crypto 2.0.1 (git+https://github.com/Starks-Network/substrate)",
+ "sp-arithmetic 2.0.1 (git+https://github.com/Starks-Network/substrate)",
  "sp-blockchain",
  "sp-consensus",
  "sp-consensus-slots",
- "sp-core",
- "sp-inherents",
- "sp-runtime",
- "sp-state-machine",
- "sp-trie",
+ "sp-core 2.0.1 (git+https://github.com/Starks-Network/substrate)",
+ "sp-inherents 2.0.1 (git+https://github.com/Starks-Network/substrate)",
+ "sp-runtime 2.0.1 (git+https://github.com/Starks-Network/substrate)",
+ "sp-state-machine 0.8.1 (git+https://github.com/Starks-Network/substrate)",
+ "sp-trie 2.0.1 (git+https://github.com/Starks-Network/substrate)",
  "thiserror",
 ]
 
@@ -5349,9 +5475,9 @@ dependencies = [
  "sc-client-api",
  "sp-authorship",
  "sp-consensus",
- "sp-core",
- "sp-inherents",
- "sp-runtime",
+ "sp-core 2.0.1 (git+https://github.com/Starks-Network/substrate)",
+ "sp-inherents 2.0.1 (git+https://github.com/Starks-Network/substrate)",
+ "sp-runtime 2.0.1 (git+https://github.com/Starks-Network/substrate)",
 ]
 
 [[package]]
@@ -5369,17 +5495,17 @@ dependencies = [
  "sc-executor-common",
  "sc-executor-wasmi",
  "sc-executor-wasmtime",
- "sp-api",
- "sp-core",
- "sp-externalities",
- "sp-io",
- "sp-panic-handler",
- "sp-runtime-interface",
+ "sp-api 2.0.1 (git+https://github.com/Starks-Network/substrate)",
+ "sp-core 2.0.1 (git+https://github.com/Starks-Network/substrate)",
+ "sp-externalities 0.8.1 (git+https://github.com/Starks-Network/substrate)",
+ "sp-io 2.0.1 (git+https://github.com/Starks-Network/substrate)",
+ "sp-panic-handler 2.0.1 (git+https://github.com/Starks-Network/substrate)",
+ "sp-runtime-interface 2.0.1 (git+https://github.com/Starks-Network/substrate)",
  "sp-serializer",
  "sp-tasks",
- "sp-trie",
- "sp-version",
- "sp-wasm-interface",
+ "sp-trie 2.0.1 (git+https://github.com/Starks-Network/substrate)",
+ "sp-version 2.0.1 (git+https://github.com/Starks-Network/substrate)",
+ "sp-wasm-interface 2.0.1 (git+https://github.com/Starks-Network/substrate)",
  "wasmi",
 ]
 
@@ -5392,9 +5518,9 @@ dependencies = [
  "parity-scale-codec",
  "parity-wasm 0.41.0",
  "sp-allocator",
- "sp-core",
+ "sp-core 2.0.1 (git+https://github.com/Starks-Network/substrate)",
  "sp-serializer",
- "sp-wasm-interface",
+ "sp-wasm-interface 2.0.1 (git+https://github.com/Starks-Network/substrate)",
  "thiserror",
  "wasmi",
 ]
@@ -5408,9 +5534,9 @@ dependencies = [
  "parity-scale-codec",
  "sc-executor-common",
  "sp-allocator",
- "sp-core",
- "sp-runtime-interface",
- "sp-wasm-interface",
+ "sp-core 2.0.1 (git+https://github.com/Starks-Network/substrate)",
+ "sp-runtime-interface 2.0.1 (git+https://github.com/Starks-Network/substrate)",
+ "sp-wasm-interface 2.0.1 (git+https://github.com/Starks-Network/substrate)",
  "wasmi",
 ]
 
@@ -5426,9 +5552,9 @@ dependencies = [
  "sc-executor-common",
  "scoped-tls",
  "sp-allocator",
- "sp-core",
- "sp-runtime-interface",
- "sp-wasm-interface",
+ "sp-core 2.0.1 (git+https://github.com/Starks-Network/substrate)",
+ "sp-runtime-interface 2.0.1 (git+https://github.com/Starks-Network/substrate)",
+ "sp-wasm-interface 2.0.1 (git+https://github.com/Starks-Network/substrate)",
  "wasmtime",
 ]
 
@@ -5456,16 +5582,16 @@ dependencies = [
  "sc-network-gossip",
  "sc-telemetry",
  "serde_json",
- "sp-api",
- "sp-application-crypto",
- "sp-arithmetic",
+ "sp-api 2.0.1 (git+https://github.com/Starks-Network/substrate)",
+ "sp-application-crypto 2.0.1 (git+https://github.com/Starks-Network/substrate)",
+ "sp-arithmetic 2.0.1 (git+https://github.com/Starks-Network/substrate)",
  "sp-blockchain",
  "sp-consensus",
- "sp-core",
+ "sp-core 2.0.1 (git+https://github.com/Starks-Network/substrate)",
  "sp-finality-grandpa",
- "sp-inherents",
- "sp-keystore",
- "sp-runtime",
+ "sp-inherents 2.0.1 (git+https://github.com/Starks-Network/substrate)",
+ "sp-keystore 0.8.0 (git+https://github.com/Starks-Network/substrate)",
+ "sp-runtime 2.0.1 (git+https://github.com/Starks-Network/substrate)",
  "sp-utils",
  "substrate-prometheus-endpoint",
 ]
@@ -5482,7 +5608,7 @@ dependencies = [
  "sc-client-api",
  "sc-network",
  "sp-blockchain",
- "sp-runtime",
+ "sp-runtime 2.0.1 (git+https://github.com/Starks-Network/substrate)",
  "sp-transaction-pool",
  "sp-utils",
  "wasm-timer",
@@ -5502,9 +5628,9 @@ dependencies = [
  "parking_lot 0.11.1",
  "rand 0.7.3",
  "serde_json",
- "sp-application-crypto",
- "sp-core",
- "sp-keystore",
+ "sp-application-crypto 2.0.1 (git+https://github.com/Starks-Network/substrate)",
+ "sp-core 2.0.1 (git+https://github.com/Starks-Network/substrate)",
+ "sp-keystore 0.8.0 (git+https://github.com/Starks-Network/substrate)",
  "subtle 2.4.0",
 ]
 
@@ -5519,12 +5645,12 @@ dependencies = [
  "parking_lot 0.11.1",
  "sc-client-api",
  "sc-executor",
- "sp-api",
+ "sp-api 2.0.1 (git+https://github.com/Starks-Network/substrate)",
  "sp-blockchain",
- "sp-core",
- "sp-externalities",
- "sp-runtime",
- "sp-state-machine",
+ "sp-core 2.0.1 (git+https://github.com/Starks-Network/substrate)",
+ "sp-externalities 0.8.1 (git+https://github.com/Starks-Network/substrate)",
+ "sp-runtime 2.0.1 (git+https://github.com/Starks-Network/substrate)",
+ "sp-state-machine 0.8.1 (git+https://github.com/Starks-Network/substrate)",
 ]
 
 [[package]]
@@ -5566,11 +5692,11 @@ dependencies = [
  "serde",
  "serde_json",
  "smallvec 1.6.1",
- "sp-arithmetic",
+ "sp-arithmetic 2.0.1 (git+https://github.com/Starks-Network/substrate)",
  "sp-blockchain",
  "sp-consensus",
- "sp-core",
- "sp-runtime",
+ "sp-core 2.0.1 (git+https://github.com/Starks-Network/substrate)",
+ "sp-runtime 2.0.1 (git+https://github.com/Starks-Network/substrate)",
  "sp-utils",
  "substrate-prometheus-endpoint",
  "thiserror",
@@ -5591,7 +5717,7 @@ dependencies = [
  "log",
  "lru",
  "sc-network",
- "sp-runtime",
+ "sp-runtime 2.0.1 (git+https://github.com/Starks-Network/substrate)",
  "substrate-prometheus-endpoint",
  "wasm-timer",
 ]
@@ -5615,10 +5741,10 @@ dependencies = [
  "sc-client-api",
  "sc-keystore",
  "sc-network",
- "sp-api",
- "sp-core",
+ "sp-api 2.0.1 (git+https://github.com/Starks-Network/substrate)",
+ "sp-core 2.0.1 (git+https://github.com/Starks-Network/substrate)",
  "sp-offchain",
- "sp-runtime",
+ "sp-runtime 2.0.1 (git+https://github.com/Starks-Network/substrate)",
  "sp-utils",
  "threadpool",
 ]
@@ -5664,19 +5790,19 @@ dependencies = [
  "sc-rpc-api",
  "sc-tracing",
  "serde_json",
- "sp-api",
+ "sp-api 2.0.1 (git+https://github.com/Starks-Network/substrate)",
  "sp-blockchain",
  "sp-chain-spec",
- "sp-core",
- "sp-keystore",
+ "sp-core 2.0.1 (git+https://github.com/Starks-Network/substrate)",
+ "sp-keystore 0.8.0 (git+https://github.com/Starks-Network/substrate)",
  "sp-offchain",
  "sp-rpc",
- "sp-runtime",
- "sp-session",
- "sp-state-machine",
+ "sp-runtime 2.0.1 (git+https://github.com/Starks-Network/substrate)",
+ "sp-session 2.0.1 (git+https://github.com/Starks-Network/substrate)",
+ "sp-state-machine 0.8.1 (git+https://github.com/Starks-Network/substrate)",
  "sp-transaction-pool",
  "sp-utils",
- "sp-version",
+ "sp-version 2.0.1 (git+https://github.com/Starks-Network/substrate)",
 ]
 
 [[package]]
@@ -5696,11 +5822,11 @@ dependencies = [
  "serde",
  "serde_json",
  "sp-chain-spec",
- "sp-core",
+ "sp-core 2.0.1 (git+https://github.com/Starks-Network/substrate)",
  "sp-rpc",
- "sp-runtime",
+ "sp-runtime 2.0.1 (git+https://github.com/Starks-Network/substrate)",
  "sp-transaction-pool",
- "sp-version",
+ "sp-version 2.0.1 (git+https://github.com/Starks-Network/substrate)",
 ]
 
 [[package]]
@@ -5717,7 +5843,7 @@ dependencies = [
  "log",
  "serde",
  "serde_json",
- "sp-runtime",
+ "sp-runtime 2.0.1 (git+https://github.com/Starks-Network/substrate)",
  "substrate-prometheus-endpoint",
 ]
 
@@ -5758,24 +5884,24 @@ dependencies = [
  "sc-transaction-pool",
  "serde",
  "serde_json",
- "sp-api",
- "sp-application-crypto",
+ "sp-api 2.0.1 (git+https://github.com/Starks-Network/substrate)",
+ "sp-application-crypto 2.0.1 (git+https://github.com/Starks-Network/substrate)",
  "sp-block-builder",
  "sp-blockchain",
  "sp-consensus",
- "sp-core",
- "sp-externalities",
- "sp-inherents",
- "sp-io",
- "sp-keystore",
- "sp-runtime",
- "sp-session",
- "sp-state-machine",
- "sp-tracing",
+ "sp-core 2.0.1 (git+https://github.com/Starks-Network/substrate)",
+ "sp-externalities 0.8.1 (git+https://github.com/Starks-Network/substrate)",
+ "sp-inherents 2.0.1 (git+https://github.com/Starks-Network/substrate)",
+ "sp-io 2.0.1 (git+https://github.com/Starks-Network/substrate)",
+ "sp-keystore 0.8.0 (git+https://github.com/Starks-Network/substrate)",
+ "sp-runtime 2.0.1 (git+https://github.com/Starks-Network/substrate)",
+ "sp-session 2.0.1 (git+https://github.com/Starks-Network/substrate)",
+ "sp-state-machine 0.8.1 (git+https://github.com/Starks-Network/substrate)",
+ "sp-tracing 2.0.1 (git+https://github.com/Starks-Network/substrate)",
  "sp-transaction-pool",
- "sp-trie",
+ "sp-trie 2.0.1 (git+https://github.com/Starks-Network/substrate)",
  "sp-utils",
- "sp-version",
+ "sp-version 2.0.1 (git+https://github.com/Starks-Network/substrate)",
  "substrate-prometheus-endpoint",
  "tempfile",
  "thiserror",
@@ -5795,7 +5921,7 @@ dependencies = [
  "parity-util-mem-derive",
  "parking_lot 0.11.1",
  "sc-client-api",
- "sp-core",
+ "sp-core 2.0.1 (git+https://github.com/Starks-Network/substrate)",
  "thiserror",
 ]
 
@@ -5839,7 +5965,7 @@ dependencies = [
  "sc-tracing-proc-macro",
  "serde",
  "serde_json",
- "sp-tracing",
+ "sp-tracing 2.0.1 (git+https://github.com/Starks-Network/substrate)",
  "thiserror",
  "tracing",
  "tracing-core",
@@ -5874,8 +6000,8 @@ dependencies = [
  "retain_mut",
  "serde",
  "sp-blockchain",
- "sp-core",
- "sp-runtime",
+ "sp-core 2.0.1 (git+https://github.com/Starks-Network/substrate)",
+ "sp-runtime 2.0.1 (git+https://github.com/Starks-Network/substrate)",
  "sp-transaction-pool",
  "sp-utils",
  "thiserror",
@@ -5896,11 +6022,11 @@ dependencies = [
  "parking_lot 0.11.1",
  "sc-client-api",
  "sc-transaction-graph",
- "sp-api",
+ "sp-api 2.0.1 (git+https://github.com/Starks-Network/substrate)",
  "sp-blockchain",
- "sp-core",
- "sp-runtime",
- "sp-tracing",
+ "sp-core 2.0.1 (git+https://github.com/Starks-Network/substrate)",
+ "sp-runtime 2.0.1 (git+https://github.com/Starks-Network/substrate)",
+ "sp-tracing 2.0.1 (git+https://github.com/Starks-Network/substrate)",
  "sp-transaction-pool",
  "sp-utils",
  "substrate-prometheus-endpoint",
@@ -6284,9 +6410,9 @@ version = "2.0.1"
 source = "git+https://github.com/Starks-Network/substrate#df6d799a51b8b1216812ffab2754382aad5e271f"
 dependencies = [
  "log",
- "sp-core",
- "sp-std",
- "sp-wasm-interface",
+ "sp-core 2.0.1 (git+https://github.com/Starks-Network/substrate)",
+ "sp-std 2.0.1 (git+https://github.com/Starks-Network/substrate)",
+ "sp-wasm-interface 2.0.1 (git+https://github.com/Starks-Network/substrate)",
  "thiserror",
 ]
 
@@ -6297,12 +6423,28 @@ source = "git+https://github.com/Starks-Network/substrate#df6d799a51b8b1216812ff
 dependencies = [
  "hash-db",
  "parity-scale-codec",
- "sp-api-proc-macro",
- "sp-core",
- "sp-runtime",
- "sp-state-machine",
- "sp-std",
- "sp-version",
+ "sp-api-proc-macro 2.0.1 (git+https://github.com/Starks-Network/substrate)",
+ "sp-core 2.0.1 (git+https://github.com/Starks-Network/substrate)",
+ "sp-runtime 2.0.1 (git+https://github.com/Starks-Network/substrate)",
+ "sp-state-machine 0.8.1 (git+https://github.com/Starks-Network/substrate)",
+ "sp-std 2.0.1 (git+https://github.com/Starks-Network/substrate)",
+ "sp-version 2.0.1 (git+https://github.com/Starks-Network/substrate)",
+ "thiserror",
+]
+
+[[package]]
+name = "sp-api"
+version = "2.0.1"
+source = "git+https://github.com/zCloak-Network/substrate#df6d799a51b8b1216812ffab2754382aad5e271f"
+dependencies = [
+ "hash-db",
+ "parity-scale-codec",
+ "sp-api-proc-macro 2.0.1 (git+https://github.com/zCloak-Network/substrate)",
+ "sp-core 2.0.1 (git+https://github.com/zCloak-Network/substrate)",
+ "sp-runtime 2.0.1 (git+https://github.com/zCloak-Network/substrate)",
+ "sp-state-machine 0.8.1 (git+https://github.com/zCloak-Network/substrate)",
+ "sp-std 2.0.1 (git+https://github.com/zCloak-Network/substrate)",
+ "sp-version 2.0.1 (git+https://github.com/zCloak-Network/substrate)",
  "thiserror",
 ]
 
@@ -6319,15 +6461,39 @@ dependencies = [
 ]
 
 [[package]]
+name = "sp-api-proc-macro"
+version = "2.0.1"
+source = "git+https://github.com/zCloak-Network/substrate#df6d799a51b8b1216812ffab2754382aad5e271f"
+dependencies = [
+ "blake2-rfc",
+ "proc-macro-crate",
+ "proc-macro2",
+ "quote",
+ "syn",
+]
+
+[[package]]
 name = "sp-application-crypto"
 version = "2.0.1"
 source = "git+https://github.com/Starks-Network/substrate#df6d799a51b8b1216812ffab2754382aad5e271f"
 dependencies = [
  "parity-scale-codec",
  "serde",
- "sp-core",
- "sp-io",
- "sp-std",
+ "sp-core 2.0.1 (git+https://github.com/Starks-Network/substrate)",
+ "sp-io 2.0.1 (git+https://github.com/Starks-Network/substrate)",
+ "sp-std 2.0.1 (git+https://github.com/Starks-Network/substrate)",
+]
+
+[[package]]
+name = "sp-application-crypto"
+version = "2.0.1"
+source = "git+https://github.com/zCloak-Network/substrate#df6d799a51b8b1216812ffab2754382aad5e271f"
+dependencies = [
+ "parity-scale-codec",
+ "serde",
+ "sp-core 2.0.1 (git+https://github.com/zCloak-Network/substrate)",
+ "sp-io 2.0.1 (git+https://github.com/zCloak-Network/substrate)",
+ "sp-std 2.0.1 (git+https://github.com/zCloak-Network/substrate)",
 ]
 
 [[package]]
@@ -6339,8 +6505,21 @@ dependencies = [
  "num-traits",
  "parity-scale-codec",
  "serde",
- "sp-debug-derive",
- "sp-std",
+ "sp-debug-derive 2.0.1 (git+https://github.com/Starks-Network/substrate)",
+ "sp-std 2.0.1 (git+https://github.com/Starks-Network/substrate)",
+]
+
+[[package]]
+name = "sp-arithmetic"
+version = "2.0.1"
+source = "git+https://github.com/zCloak-Network/substrate#df6d799a51b8b1216812ffab2754382aad5e271f"
+dependencies = [
+ "integer-sqrt",
+ "num-traits",
+ "parity-scale-codec",
+ "serde",
+ "sp-debug-derive 2.0.1 (git+https://github.com/zCloak-Network/substrate)",
+ "sp-std 2.0.1 (git+https://github.com/zCloak-Network/substrate)",
 ]
 
 [[package]]
@@ -6349,9 +6528,9 @@ version = "2.0.1"
 source = "git+https://github.com/Starks-Network/substrate#df6d799a51b8b1216812ffab2754382aad5e271f"
 dependencies = [
  "parity-scale-codec",
- "sp-inherents",
- "sp-runtime",
- "sp-std",
+ "sp-inherents 2.0.1 (git+https://github.com/Starks-Network/substrate)",
+ "sp-runtime 2.0.1 (git+https://github.com/Starks-Network/substrate)",
+ "sp-std 2.0.1 (git+https://github.com/Starks-Network/substrate)",
 ]
 
 [[package]]
@@ -6360,10 +6539,10 @@ version = "2.0.1"
 source = "git+https://github.com/Starks-Network/substrate#df6d799a51b8b1216812ffab2754382aad5e271f"
 dependencies = [
  "parity-scale-codec",
- "sp-api",
- "sp-inherents",
- "sp-runtime",
- "sp-std",
+ "sp-api 2.0.1 (git+https://github.com/Starks-Network/substrate)",
+ "sp-inherents 2.0.1 (git+https://github.com/Starks-Network/substrate)",
+ "sp-runtime 2.0.1 (git+https://github.com/Starks-Network/substrate)",
+ "sp-std 2.0.1 (git+https://github.com/Starks-Network/substrate)",
 ]
 
 [[package]]
@@ -6376,11 +6555,11 @@ dependencies = [
  "lru",
  "parity-scale-codec",
  "parking_lot 0.11.1",
- "sp-api",
+ "sp-api 2.0.1 (git+https://github.com/Starks-Network/substrate)",
  "sp-consensus",
  "sp-database",
- "sp-runtime",
- "sp-state-machine",
+ "sp-runtime 2.0.1 (git+https://github.com/Starks-Network/substrate)",
+ "sp-state-machine 0.8.1 (git+https://github.com/Starks-Network/substrate)",
  "thiserror",
 ]
 
@@ -6405,15 +6584,15 @@ dependencies = [
  "parity-scale-codec",
  "parking_lot 0.11.1",
  "serde",
- "sp-api",
- "sp-core",
- "sp-inherents",
- "sp-runtime",
- "sp-state-machine",
- "sp-std",
- "sp-trie",
+ "sp-api 2.0.1 (git+https://github.com/Starks-Network/substrate)",
+ "sp-core 2.0.1 (git+https://github.com/Starks-Network/substrate)",
+ "sp-inherents 2.0.1 (git+https://github.com/Starks-Network/substrate)",
+ "sp-runtime 2.0.1 (git+https://github.com/Starks-Network/substrate)",
+ "sp-state-machine 0.8.1 (git+https://github.com/Starks-Network/substrate)",
+ "sp-std 2.0.1 (git+https://github.com/Starks-Network/substrate)",
+ "sp-trie 2.0.1 (git+https://github.com/Starks-Network/substrate)",
  "sp-utils",
- "sp-version",
+ "sp-version 2.0.1 (git+https://github.com/Starks-Network/substrate)",
  "substrate-prometheus-endpoint",
  "thiserror",
  "wasm-timer",
@@ -6425,13 +6604,13 @@ version = "0.8.1"
 source = "git+https://github.com/Starks-Network/substrate#df6d799a51b8b1216812ffab2754382aad5e271f"
 dependencies = [
  "parity-scale-codec",
- "sp-api",
- "sp-application-crypto",
+ "sp-api 2.0.1 (git+https://github.com/Starks-Network/substrate)",
+ "sp-application-crypto 2.0.1 (git+https://github.com/Starks-Network/substrate)",
  "sp-consensus-slots",
- "sp-inherents",
- "sp-runtime",
- "sp-std",
- "sp-timestamp",
+ "sp-inherents 2.0.1 (git+https://github.com/Starks-Network/substrate)",
+ "sp-runtime 2.0.1 (git+https://github.com/Starks-Network/substrate)",
+ "sp-std 2.0.1 (git+https://github.com/Starks-Network/substrate)",
+ "sp-timestamp 2.0.1 (git+https://github.com/Starks-Network/substrate)",
 ]
 
 [[package]]
@@ -6441,17 +6620,17 @@ source = "git+https://github.com/Starks-Network/substrate#df6d799a51b8b1216812ff
 dependencies = [
  "merlin",
  "parity-scale-codec",
- "sp-api",
- "sp-application-crypto",
+ "sp-api 2.0.1 (git+https://github.com/Starks-Network/substrate)",
+ "sp-application-crypto 2.0.1 (git+https://github.com/Starks-Network/substrate)",
  "sp-consensus",
  "sp-consensus-slots",
  "sp-consensus-vrf",
- "sp-core",
- "sp-inherents",
- "sp-keystore",
- "sp-runtime",
- "sp-std",
- "sp-timestamp",
+ "sp-core 2.0.1 (git+https://github.com/Starks-Network/substrate)",
+ "sp-inherents 2.0.1 (git+https://github.com/Starks-Network/substrate)",
+ "sp-keystore 0.8.0 (git+https://github.com/Starks-Network/substrate)",
+ "sp-runtime 2.0.1 (git+https://github.com/Starks-Network/substrate)",
+ "sp-std 2.0.1 (git+https://github.com/Starks-Network/substrate)",
+ "sp-timestamp 2.0.1 (git+https://github.com/Starks-Network/substrate)",
 ]
 
 [[package]]
@@ -6460,8 +6639,8 @@ version = "0.8.1"
 source = "git+https://github.com/Starks-Network/substrate#df6d799a51b8b1216812ffab2754382aad5e271f"
 dependencies = [
  "parity-scale-codec",
- "sp-arithmetic",
- "sp-runtime",
+ "sp-arithmetic 2.0.1 (git+https://github.com/Starks-Network/substrate)",
+ "sp-runtime 2.0.1 (git+https://github.com/Starks-Network/substrate)",
 ]
 
 [[package]]
@@ -6471,9 +6650,9 @@ source = "git+https://github.com/Starks-Network/substrate#df6d799a51b8b1216812ff
 dependencies = [
  "parity-scale-codec",
  "schnorrkel",
- "sp-core",
- "sp-runtime",
- "sp-std",
+ "sp-core 2.0.1 (git+https://github.com/Starks-Network/substrate)",
+ "sp-runtime 2.0.1 (git+https://github.com/Starks-Network/substrate)",
+ "sp-std 2.0.1 (git+https://github.com/Starks-Network/substrate)",
 ]
 
 [[package]]
@@ -6506,11 +6685,55 @@ dependencies = [
  "secrecy",
  "serde",
  "sha2 0.9.3",
- "sp-debug-derive",
- "sp-externalities",
- "sp-runtime-interface",
- "sp-std",
- "sp-storage",
+ "sp-debug-derive 2.0.1 (git+https://github.com/Starks-Network/substrate)",
+ "sp-externalities 0.8.1 (git+https://github.com/Starks-Network/substrate)",
+ "sp-runtime-interface 2.0.1 (git+https://github.com/Starks-Network/substrate)",
+ "sp-std 2.0.1 (git+https://github.com/Starks-Network/substrate)",
+ "sp-storage 2.0.1 (git+https://github.com/Starks-Network/substrate)",
+ "substrate-bip39",
+ "thiserror",
+ "tiny-bip39",
+ "tiny-keccak",
+ "twox-hash",
+ "wasmi",
+ "zeroize",
+]
+
+[[package]]
+name = "sp-core"
+version = "2.0.1"
+source = "git+https://github.com/zCloak-Network/substrate#df6d799a51b8b1216812ffab2754382aad5e271f"
+dependencies = [
+ "base58",
+ "blake2-rfc",
+ "byteorder",
+ "dyn-clonable",
+ "ed25519-dalek",
+ "futures 0.3.12",
+ "hash-db",
+ "hash256-std-hasher",
+ "hex",
+ "impl-serde",
+ "lazy_static",
+ "libsecp256k1",
+ "log",
+ "merlin",
+ "num-traits",
+ "parity-scale-codec",
+ "parity-util-mem",
+ "parking_lot 0.11.1",
+ "primitive-types",
+ "rand 0.7.3",
+ "regex",
+ "schnorrkel",
+ "secrecy",
+ "serde",
+ "sha2 0.9.3",
+ "sp-debug-derive 2.0.1 (git+https://github.com/zCloak-Network/substrate)",
+ "sp-externalities 0.8.1 (git+https://github.com/zCloak-Network/substrate)",
+ "sp-runtime-interface 2.0.1 (git+https://github.com/zCloak-Network/substrate)",
+ "sp-std 2.0.1 (git+https://github.com/zCloak-Network/substrate)",
+ "sp-storage 2.0.1 (git+https://github.com/zCloak-Network/substrate)",
  "substrate-bip39",
  "thiserror",
  "tiny-bip39",
@@ -6540,14 +6763,35 @@ dependencies = [
 ]
 
 [[package]]
+name = "sp-debug-derive"
+version = "2.0.1"
+source = "git+https://github.com/zCloak-Network/substrate#df6d799a51b8b1216812ffab2754382aad5e271f"
+dependencies = [
+ "proc-macro2",
+ "quote",
+ "syn",
+]
+
+[[package]]
 name = "sp-externalities"
 version = "0.8.1"
 source = "git+https://github.com/Starks-Network/substrate#df6d799a51b8b1216812ffab2754382aad5e271f"
 dependencies = [
  "environmental",
  "parity-scale-codec",
- "sp-std",
- "sp-storage",
+ "sp-std 2.0.1 (git+https://github.com/Starks-Network/substrate)",
+ "sp-storage 2.0.1 (git+https://github.com/Starks-Network/substrate)",
+]
+
+[[package]]
+name = "sp-externalities"
+version = "0.8.1"
+source = "git+https://github.com/zCloak-Network/substrate#df6d799a51b8b1216812ffab2754382aad5e271f"
+dependencies = [
+ "environmental",
+ "parity-scale-codec",
+ "sp-std 2.0.1 (git+https://github.com/zCloak-Network/substrate)",
+ "sp-storage 2.0.1 (git+https://github.com/zCloak-Network/substrate)",
 ]
 
 [[package]]
@@ -6559,12 +6803,12 @@ dependencies = [
  "log",
  "parity-scale-codec",
  "serde",
- "sp-api",
- "sp-application-crypto",
- "sp-core",
- "sp-keystore",
- "sp-runtime",
- "sp-std",
+ "sp-api 2.0.1 (git+https://github.com/Starks-Network/substrate)",
+ "sp-application-crypto 2.0.1 (git+https://github.com/Starks-Network/substrate)",
+ "sp-core 2.0.1 (git+https://github.com/Starks-Network/substrate)",
+ "sp-keystore 0.8.0 (git+https://github.com/Starks-Network/substrate)",
+ "sp-runtime 2.0.1 (git+https://github.com/Starks-Network/substrate)",
+ "sp-std 2.0.1 (git+https://github.com/Starks-Network/substrate)",
 ]
 
 [[package]]
@@ -6574,8 +6818,20 @@ source = "git+https://github.com/Starks-Network/substrate#df6d799a51b8b1216812ff
 dependencies = [
  "parity-scale-codec",
  "parking_lot 0.11.1",
- "sp-core",
- "sp-std",
+ "sp-core 2.0.1 (git+https://github.com/Starks-Network/substrate)",
+ "sp-std 2.0.1 (git+https://github.com/Starks-Network/substrate)",
+ "thiserror",
+]
+
+[[package]]
+name = "sp-inherents"
+version = "2.0.1"
+source = "git+https://github.com/zCloak-Network/substrate#df6d799a51b8b1216812ffab2754382aad5e271f"
+dependencies = [
+ "parity-scale-codec",
+ "parking_lot 0.11.1",
+ "sp-core 2.0.1 (git+https://github.com/zCloak-Network/substrate)",
+ "sp-std 2.0.1 (git+https://github.com/zCloak-Network/substrate)",
  "thiserror",
 ]
 
@@ -6590,15 +6846,39 @@ dependencies = [
  "log",
  "parity-scale-codec",
  "parking_lot 0.11.1",
- "sp-core",
- "sp-externalities",
- "sp-keystore",
- "sp-runtime-interface",
- "sp-state-machine",
- "sp-std",
- "sp-tracing",
- "sp-trie",
- "sp-wasm-interface",
+ "sp-core 2.0.1 (git+https://github.com/Starks-Network/substrate)",
+ "sp-externalities 0.8.1 (git+https://github.com/Starks-Network/substrate)",
+ "sp-keystore 0.8.0 (git+https://github.com/Starks-Network/substrate)",
+ "sp-runtime-interface 2.0.1 (git+https://github.com/Starks-Network/substrate)",
+ "sp-state-machine 0.8.1 (git+https://github.com/Starks-Network/substrate)",
+ "sp-std 2.0.1 (git+https://github.com/Starks-Network/substrate)",
+ "sp-tracing 2.0.1 (git+https://github.com/Starks-Network/substrate)",
+ "sp-trie 2.0.1 (git+https://github.com/Starks-Network/substrate)",
+ "sp-wasm-interface 2.0.1 (git+https://github.com/Starks-Network/substrate)",
+ "tracing",
+ "tracing-core",
+]
+
+[[package]]
+name = "sp-io"
+version = "2.0.1"
+source = "git+https://github.com/zCloak-Network/substrate#df6d799a51b8b1216812ffab2754382aad5e271f"
+dependencies = [
+ "futures 0.3.12",
+ "hash-db",
+ "libsecp256k1",
+ "log",
+ "parity-scale-codec",
+ "parking_lot 0.11.1",
+ "sp-core 2.0.1 (git+https://github.com/zCloak-Network/substrate)",
+ "sp-externalities 0.8.1 (git+https://github.com/zCloak-Network/substrate)",
+ "sp-keystore 0.8.0 (git+https://github.com/zCloak-Network/substrate)",
+ "sp-runtime-interface 2.0.1 (git+https://github.com/zCloak-Network/substrate)",
+ "sp-state-machine 0.8.1 (git+https://github.com/zCloak-Network/substrate)",
+ "sp-std 2.0.1 (git+https://github.com/zCloak-Network/substrate)",
+ "sp-tracing 2.0.1 (git+https://github.com/zCloak-Network/substrate)",
+ "sp-trie 2.0.1 (git+https://github.com/zCloak-Network/substrate)",
+ "sp-wasm-interface 2.0.1 (git+https://github.com/zCloak-Network/substrate)",
  "tracing",
  "tracing-core",
 ]
@@ -6609,8 +6889,8 @@ version = "2.0.1"
 source = "git+https://github.com/Starks-Network/substrate#df6d799a51b8b1216812ffab2754382aad5e271f"
 dependencies = [
  "lazy_static",
- "sp-core",
- "sp-runtime",
+ "sp-core 2.0.1 (git+https://github.com/Starks-Network/substrate)",
+ "sp-runtime 2.0.1 (git+https://github.com/Starks-Network/substrate)",
  "strum",
 ]
 
@@ -6627,8 +6907,25 @@ dependencies = [
  "parking_lot 0.11.1",
  "schnorrkel",
  "serde",
- "sp-core",
- "sp-externalities",
+ "sp-core 2.0.1 (git+https://github.com/Starks-Network/substrate)",
+ "sp-externalities 0.8.1 (git+https://github.com/Starks-Network/substrate)",
+]
+
+[[package]]
+name = "sp-keystore"
+version = "0.8.0"
+source = "git+https://github.com/zCloak-Network/substrate#df6d799a51b8b1216812ffab2754382aad5e271f"
+dependencies = [
+ "async-trait",
+ "derive_more",
+ "futures 0.3.12",
+ "merlin",
+ "parity-scale-codec",
+ "parking_lot 0.11.1",
+ "schnorrkel",
+ "serde",
+ "sp-core 2.0.1 (git+https://github.com/zCloak-Network/substrate)",
+ "sp-externalities 0.8.1 (git+https://github.com/zCloak-Network/substrate)",
 ]
 
 [[package]]
@@ -6636,9 +6933,9 @@ name = "sp-offchain"
 version = "2.0.1"
 source = "git+https://github.com/Starks-Network/substrate#df6d799a51b8b1216812ffab2754382aad5e271f"
 dependencies = [
- "sp-api",
- "sp-core",
- "sp-runtime",
+ "sp-api 2.0.1 (git+https://github.com/Starks-Network/substrate)",
+ "sp-core 2.0.1 (git+https://github.com/Starks-Network/substrate)",
+ "sp-runtime 2.0.1 (git+https://github.com/Starks-Network/substrate)",
 ]
 
 [[package]]
@@ -6650,12 +6947,20 @@ dependencies = [
 ]
 
 [[package]]
+name = "sp-panic-handler"
+version = "2.0.1"
+source = "git+https://github.com/zCloak-Network/substrate#df6d799a51b8b1216812ffab2754382aad5e271f"
+dependencies = [
+ "backtrace",
+]
+
+[[package]]
 name = "sp-rpc"
 version = "2.0.1"
 source = "git+https://github.com/Starks-Network/substrate#df6d799a51b8b1216812ffab2754382aad5e271f"
 dependencies = [
  "serde",
- "sp-core",
+ "sp-core 2.0.1 (git+https://github.com/Starks-Network/substrate)",
 ]
 
 [[package]]
@@ -6672,11 +6977,32 @@ dependencies = [
  "paste 1.0.4",
  "rand 0.7.3",
  "serde",
- "sp-application-crypto",
- "sp-arithmetic",
- "sp-core",
- "sp-io",
- "sp-std",
+ "sp-application-crypto 2.0.1 (git+https://github.com/Starks-Network/substrate)",
+ "sp-arithmetic 2.0.1 (git+https://github.com/Starks-Network/substrate)",
+ "sp-core 2.0.1 (git+https://github.com/Starks-Network/substrate)",
+ "sp-io 2.0.1 (git+https://github.com/Starks-Network/substrate)",
+ "sp-std 2.0.1 (git+https://github.com/Starks-Network/substrate)",
+]
+
+[[package]]
+name = "sp-runtime"
+version = "2.0.1"
+source = "git+https://github.com/zCloak-Network/substrate#df6d799a51b8b1216812ffab2754382aad5e271f"
+dependencies = [
+ "either",
+ "hash256-std-hasher",
+ "impl-trait-for-tuples 0.2.0",
+ "log",
+ "parity-scale-codec",
+ "parity-util-mem",
+ "paste 1.0.4",
+ "rand 0.7.3",
+ "serde",
+ "sp-application-crypto 2.0.1 (git+https://github.com/zCloak-Network/substrate)",
+ "sp-arithmetic 2.0.1 (git+https://github.com/zCloak-Network/substrate)",
+ "sp-core 2.0.1 (git+https://github.com/zCloak-Network/substrate)",
+ "sp-io 2.0.1 (git+https://github.com/zCloak-Network/substrate)",
+ "sp-std 2.0.1 (git+https://github.com/zCloak-Network/substrate)",
 ]
 
 [[package]]
@@ -6687,12 +7013,29 @@ dependencies = [
  "impl-trait-for-tuples 0.2.0",
  "parity-scale-codec",
  "primitive-types",
- "sp-externalities",
- "sp-runtime-interface-proc-macro",
- "sp-std",
- "sp-storage",
- "sp-tracing",
- "sp-wasm-interface",
+ "sp-externalities 0.8.1 (git+https://github.com/Starks-Network/substrate)",
+ "sp-runtime-interface-proc-macro 2.0.1 (git+https://github.com/Starks-Network/substrate)",
+ "sp-std 2.0.1 (git+https://github.com/Starks-Network/substrate)",
+ "sp-storage 2.0.1 (git+https://github.com/Starks-Network/substrate)",
+ "sp-tracing 2.0.1 (git+https://github.com/Starks-Network/substrate)",
+ "sp-wasm-interface 2.0.1 (git+https://github.com/Starks-Network/substrate)",
+ "static_assertions",
+]
+
+[[package]]
+name = "sp-runtime-interface"
+version = "2.0.1"
+source = "git+https://github.com/zCloak-Network/substrate#df6d799a51b8b1216812ffab2754382aad5e271f"
+dependencies = [
+ "impl-trait-for-tuples 0.2.0",
+ "parity-scale-codec",
+ "primitive-types",
+ "sp-externalities 0.8.1 (git+https://github.com/zCloak-Network/substrate)",
+ "sp-runtime-interface-proc-macro 2.0.1 (git+https://github.com/zCloak-Network/substrate)",
+ "sp-std 2.0.1 (git+https://github.com/zCloak-Network/substrate)",
+ "sp-storage 2.0.1 (git+https://github.com/zCloak-Network/substrate)",
+ "sp-tracing 2.0.1 (git+https://github.com/zCloak-Network/substrate)",
+ "sp-wasm-interface 2.0.1 (git+https://github.com/zCloak-Network/substrate)",
  "static_assertions",
 ]
 
@@ -6700,6 +7043,18 @@ dependencies = [
 name = "sp-runtime-interface-proc-macro"
 version = "2.0.1"
 source = "git+https://github.com/Starks-Network/substrate#df6d799a51b8b1216812ffab2754382aad5e271f"
+dependencies = [
+ "Inflector",
+ "proc-macro-crate",
+ "proc-macro2",
+ "quote",
+ "syn",
+]
+
+[[package]]
+name = "sp-runtime-interface-proc-macro"
+version = "2.0.1"
+source = "git+https://github.com/zCloak-Network/substrate#df6d799a51b8b1216812ffab2754382aad5e271f"
 dependencies = [
  "Inflector",
  "proc-macro-crate",
@@ -6723,11 +7078,24 @@ version = "2.0.1"
 source = "git+https://github.com/Starks-Network/substrate#df6d799a51b8b1216812ffab2754382aad5e271f"
 dependencies = [
  "parity-scale-codec",
- "sp-api",
- "sp-core",
- "sp-runtime",
- "sp-staking",
- "sp-std",
+ "sp-api 2.0.1 (git+https://github.com/Starks-Network/substrate)",
+ "sp-core 2.0.1 (git+https://github.com/Starks-Network/substrate)",
+ "sp-runtime 2.0.1 (git+https://github.com/Starks-Network/substrate)",
+ "sp-staking 2.0.1 (git+https://github.com/Starks-Network/substrate)",
+ "sp-std 2.0.1 (git+https://github.com/Starks-Network/substrate)",
+]
+
+[[package]]
+name = "sp-session"
+version = "2.0.1"
+source = "git+https://github.com/zCloak-Network/substrate#df6d799a51b8b1216812ffab2754382aad5e271f"
+dependencies = [
+ "parity-scale-codec",
+ "sp-api 2.0.1 (git+https://github.com/zCloak-Network/substrate)",
+ "sp-core 2.0.1 (git+https://github.com/zCloak-Network/substrate)",
+ "sp-runtime 2.0.1 (git+https://github.com/zCloak-Network/substrate)",
+ "sp-staking 2.0.1 (git+https://github.com/zCloak-Network/substrate)",
+ "sp-std 2.0.1 (git+https://github.com/zCloak-Network/substrate)",
 ]
 
 [[package]]
@@ -6736,8 +7104,18 @@ version = "2.0.1"
 source = "git+https://github.com/Starks-Network/substrate#df6d799a51b8b1216812ffab2754382aad5e271f"
 dependencies = [
  "parity-scale-codec",
- "sp-runtime",
- "sp-std",
+ "sp-runtime 2.0.1 (git+https://github.com/Starks-Network/substrate)",
+ "sp-std 2.0.1 (git+https://github.com/Starks-Network/substrate)",
+]
+
+[[package]]
+name = "sp-staking"
+version = "2.0.1"
+source = "git+https://github.com/zCloak-Network/substrate#df6d799a51b8b1216812ffab2754382aad5e271f"
+dependencies = [
+ "parity-scale-codec",
+ "sp-runtime 2.0.1 (git+https://github.com/zCloak-Network/substrate)",
+ "sp-std 2.0.1 (git+https://github.com/zCloak-Network/substrate)",
 ]
 
 [[package]]
@@ -6746,7 +7124,7 @@ version = "0.1.0"
 dependencies = [
  "bincode",
  "distaff",
- "sp-runtime-interface",
+ "sp-runtime-interface 2.0.1 (git+https://github.com/Starks-Network/substrate)",
 ]
 
 [[package]]
@@ -6761,11 +7139,33 @@ dependencies = [
  "parking_lot 0.11.1",
  "rand 0.7.3",
  "smallvec 1.6.1",
- "sp-core",
- "sp-externalities",
- "sp-panic-handler",
- "sp-std",
- "sp-trie",
+ "sp-core 2.0.1 (git+https://github.com/Starks-Network/substrate)",
+ "sp-externalities 0.8.1 (git+https://github.com/Starks-Network/substrate)",
+ "sp-panic-handler 2.0.1 (git+https://github.com/Starks-Network/substrate)",
+ "sp-std 2.0.1 (git+https://github.com/Starks-Network/substrate)",
+ "sp-trie 2.0.1 (git+https://github.com/Starks-Network/substrate)",
+ "thiserror",
+ "trie-db",
+ "trie-root",
+]
+
+[[package]]
+name = "sp-state-machine"
+version = "0.8.1"
+source = "git+https://github.com/zCloak-Network/substrate#df6d799a51b8b1216812ffab2754382aad5e271f"
+dependencies = [
+ "hash-db",
+ "log",
+ "num-traits",
+ "parity-scale-codec",
+ "parking_lot 0.11.1",
+ "rand 0.7.3",
+ "smallvec 1.6.1",
+ "sp-core 2.0.1 (git+https://github.com/zCloak-Network/substrate)",
+ "sp-externalities 0.8.1 (git+https://github.com/zCloak-Network/substrate)",
+ "sp-panic-handler 2.0.1 (git+https://github.com/zCloak-Network/substrate)",
+ "sp-std 2.0.1 (git+https://github.com/zCloak-Network/substrate)",
+ "sp-trie 2.0.1 (git+https://github.com/zCloak-Network/substrate)",
  "thiserror",
  "trie-db",
  "trie-root",
@@ -6777,6 +7177,11 @@ version = "2.0.1"
 source = "git+https://github.com/Starks-Network/substrate#df6d799a51b8b1216812ffab2754382aad5e271f"
 
 [[package]]
+name = "sp-std"
+version = "2.0.1"
+source = "git+https://github.com/zCloak-Network/substrate#df6d799a51b8b1216812ffab2754382aad5e271f"
+
+[[package]]
 name = "sp-storage"
 version = "2.0.1"
 source = "git+https://github.com/Starks-Network/substrate#df6d799a51b8b1216812ffab2754382aad5e271f"
@@ -6785,8 +7190,21 @@ dependencies = [
  "parity-scale-codec",
  "ref-cast",
  "serde",
- "sp-debug-derive",
- "sp-std",
+ "sp-debug-derive 2.0.1 (git+https://github.com/Starks-Network/substrate)",
+ "sp-std 2.0.1 (git+https://github.com/Starks-Network/substrate)",
+]
+
+[[package]]
+name = "sp-storage"
+version = "2.0.1"
+source = "git+https://github.com/zCloak-Network/substrate#df6d799a51b8b1216812ffab2754382aad5e271f"
+dependencies = [
+ "impl-serde",
+ "parity-scale-codec",
+ "ref-cast",
+ "serde",
+ "sp-debug-derive 2.0.1 (git+https://github.com/zCloak-Network/substrate)",
+ "sp-std 2.0.1 (git+https://github.com/zCloak-Network/substrate)",
 ]
 
 [[package]]
@@ -6795,11 +7213,11 @@ version = "2.0.0"
 source = "git+https://github.com/Starks-Network/substrate#df6d799a51b8b1216812ffab2754382aad5e271f"
 dependencies = [
  "log",
- "sp-core",
- "sp-externalities",
- "sp-io",
- "sp-runtime-interface",
- "sp-std",
+ "sp-core 2.0.1 (git+https://github.com/Starks-Network/substrate)",
+ "sp-externalities 0.8.1 (git+https://github.com/Starks-Network/substrate)",
+ "sp-io 2.0.1 (git+https://github.com/Starks-Network/substrate)",
+ "sp-runtime-interface 2.0.1 (git+https://github.com/Starks-Network/substrate)",
+ "sp-std 2.0.1 (git+https://github.com/Starks-Network/substrate)",
 ]
 
 [[package]]
@@ -6809,10 +7227,24 @@ source = "git+https://github.com/Starks-Network/substrate#df6d799a51b8b1216812ff
 dependencies = [
  "impl-trait-for-tuples 0.2.0",
  "parity-scale-codec",
- "sp-api",
- "sp-inherents",
- "sp-runtime",
- "sp-std",
+ "sp-api 2.0.1 (git+https://github.com/Starks-Network/substrate)",
+ "sp-inherents 2.0.1 (git+https://github.com/Starks-Network/substrate)",
+ "sp-runtime 2.0.1 (git+https://github.com/Starks-Network/substrate)",
+ "sp-std 2.0.1 (git+https://github.com/Starks-Network/substrate)",
+ "wasm-timer",
+]
+
+[[package]]
+name = "sp-timestamp"
+version = "2.0.1"
+source = "git+https://github.com/zCloak-Network/substrate#df6d799a51b8b1216812ffab2754382aad5e271f"
+dependencies = [
+ "impl-trait-for-tuples 0.2.0",
+ "parity-scale-codec",
+ "sp-api 2.0.1 (git+https://github.com/zCloak-Network/substrate)",
+ "sp-inherents 2.0.1 (git+https://github.com/zCloak-Network/substrate)",
+ "sp-runtime 2.0.1 (git+https://github.com/zCloak-Network/substrate)",
+ "sp-std 2.0.1 (git+https://github.com/zCloak-Network/substrate)",
  "wasm-timer",
 ]
 
@@ -6823,7 +7255,20 @@ source = "git+https://github.com/Starks-Network/substrate#df6d799a51b8b1216812ff
 dependencies = [
  "log",
  "parity-scale-codec",
- "sp-std",
+ "sp-std 2.0.1 (git+https://github.com/Starks-Network/substrate)",
+ "tracing",
+ "tracing-core",
+ "tracing-subscriber",
+]
+
+[[package]]
+name = "sp-tracing"
+version = "2.0.1"
+source = "git+https://github.com/zCloak-Network/substrate#df6d799a51b8b1216812ffab2754382aad5e271f"
+dependencies = [
+ "log",
+ "parity-scale-codec",
+ "sp-std 2.0.1 (git+https://github.com/zCloak-Network/substrate)",
  "tracing",
  "tracing-core",
  "tracing-subscriber",
@@ -6839,9 +7284,9 @@ dependencies = [
  "log",
  "parity-scale-codec",
  "serde",
- "sp-api",
+ "sp-api 2.0.1 (git+https://github.com/Starks-Network/substrate)",
  "sp-blockchain",
- "sp-runtime",
+ "sp-runtime 2.0.1 (git+https://github.com/Starks-Network/substrate)",
  "thiserror",
 ]
 
@@ -6853,8 +7298,22 @@ dependencies = [
  "hash-db",
  "memory-db",
  "parity-scale-codec",
- "sp-core",
- "sp-std",
+ "sp-core 2.0.1 (git+https://github.com/Starks-Network/substrate)",
+ "sp-std 2.0.1 (git+https://github.com/Starks-Network/substrate)",
+ "trie-db",
+ "trie-root",
+]
+
+[[package]]
+name = "sp-trie"
+version = "2.0.1"
+source = "git+https://github.com/zCloak-Network/substrate#df6d799a51b8b1216812ffab2754382aad5e271f"
+dependencies = [
+ "hash-db",
+ "memory-db",
+ "parity-scale-codec",
+ "sp-core 2.0.1 (git+https://github.com/zCloak-Network/substrate)",
+ "sp-std 2.0.1 (git+https://github.com/zCloak-Network/substrate)",
  "trie-db",
  "trie-root",
 ]
@@ -6879,8 +7338,20 @@ dependencies = [
  "impl-serde",
  "parity-scale-codec",
  "serde",
- "sp-runtime",
- "sp-std",
+ "sp-runtime 2.0.1 (git+https://github.com/Starks-Network/substrate)",
+ "sp-std 2.0.1 (git+https://github.com/Starks-Network/substrate)",
+]
+
+[[package]]
+name = "sp-version"
+version = "2.0.1"
+source = "git+https://github.com/zCloak-Network/substrate#df6d799a51b8b1216812ffab2754382aad5e271f"
+dependencies = [
+ "impl-serde",
+ "parity-scale-codec",
+ "serde",
+ "sp-runtime 2.0.1 (git+https://github.com/zCloak-Network/substrate)",
+ "sp-std 2.0.1 (git+https://github.com/zCloak-Network/substrate)",
 ]
 
 [[package]]
@@ -6890,7 +7361,18 @@ source = "git+https://github.com/Starks-Network/substrate#df6d799a51b8b1216812ff
 dependencies = [
  "impl-trait-for-tuples 0.2.0",
  "parity-scale-codec",
- "sp-std",
+ "sp-std 2.0.1 (git+https://github.com/Starks-Network/substrate)",
+ "wasmi",
+]
+
+[[package]]
+name = "sp-wasm-interface"
+version = "2.0.1"
+source = "git+https://github.com/zCloak-Network/substrate#df6d799a51b8b1216812ffab2754382aad5e271f"
+dependencies = [
+ "impl-trait-for-tuples 0.2.0",
+ "parity-scale-codec",
+ "sp-std 2.0.1 (git+https://github.com/zCloak-Network/substrate)",
  "wasmi",
 ]
 
@@ -7028,11 +7510,11 @@ dependencies = [
  "sc-client-api",
  "sc-rpc-api",
  "serde",
- "sp-api",
+ "sp-api 2.0.1 (git+https://github.com/Starks-Network/substrate)",
  "sp-block-builder",
  "sp-blockchain",
- "sp-core",
- "sp-runtime",
+ "sp-core 2.0.1 (git+https://github.com/Starks-Network/substrate)",
+ "sp-runtime 2.0.1 (git+https://github.com/Starks-Network/substrate)",
  "sp-transaction-pool",
 ]
 
@@ -8325,6 +8807,41 @@ dependencies = [
  "parking_lot 0.11.1",
  "rand 0.7.3",
  "static_assertions",
+]
+
+[[package]]
+name = "zcloak-node"
+version = "2.0.1"
+dependencies = [
+ "frame-benchmarking 2.0.1 (git+https://github.com/Starks-Network/substrate)",
+ "frame-benchmarking-cli",
+ "jsonrpc-core",
+ "node-template-runtime",
+ "pallet-transaction-payment-rpc",
+ "sc-basic-authorship",
+ "sc-cli",
+ "sc-client-api",
+ "sc-consensus",
+ "sc-consensus-aura",
+ "sc-executor",
+ "sc-finality-grandpa",
+ "sc-rpc",
+ "sc-rpc-api",
+ "sc-service",
+ "sc-transaction-pool",
+ "sp-api 2.0.1 (git+https://github.com/Starks-Network/substrate)",
+ "sp-block-builder",
+ "sp-blockchain",
+ "sp-consensus",
+ "sp-consensus-aura",
+ "sp-core 2.0.1 (git+https://github.com/Starks-Network/substrate)",
+ "sp-finality-grandpa",
+ "sp-inherents 2.0.1 (git+https://github.com/Starks-Network/substrate)",
+ "sp-runtime 2.0.1 (git+https://github.com/Starks-Network/substrate)",
+ "sp-transaction-pool",
+ "structopt",
+ "substrate-build-script-utils",
+ "substrate-frame-rpc-system",
 ]
 
 [[package]]

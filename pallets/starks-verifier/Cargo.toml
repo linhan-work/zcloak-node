@@ -1,7 +1,7 @@
 [package]
 name = "pallet-starks-verifier"
 version = "0.1.0"
-authors = ["suvi"]
+authors = ["Dejavukong"]
 edition = "2018"
 
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
@@ -9,22 +9,22 @@ edition = "2018"
 [dependencies]
 serde = { version = "1.0.101", optional = true }
 codec = { package = "parity-scale-codec", version = "2.0.0", default-features = false, features = ["derive"] }
-sp-std =  { default-features = false, git = "https://github.com/Starks-Network/substrate" }
-sp-core =  { default-features = false, git = "https://github.com/Starks-Network/substrate" }
-sp-io =  { default-features = false, git = "https://github.com/Starks-Network/substrate" }
-sp-application-crypto = { default-features = false, git = "https://github.com/Starks-Network/substrate" }
-sp-runtime = { default-features = false, git = "https://github.com/Starks-Network/substrate" }
-frame-support =  { default-features = false, git = "https://github.com/Starks-Network/substrate" }
-frame-system =  { default-features = false, git = "https://github.com/Starks-Network/substrate" }
-sp-keystore = { git = "https://github.com/Starks-Network/substrate", optional = true }
-pallet-session = { default-features = false, git = "https://github.com/Starks-Network/substrate" }
+sp-std =  { default-features = false, git = "https://github.com/zCloak-Network/substrate" }
+sp-core =  { default-features = false, git = "https://github.com/zCloak-Network/substrate" }
+sp-io =  { default-features = false, git = "https://github.com/zCloak-Network/substrate" }
+sp-application-crypto = { default-features = false, git = "https://github.com/zCloak-Network/substrate" }
+sp-runtime = { default-features = false, git = "https://github.com/zCloak-Network/substrate" }
+frame-support =  { default-features = false, git = "https://github.com/zCloak-Network/substrate" }
+frame-system =  { default-features = false, git = "https://github.com/zCloak-Network/substrate" }
+sp-keystore = { git = "https://github.com/zCloak-Network/substrate", optional = true }
+pallet-session = { default-features = false, git = "https://github.com/zCloak-Network/substrate" }
 
 # starks
 sp-starks = { path = "../../primitives/starks", default-features = false }
 
 [dev-dependencies]
-pallet-session = { git = "https://github.com/Starks-Network/substrate" }
-sp-staking = { git = "https://github.com/Starks-Network/substrate" }
+pallet-session = { git = "https://github.com/zCloak-Network/substrate" }
+sp-staking = { git = "https://github.com/zCloak-Network/substrate" }
 
 [features]
 default = ["std"]

@@ -140,7 +140,7 @@ pub fn advance_session() {
 	System::set_block_number(now + 1);
 	Session::rotate_session();
 	let keys = built_in_verifiers();
-	Verifier::set_keys(keys);
+	Verifier::set_keys(&keys);
 	assert_eq!(Session::current_index(), (now / Period::get()) as u32);
 	assert_eq!(Session::validators().len(), Verifier::keys().len()); 
 }

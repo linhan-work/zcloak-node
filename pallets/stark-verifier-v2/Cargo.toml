@@ -1,5 +1,5 @@
 [package]
-name = "pallet-starks-verifier"
+name = "pallet-starks-verifier-v2"
 version = "0.1.0"
 authors = ["Dejavukong"]
 edition = "2018"

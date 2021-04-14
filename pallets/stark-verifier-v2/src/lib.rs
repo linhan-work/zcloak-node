@@ -1,28 +1,3 @@
-//! # Starks-verifier Module
-//! A module for validated offchain-workers to verify tasks.
-//!
-//!
-//! ## Overview
-//! 
-//! This module is used for off-chain workers to verify the tasks stored on chain, 
-//! including the submission of tasks, the verification of a single off-chain worker on the task, 
-//! and the `pass or not`results are stored on-chain at the moment the verification is done.
-//! When the number of ayes or nays in the verification result exceeds the set threshold, 
-//! the final verification result will be stored on-chain in the form of SettledTask, 
-//! and the SettledTask will automatically expire after the set time.
-//! 
-//!
-//! ## Interface
-//!
-//! ### Dispatchable Functions
-//!
-//! * `create_task` - Create a task with program_has h,inputs, outputs, proof_id.
-//! * `offchain_worker` - For validated offchain-workers to dispatch only,in order to 
-//! verify tasks.
-//! * `on_finalize` - Remove SettledTask which is expired at this block
-//!
-//! 
-//! 
 // Ensure we're `no_std` when compiling for Wasm.
 #![cfg_attr(not(feature = "std"), no_std)]
 
@@ -32,7 +7,6 @@ use sp_std::prelude::*;
 use sp_runtime::{
     offchain::{http, Duration, storage::StorageValueRef},
     RuntimeDebug,
-    traits::Member,
     transaction_validity::{
         TransactionValidity, ValidTransaction, InvalidTransaction, TransactionSource,
         TransactionPriority,
@@ -41,7 +15,7 @@ use sp_runtime::{
 use sp_core::crypto::KeyTypeId;
 use frame_support::{
     dispatch::DispatchResult,
-    decl_module, decl_event, decl_storage, Parameter, decl_error, ensure,
+    decl_module, decl_event, decl_storage, Parameter, debug, decl_error, ensure,
     traits::{Get, OneSessionHandler},
 };
 use frame_system::{ensure_signed, ensure_none};
@@ -49,6 +23,7 @@ use frame_system::offchain::{
     SendTransactionTypes,
     SubmitTransaction,
 };
+pub use pallet::*;
 
 #[cfg(all(feature = "std", test))]
 mod mock;
@@ -82,36 +57,27 @@ pub mod crypto {
 /// The status of a given verification task
 #[derive(Encode, Decode, Default, PartialEq, Eq, RuntimeDebug)]
 pub struct Status {
-    /// The verifiers involved so far
     pub verifiers: Vec<u32>,
-    /// The number of affirmative vote so far
     pub ayes: u32,
-    /// The number of dissenting vote so far
     pub nays: u32
 }
 
-/// Receipt about any verification occured
 #[derive(Encode, Decode, Clone, PartialEq, Eq, RuntimeDebug)]
 pub struct VerificationReceipt<BlockNumber, Hash> {
-    /// The Hash of a certain task to be verified 
     program_hash: Hash,
-    /// A task is passed or not
+    // when a task is passed or not
     passed: bool,
-    /// Block number at the time submission is created.
     submit_at: BlockNumber,
-    /// An index of the authority on the list of validators.
+    // submitted by who
     auth_index: u32,
-    /// The length of session validator set
     validators_len: u32
 }
-/// Info of a certain task
+
 #[derive(Encode, Decode, Default, PartialEq, Eq, RuntimeDebug)]
 pub struct TaskInfo {
-    /// The id of the proof,combined with a url to fetch the complete proof later
+    // the id of
     proof_id: Vec<u8>,
-    /// Inputs of the task 
     inputs: Vec<u128>,
-    /// Outputs of the task 
     outputs: Vec<u128>
 }
 
@@ -150,46 +116,105 @@ const DB_PREFIX: &[u8] = b"starksnetwork/verification-tasks/";
 
 pub type OffchainResult<T, A> = Result<A, OffchainErr<<T as frame_system::Config>::BlockNumber>>;
 
+#[frame_support::pallet]
+pub mod pallet {
+    use frame_support::{
+        dispatch::DispatchResult,
+		pallet_prelude::*,
+    };
+    use frame_system::pallet_prelude::*;
+	use super::*;
+    #[pallet::config]
+    #[pallet::disable_frame_system_supertrait_check]
+    pub trait Config: pallet_session::Config + SendTransactionTypes<Call<Self>> {
+        /// The identifier type for an offchain worker.
+        type AuthorityId: Member + Parameter + RuntimeAppPublic + Default + Ord + MaybeSerializeDeserialize;
+    
+        type Event: From<Event<Self>> + IsType<<Self as frame_system::Config>::Event>;
+    
+        /// After a task is verified, it can still be stored on chain for a `StorePeriod` of time
+        #[pallet::constant]
+        type StorePeriod: Get<Self::BlockNumber>;
+    
+        /// A configuration for base priority of unsigned transactions.
+        ///
+        /// This is exposed so that it can be tuned for particular runtime, when
+        /// multiple pallets send unsigned transactions.
+        #[pallet::constant]
+        type UnsignedPriority: Get<TransactionPriority>;
+    
+    }
 
-pub trait Config: pallet_session::Config + SendTransactionTypes<Call<Self>> {
-    /// The identifier type for an offchain worker.
-	type AuthorityId: Member + Parameter + RuntimeAppPublic + Default + Ord;
+    #[pallet::pallet]
+	#[pallet::generate_store(pub(super) trait Store)]
+	pub struct Pallet<T>(PhantomData<T>);
 
-    /// The overarching event type.
+    #[pallet::storage]
+    #[pallet::getter(fn keys)]
+    pub(super) type Keys<T: Config> = StorageValue<_, Vec<T::AuthorityId>, ValueQuery>;
 
-    type Event: From<Event<Self>> + Into<<Self as frame_system::Config>::Event>;
+    #[pallet::storage]
+    #[pallet::getter(fn task_params)]
+    pub(super) type TaskParams<T: Config> = StorageMap<
+        _,
+        Identity,
+        T::Hash,
+        TaskInfo,
+        ValueQuery,
+    >;
 
-    /// After a task is verified, it can still be stored on chain for a `StorePeriod` of time
-    type StorePeriod: Get<Self::BlockNumber>;
+    #[pallet::storage]
+    #[pallet::getter(fn ongoing_tasks)]
+    pub(super) type OngoingTasks<T: Config> = StorageMap<
+        _,
+        Identity,
+        T::Hash,
+        Status,
+        OptionQuery,
+    >;
 
-    /// A configuration for base priority of unsigned transactions.
-	///
-	/// This is exposed so that it can be tuned for particular runtime, when
-	/// multiple pallets send unsigned transactions.
-    type UnsignedPriority: Get<TransactionPriority>;
+    #[pallet::storage]
+    #[pallet::getter(fn settled_tasks)]
+    pub(super) type SettledTasks<T: Config> = StorageDoubleMap<
+        _,
+        Blake2_128Concat, T::BlockNumber,
+        Identity, T::Hash,
+        bool,
+        ValueQuery,
+    >;
 
-}
+    #[pallet::genesis_config]
+	pub struct GenesisConfig<T: Config> {
+		pub keys: Vec<T::AuthorityId>,
+	}
 
+    #[cfg(feature = "std")]
+	impl<T: Config> Default for GenesisConfig<T> {
+		fn default() -> Self {
+			Self { keys: Vec::new() }
+		}
+	}
 
-decl_event!(
-	/// Events generated by the module.
-    pub enum Event<T> where 
-        AccountId = <T as frame_system::Config>::AccountId,
-        Hash = <T as frame_system::Config>::Hash
-    {
-        /// A new verifier is added with `AccountId`.
-        AddVerifier(AccountId),
-        /// A verifier is removed with `AccountId`.
-        RemoveVerifier(AccountId),
-        /// A new task is created.
-        TaskCreated(Hash),
-    }   
-);
+    #[pallet::genesis_build]
+	impl<T: Config> GenesisBuild<T> for GenesisConfig<T> {
+		fn build(&self) {
+			Pallet::<T>::set_keys(&self.keys);
+		}
+	}
+ 
 
-decl_error! {
-    /// Error for the starks-verifier module.
-	pub enum Error for Module<T: Config> {
-	    /// It's not allowed to recreated an existed task.
+    #[pallet::event]
+	#[pallet::generate_deposit(pub(super) fn deposit_event)]
+	#[pallet::metadata(T::AccountId = "AccountId", T::Hash = "Hash")]
+    pub enum Event<T: Config> {
+        AddVerifier(T::AccountId),
+        RemoveVerifier(T::AccountId),
+        TaskCreated(T::Hash),
+    }
+
+    #[pallet::error]
+    pub enum Error<T> {
+         /// It's not allowed to recreated an existed task.
 		TaskAlreadyExists,
 		/// Only permitted verifiers can submit the result
 		NotAllowed,
@@ -198,87 +223,38 @@ decl_error! {
 		/// Duplicated Submission
 		DuplicatedSubmission,
     }
-}
 
-decl_storage! {
-	trait Store for Module<T: Config> as StarksVerifier {
-
-	    /// Current set of keys that are allowed to execute verification tasks
-	    Keys get(fn keys): Vec<T::AuthorityId>;
-
-        /// Map from the task_params to the TaskInfo(proof_id,inputs,outputs)
-		TaskParams get(fn task_params): map hasher(identity) T::Hash => TaskInfo;
-
-        /// Record the verification tasks that are about to be verified or under verifying.
-        /// The key is program hash
-		OngoingTasks get(fn ongoing_tasks): map hasher(identity) T::Hash => Option<Status>;
-
-        /// Completed proof tasks, will be stored onchain for a short period to be challenged
-        SettledTasks get(fn settled_tasks): double_map
-            hasher(blake2_128_concat) T::BlockNumber,
-            hasher(identity) T::Hash => bool;
-	}
-
-	add_extra_genesis {
-		config(keys): Vec<T::AuthorityId>;
-		build(|config| Module::<T>::initialize_keys(&config.keys))
-	}
-
-}
-
-
-decl_module! {
-	// A public part of the pallet.
-	pub struct Module<T: Config> for enum Call where origin: T::Origin {
-
-	    type Error = Error<T>;
-
-        const StorePeriod: T::BlockNumber = T::StorePeriod::get();
-
-        fn deposit_event() = default;
-
-        /// To create a new task for verifiers to verify,make sure that this task hasn't be stored on-chain yet.
-        /// If qualified,store the task on-chain ( <TaskParam> & <OngoingTasks> )
-        /// 
-        /// The dispatch origin for this call must be _Signed_.
-        /// 
-		/// - `program_hash`: The hash of task to be verified.
-		/// - `inputs`: Inputs of the task.
-        /// - `outputs`: Outputs of the task.
-        /// - `proof_id`: The id of the proof,combined with a url to fetch the complete proof later
-        /// 
-        /// If the Task created successfully, deposit the `TaskCreated` event.
-        #[weight = 10000]
-        fn create_task(origin, program_hash: T::Hash, inputs: Vec<u128>, outputs: Vec<u128>, proof_id: Vec<u8>) {
+    #[pallet::call]
+	impl<T: Config> Pallet<T> {
+        #[pallet::weight(10000)]
+        pub fn create_task(
+            origin: OriginFor<T>,
+            program_hash: T::Hash,
+            inputs: Vec<u128>,
+            outputs: Vec<u128>,
+            proof_id: Vec<u8>
+        ) -> DispatchResult {
             let _who = ensure_signed(origin)?;
             // ensure task has not been created
             ensure!(!Self::task_exists(&program_hash), Error::<T>::TaskAlreadyExists);
             <TaskParams<T>>::insert(&program_hash, TaskInfo{proof_id, inputs, outputs});
             <OngoingTasks<T>>::insert(&program_hash, Status::default());
-            Self::deposit_event(RawEvent::TaskCreated(program_hash));
+            Self::deposit_event(Event::TaskCreated(program_hash));
+            Ok(())
         }
 
-        /// Submit a verification with certain receipt.
-        /// 
-        /// The dispatch origin for this call must represent an unsigned extrinsin.
-        /// 
-        /// - `receipt`: Receipt about a verification occured
-        /// 
-        /// Once the number of affirmative vote or dissenting vote above the threshold,store it on-chain(`SettledTask`)
-        /// The last parameter of `SettleTask` represents the task if passed or not.
-        #[weight = 10000]
-        fn submit_verification(
-            origin,
+        #[pallet::weight(10000)]
+        pub fn submit_verification(
+            origin: OriginFor<T>,
             receipt: VerificationReceipt<T::BlockNumber, T::Hash>,
             _signature: <T::AuthorityId as RuntimeAppPublic>::Signature,
-        ) {
+        ) -> DispatchResult {
             ensure_none(origin)?;
             <OngoingTasks<T>>::try_mutate_exists(
                 &receipt.program_hash,
                 |last_status| -> DispatchResult {
-                    // Last status must exist.Fetch last status,if not exists return error
+             
                     let mut status = last_status.take().ok_or(Error::<T>::TaskNotExists)?;
-
                     // A verifier can not submit more than once
                     ensure!(!status.verifiers.contains(&receipt.auth_index),
                         Error::<T>::DuplicatedSubmission);
@@ -286,37 +262,35 @@ decl_module! {
                     status.verifiers.push(receipt.auth_index);
                     // > 50%
                     let threshold = (Self::authority_len() + 1) / 2;
-                    // Adjust ayes or nays according to the receipt.
+
                     if receipt.passed {
                         status.ayes += 1;
                     } else {
                         status.nays += 1;
                     }
-                    // Change expiration.
+       
                     let expiration = receipt.submit_at + T::StorePeriod::get();
-                    // If ayes >= threshold，pass the task and store it on-chain with a `true`.
+                 
                     if status.ayes >= threshold {
                         // pass the verification
                         SettledTasks::<T>::insert(expiration, receipt.program_hash, true);
                         *last_status = None;
-
-                    // If nays >= threshold，reject the task and store it on-chain with a `false`.
                     } else if status.nays >= threshold {
                          // fail the verification
                         SettledTasks::<T>::insert(expiration, receipt.program_hash, false);
                         *last_status = None;
                     } else {
-                        // Otherwise, update the task status
+                        // update the task status
                         *last_status = Some(status);
                     }
                     Ok(())
-            })?;
-          
+            })
         }
+    }
 
-		/// Runs after every block.
+    #[pallet::hooks]
+    impl<T: Config> Hooks<BlockNumberFor<T>> for Pallet<T> {
         fn offchain_worker(now: T::BlockNumber) {
-            // Only send messages if we are a potential validator.
             if sp_io::offchain::is_validator() {
 				for res in Self::send_verification_output(now).into_iter().flatten() {
 					if let Err(e) = res {
@@ -336,28 +310,71 @@ decl_module! {
 				)
 			}
         }
+    }
 
-        fn on_finalize(block: T::BlockNumber) {
-            SettledTasks::<T>::remove_prefix(block);
+
+    const INVALID_VALIDATORS_LEN: u8 = 10;
+  #[pallet::validate_unsigned]
+    impl<T: Config> frame_support::unsigned::ValidateUnsigned for Pallet<T> {
+        type Call = Call<T>;
+
+        fn validate_unsigned(
+            _source: TransactionSource,
+            call: &Self::Call
+        ) -> TransactionValidity {
+
+            if let Call::submit_verification(receipt, signature) = call {
+                if receipt.submit_at > <frame_system::Pallet<T>>::block_number() {
+                    return InvalidTransaction::Future.into();
+                }
+
+                // verify that the incoming (unverified) pubkey is actually an authority id
+                let keys = Keys::<T>::get();
+                if keys.len() as u32 != receipt.validators_len {
+                    return InvalidTransaction::Custom(INVALID_VALIDATORS_LEN).into();
+                }
+           
+                let authority_id = match keys.get(receipt.auth_index as usize) {
+                    Some(id) => id,
+                    None => return InvalidTransaction::BadProof.into(),
+                };
+
+                // check signature (this is expensive so we do it last).
+                let signature_valid = receipt.using_encoded(|encoded_receipt| {
+                    authority_id.verify(&encoded_receipt, &signature)
+                });
+
+                if !signature_valid {
+                    return InvalidTransaction::BadProof.into();
+                }
+
+                ValidTransaction::with_tag_prefix("StarksVerifier")
+                    .priority(T::UnsignedPriority::get())
+                    .and_provides((receipt.program_hash,authority_id))
+                    .longevity(5)
+                    .propagate(true)
+                    .build()
+            } else {
+                InvalidTransaction::Call.into()
+            }
         }
     }
+
 }
 
 
-
-impl<T: Config> Module<T> {
-    /// The internal entry of offchain worker   
-    /// Send verification with index of on-chain authorities and its corresponding local public key
+impl<T: Config> Pallet<T> {
+    /// The internal entry of offchain worker
     pub(crate) fn send_verification_output(
         block_number: T::BlockNumber
     ) -> OffchainResult<T, impl Iterator<Item=OffchainResult<T, ()>>> {
-        Ok(Self::local_authority_keys()   
+        Ok(Self::local_authority_keys()
             .map( move |(auth_index, key)|
-                Self::send_single_result_with_lock(auth_index, key, block_number)  
+                Self::send_single_result_with_lock(auth_index, key, block_number)
         ))
     }
 
-    fn send_single_result_with_lock(  
+    fn send_single_result_with_lock(
         auth_index: u32,
         key: T::AuthorityId,
         block_number: T::BlockNumber,
@@ -370,18 +387,14 @@ impl<T: Config> Module<T> {
         let storage = StorageValueRef::persistent(&storage_key);
 
         let res = storage.mutate(|tasks: Option<Option<Vec<T::Hash>>>| {
-            // Check if there is already a lock for that particular task.(hash)
-            // If there exists a vec of `local_tasks`,we will attempt to find a certian task which is
-            // stored on-chain(<OngoingTask>) but not verified locally yet.
-            // If such vec doesn't exist ,we will initialize it,with the fist task to be verified on-chain(<OngoingTask>)
             match tasks {
-                Some(Some(mut local_tasks)) =>  {   
+                Some(Some(mut local_tasks)) =>  {
                     let task_hash = Self::task_to_execute(&mut local_tasks)?;
                     // TODO: fetch_proof, verify, and submit
                     local_tasks.push(task_hash);
                     Ok(local_tasks)
                 },
-                _ => {  
+                _ => {
                     let task_hash = Self::task_to_execute(&mut vec![])?;
                     Ok(vec![task_hash])
                 }
@@ -409,12 +422,11 @@ impl<T: Config> Module<T> {
         block_number: T::BlockNumber,
         task_hash: T::Hash
     ) -> OffchainResult<T, ()> {
-        // To fetch proof and verify it.
-        let is_success: bool = Self::fetch_proof(&task_hash)
-            .map(|proof| Self::stark_verify(&task_hash, &proof))??; 
         
-        let validators_len = <pallet_session::Module<T>>::validators().len() as u32;
-        //Create and initialize a verification receipt
+        let is_success: bool = Self::fetch_proof(&task_hash)
+            .map(|proof| Self::stark_verify(&task_hash, &proof))??;
+        
+        let validators_len = <pallet_session::Pallet<T>>::validators().len() as u32;
         let receipt = VerificationReceipt {
             program_hash: task_hash,
             passed: is_success,
@@ -441,26 +453,22 @@ impl<T: Config> Module<T> {
         Ok(())
     }
 
-    /// Fetch the proof 
-    /// 
+
     fn fetch_proof(program_hash: &T::Hash) -> OffchainResult<T, Vec<u8>> {
-        let proof_id = Self::task_params(program_hash).proof_id; // 由programhash，查询taskinfo，查询proof id
+        let proof_id = Self::task_params(program_hash).proof_id;
         let deadline = sp_io::offchain::timestamp().add(Duration::from_millis(8_000));
 
-        // Combine the the `proof_id` with a certain url 
         let url = "https://ipfs.infura.io:5001/api/v0/cat?arg=".to_owned() + sp_std::str::from_utf8(&proof_id).unwrap();
         let request = http::Request::get(&url);
-       
         let pending = request
-            .deadline(deadline) 
-            .send() 
-             //Reach the deadline set
+            .deadline(deadline)
+            .send()
             .map_err(|_| OffchainErr::HttpError(10))?;
-        
-        let response = pending.try_wait(deadline)   
+
+        let response = pending.try_wait(deadline)
             .map_err(|_| OffchainErr::HttpError(20))?;
-        
-        let response = match response { 
+
+        let response = match response {
             Ok(r) => r,
             Err(_e) => return Err(OffchainErr::HttpError(20)),
         };
@@ -478,20 +486,20 @@ impl<T: Config> Module<T> {
     
         log::info!("the body is {:?}", &body);
 
-        Ok(body) 
+        Ok(body)
     }
 
-    /// Use Stark_verify to verify every program_hash with proof
     fn stark_verify(program_hash: &T::Hash, proof: &[u8]) -> OffchainResult<T, bool> {
         let TaskInfo {proof_id:_, inputs, outputs} = Self::task_params(&program_hash);
+
         let mut program_hash_slice = [0u8; 32];
         program_hash_slice.copy_from_slice(program_hash.as_ref());
-        //To verify program hash，inputs，outputs，proof. 
+
         sp_starks::starks::verify(&program_hash_slice, &inputs, &outputs, proof)
             .map_err(|_| OffchainErr::VerificationFailed)
     }
 
-    // /Return index of on-chain authorities and its corresponding local public key
+    // return index of on-chain authorities and its corresponding local public key
     fn local_authority_keys() -> impl Iterator<Item=(u32, T::AuthorityId)> {
         // on-chain storage
         let authorities = Keys::<T>::get();
@@ -509,30 +517,28 @@ impl<T: Config> Module<T> {
     }
 
 
-    /// Pick an on-chain tasks to execute which is not included in `local_tasks`
+    // pick an on-chain tasks to execute
     fn task_to_execute(local_tasks: &mut Vec<T::Hash>) -> OffchainResult<T, T::Hash> {
-        // on-chain ready-to-verify tasks,put all task_hash of OngoingTasks into a vec.
+        // on-chain ready-to-verify tasks
         let ongoing_tasks: Vec<T::Hash> = OngoingTasks::<T>::iter().map(|(hash, _)| hash).collect::<Vec<T::Hash>>();
-        local_tasks.sort(); //对本地对进行排序
+        local_tasks.sort();
         // find any one task that is not executed
-        // TODO： find all tasks that are not executed 
+        // TODO： find all tasks that are not executed
         let task_hash = ongoing_tasks.into_iter()
-            //Make a predict here,if the predict is true return index and ot(one task to be excuted)
-            .enumerate().find( |(_, ot)| {  
-            local_tasks.binary_search(ot).is_err()  
-        }); 
+            .enumerate().find( |(_, ot)| {
+            local_tasks.binary_search(ot).is_err()
+        });
 
         match task_hash {
             Some((_i, t)) => {
                 Ok(t)
             },
-
             None => Err(OffchainErr::NoTaskToExecute)
         }
     }
 
 
-    /// Check whether the task exists on-chain(<OngoingTasks>)yet return a bool.
+
     fn task_exists(program_hash: &T::Hash) -> bool {
         <OngoingTasks<T>>::contains_key(program_hash)
     }
@@ -548,19 +554,18 @@ impl<T: Config> Module<T> {
         }
     }
 
-    #[cfg(test)]
-    fn set_keys(keys: Vec<T::AuthorityId>) {
+    fn set_keys(keys: &Vec<T::AuthorityId>) {
         Keys::<T>::put(&keys)
     }
 }
 
 
 
-impl<T: Config> sp_runtime::BoundToRuntimeAppPublic for Module<T> {
+impl<T: Config> sp_runtime::BoundToRuntimeAppPublic for Pallet<T> {
     type Public = T::AuthorityId;
 }
 
-impl<T: Config> OneSessionHandler<T::AccountId> for Module<T> {
+impl<T: Config> OneSessionHandler<T::AccountId> for Pallet<T> {
     type Key = T::AuthorityId;
 
     fn on_genesis_session<'a, I: 'a>(validators: I)
@@ -580,54 +585,5 @@ impl<T: Config> OneSessionHandler<T::AccountId> for Module<T> {
 
     fn on_disabled(_i: usize) {
         // ignore
-    }
-}
-
-/// Invalid transaction custom error. Returned when validators_len field in Receipt is incorrect.
-const INVALID_VALIDATORS_LEN: u8 = 10;
-
-impl<T: Config> frame_support::unsigned::ValidateUnsigned for Module<T> {
-    type Call = Call<T>;
-
-    fn validate_unsigned(
-        _source: TransactionSource,
-        call: &Self::Call
-    ) -> TransactionValidity {
-
-        if let Call::submit_verification(receipt, signature) = call {
-            if receipt.submit_at > <frame_system::Module<T>>::block_number() {
-                return InvalidTransaction::Future.into();
-            }
-
-            // verify that the incoming (unverified) pubkey is actually an authority id
-            let keys = Keys::<T>::get();
-            if keys.len() as u32 != receipt.validators_len {
-                return InvalidTransaction::Custom(INVALID_VALIDATORS_LEN).into();
-            }
-           
-            let authority_id = match keys.get(receipt.auth_index as usize) {
-                Some(id) => id,
-                None => return InvalidTransaction::BadProof.into(),
-            };
-
-            // check signature (this is expensive so we do it last).
-            let signature_valid = receipt.using_encoded(|encoded_receipt| {
-                authority_id.verify(&encoded_receipt, &signature)
-            });
-
-            if !signature_valid {
-                return InvalidTransaction::BadProof.into();
-            }
-
-            ValidTransaction::with_tag_prefix("StarksVerifier")
-                .priority(T::UnsignedPriority::get())
-                .and_provides((receipt.program_hash,authority_id))
-                .longevity(5)
-                .propagate(true)
-                .build()
-        } else {
-            InvalidTransaction::Call.into()
-        }
-
     }
 }

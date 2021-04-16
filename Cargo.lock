@@ -3797,8 +3797,8 @@ dependencies = [
  "pallet-balances",
  "pallet-grandpa",
  "pallet-randomness-collective-flip",
+ "pallet-starks-verifier",
  "pallet-sudo",
- "pallet-template",
  "pallet-timestamp 3.0.0 (git+https://github.com/Starks-Network/substrate)",
  "pallet-transaction-payment",
  "pallet-transaction-payment-rpc-runtime-api",
@@ -4112,26 +4112,6 @@ dependencies = [
 ]
 
 [[package]]
-name = "pallet-starks-verifier-v2"
-version = "0.1.0"
-dependencies = [
- "frame-support 3.0.0 (git+https://github.com/zCloak-Network/substrate)",
- "frame-system 3.0.0 (git+https://github.com/zCloak-Network/substrate)",
- "log",
- "pallet-session 3.0.0 (git+https://github.com/zCloak-Network/substrate)",
- "parity-scale-codec",
- "serde",
- "sp-application-crypto 3.0.0 (git+https://github.com/zCloak-Network/substrate)",
- "sp-core 3.0.0 (git+https://github.com/zCloak-Network/substrate)",
- "sp-io 3.0.0 (git+https://github.com/zCloak-Network/substrate)",
- "sp-keystore 0.9.0 (git+https://github.com/zCloak-Network/substrate)",
- "sp-runtime 3.0.0 (git+https://github.com/zCloak-Network/substrate)",
- "sp-staking 3.0.0 (git+https://github.com/zCloak-Network/substrate)",
- "sp-starks",
- "sp-std 3.0.0 (git+https://github.com/zCloak-Network/substrate)",
-]
-
-[[package]]
 name = "pallet-sudo"
 version = "3.0.0"
 source = "git+https://github.com/Starks-Network/substrate#bc668ef1aa1919b589f41772eb8484f2273e7424"
@@ -4143,18 +4123,6 @@ dependencies = [
  "sp-io 3.0.0 (git+https://github.com/Starks-Network/substrate)",
  "sp-runtime 3.0.0 (git+https://github.com/Starks-Network/substrate)",
  "sp-std 3.0.0 (git+https://github.com/Starks-Network/substrate)",
-]
-
-[[package]]
-name = "pallet-template"
-version = "2.0.1"
-dependencies = [
- "frame-support 3.0.0 (git+https://github.com/Starks-Network/substrate)",
- "frame-system 3.0.0 (git+https://github.com/Starks-Network/substrate)",
- "parity-scale-codec",
- "sp-core 3.0.0 (git+https://github.com/Starks-Network/substrate)",
- "sp-io 3.0.0 (git+https://github.com/Starks-Network/substrate)",
- "sp-runtime 3.0.0 (git+https://github.com/Starks-Network/substrate)",
 ]
 
 [[package]]

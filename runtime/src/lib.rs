@@ -42,7 +42,7 @@ pub use frame_support::{
 	},
 };
 use pallet_transaction_payment::CurrencyAdapter;
-use pallet_starks_verifier::crypto::AuthorityId as VerifierId;
+pub use pallet_starks_verifier::crypto::AuthorityId as VerifierId;
 
 /// An index to a block.
 pub type BlockNumber = u32;
@@ -90,6 +90,7 @@ pub mod opaque {
 		pub struct SessionKeys {
 			pub aura: Aura,
 			pub grandpa: Grandpa,
+			pub verifier: StarksVerifier,
 		}
 	}
 }
@@ -283,7 +284,7 @@ impl_opaque_keys! {
 	pub struct SessionKeys {
 		pub grandpa: Grandpa,
 		pub aura: Aura,
-		// pub starks_verifier: StarksVerifier,
+		pub verifier: StarksVerifier,
 	}
 }
 

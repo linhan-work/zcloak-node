@@ -10,7 +10,7 @@ use sp_std::prelude::*;
 use frame_support::pallet;
 pub use pallet::*;
 use sp_runtime::traits::{Convert, Zero};
-use frame_support::traits::ValidatorSetWithIdentification;
+use frame_support::traits::{ValidatorSet, ValidatorSetWithIdentification};
 
 #[pallet]
 pub mod pallet {
@@ -169,7 +169,3 @@ impl<T: Config> Convert<T::AccountId, Option<T::AccountId>> for ValidatorOf<T> {
 		Some(account)
 	}
 }
-
-// impl<T: Config> ValidatorSetWithIdentification<T::AccountId> for Pallet<T> {
-
-// }

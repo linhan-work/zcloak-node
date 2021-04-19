@@ -13,6 +13,7 @@ sp-std =  { default-features = false, git = "https://github.com/zCloak-Network/s
 frame-support =  { default-features = false, git = "https://github.com/zCloak-Network/substrate" }
 frame-system =  { default-features = false, git = "https://github.com/zCloak-Network/substrate" }
 sp-runtime =  { default-features = false, git = "https://github.com/zCloak-Network/substrate" }
+sp-staking = { default-features = false, git = "https://github.com/zCloak-Network/substrate" }
 pallet-session = { default-features = false, git = "https://github.com/zCloak-Network/substrate" }
 
 [features]
@@ -24,5 +25,6 @@ std = [
     "frame-support/std",
     "frame-system/std",
     "sp-runtime/std",
+    "sp-staking/std",
     "pallet-session/std",
 ]

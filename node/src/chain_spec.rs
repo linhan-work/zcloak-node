@@ -161,10 +161,10 @@ fn testnet_genesis(
 			}).collect::<Vec<_>>(),
 		},
 		pallet_aura: AuraConfig {
-			authorities: initial_authorities.iter().map(|x| (x.1.clone())).collect(),
+			authorities: vec![],
 		},
 		pallet_grandpa: GrandpaConfig {
-			authorities: initial_authorities.iter().map(|x| (x.2.clone(), 1)).collect(),
+			authorities: vec![],
 		},
 		pallet_sudo: SudoConfig {
 			// Assign network admin rights.

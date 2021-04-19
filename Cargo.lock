@@ -4035,6 +4035,7 @@ dependencies = [
  "parity-scale-codec",
  "serde",
  "sp-runtime",
+ "sp-staking",
  "sp-std",
 ]
 

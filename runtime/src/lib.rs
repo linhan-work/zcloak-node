@@ -97,8 +97,8 @@ pub mod opaque {
 // To learn more about runtime versioning and what each of the following value means:
 //   https://substrate.dev/docs/en/knowledgebase/runtime/upgrades#runtime-versioning
 pub const VERSION: RuntimeVersion = RuntimeVersion {
-	spec_name: create_runtime_str!("node-template"),
-	impl_name: create_runtime_str!("node-template"),
+	spec_name: create_runtime_str!("zcloak-network"),
+	impl_name: create_runtime_str!("zcloak-network"),
 	authoring_version: 1,
 	// The version of the runtime specification. A full node will not attempt to use its native
 	//   runtime in substitute for the on-chain Wasm runtime unless all of `spec_name`,
@@ -381,11 +381,11 @@ construct_runtime!(
 		System: frame_system::{Pallet, Call, Config, Storage, Event<T>},
 		RandomnessCollectiveFlip: pallet_randomness_collective_flip::{Pallet, Call, Storage},
 		Timestamp: pallet_timestamp::{Pallet, Call, Storage, Inherent},
+		Balances: pallet_balances::{Pallet, Call, Storage, Config<T>, Event<T>},
 		Session: pallet_session::{Pallet, Call, Storage, Event, Config<T>},
 		ValidatorSet: pallet_validator_set::{Pallet, Call, Storage, Event<T>, Config<T>},
 		Aura: pallet_aura::{Pallet, Config<T>},
 		Grandpa: pallet_grandpa::{Pallet, Call, Storage, Config, Event},
-		Balances: pallet_balances::{Pallet, Call, Storage, Config<T>, Event<T>},
 		TransactionPayment: pallet_transaction_payment::{Pallet, Storage},
 		Sudo: pallet_sudo::{Pallet, Call, Config<T>, Storage, Event<T>},
 		StarksVerifier: pallet_starks_verifier::{Pallet, Call, Storage, Event<T>, ValidateUnsigned},

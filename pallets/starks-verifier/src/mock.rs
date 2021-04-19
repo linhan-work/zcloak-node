@@ -4,6 +4,7 @@ use std::cell::RefCell;
 use crate::Config;
 use sp_runtime::Perbill;
 use sp_staking::SessionIndex;
+use pallet_session::historical as pallet_session_historical;
 use sp_runtime::testing::{Header, UintAuthorityId, TestXt};
 use sp_runtime::traits::{IdentityLookup, BlakeTwo256, ConvertInto};
 use sp_core::H256;
@@ -22,6 +23,7 @@ frame_support::construct_runtime!(
 	{
 		System: frame_system::{Pallet, Call, Config, Storage, Event<T>},
 		Session: pallet_session::{Pallet, Call, Storage, Event, Config<T>},
+		Historical: pallet_session_historical::{Pallet},
 		Verifier: verifier::{Pallet, Call, Storage, Config<T>, Event<T>, ValidateUnsigned},
 	}
 );
@@ -102,6 +104,11 @@ impl pallet_session::Config for Test {
 	type WeightInfo = ();
 }
 
+impl pallet_session::historical::Config for Test {
+	type FullIdentification = u64;
+	type FullIdentificationOf = ConvertInto;
+}
+
 parameter_types! {
 	pub const UnsignedPriority: u64 = 1 << 20;
 	pub const StoragePeriod: u64 = 20;
@@ -110,6 +117,7 @@ parameter_types! {
 impl Config for Test {
 	type Event = Event;
 	type AuthorityId = UintAuthorityId;
+	type ValidatorSet = Historical;
 	type StorePeriod = StoragePeriod;
 	type UnsignedPriority = UnsignedPriority;
 }

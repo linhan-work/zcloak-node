@@ -47,7 +47,8 @@ use sp_core::crypto::KeyTypeId;
 use frame_support::{
     dispatch::DispatchResult,
     decl_module, decl_event, decl_storage, Parameter, debug, decl_error, ensure,
-    traits::{Get, OneSessionHandler},
+    traits::{EstimateNextSessionRotation, Get, OneSessionHandler, ValidatorSet,
+		ValidatorSetWithIdentification},
 };
 use frame_system::{ensure_signed, ensure_none};
 use frame_system::offchain::{
@@ -66,7 +67,6 @@ mod tests;
 pub const KEY_TYPE: KeyTypeId = KeyTypeId(*b"zkst");
 
 pub mod crypto {
-    use sp_runtime::traits::Verify;
     pub mod app_sr25519 {
         pub use crate::KEY_TYPE;
         use sp_application_crypto::{app_crypto, sr25519};
@@ -173,11 +173,14 @@ pub mod pallet {
 	use super::*;
     #[pallet::config]
     #[pallet::disable_frame_system_supertrait_check]
-    pub trait Config: pallet_session::Config + SendTransactionTypes<Call<Self>> {
+    pub trait Config: frame_system::Config + SendTransactionTypes<Call<Self>> {
         /// The identifier type for an offchain worker.
         type AuthorityId: Member + Parameter + RuntimeAppPublic + Default + Ord + MaybeSerializeDeserialize;
         /// The overarching event type.
         type Event: From<Event<Self>> + IsType<<Self as frame_system::Config>::Event>;
+
+        /// A type for retrieving the validators supposed to be online in a session.
+    	// type ValidatorSet: ValidatorSetWithIdentification<Self::AccountId>;
     
         /// After a task is verified, it can still be stored on chain for a `StorePeriod` of time
         #[pallet::constant]
@@ -234,27 +237,6 @@ pub mod pallet {
         bool,
         ValueQuery,
     >;
-
-    #[pallet::genesis_config]
-	pub struct GenesisConfig<T: Config> {
-		pub keys: Vec<T::AuthorityId>,
-	}
-
-    #[cfg(feature = "std")]
-	impl<T: Config> Default for GenesisConfig<T> {
-		fn default() -> Self {
-			Self { keys: Vec::new() }
-		}
-	}
-
-    #[pallet::genesis_build]
-	impl<T: Config> GenesisBuild<T> for GenesisConfig<T> {
-		fn build(&self) {
-			Pallet::<T>::set_keys(&self.keys);
-		}
-	}
- 
-
     #[pallet::event]
 	#[pallet::generate_deposit(pub(super) fn deposit_event)]
 	#[pallet::metadata(T::AccountId = "AccountId")]
@@ -531,7 +513,7 @@ impl<T: Config> Pallet<T> {
                     }
             )??;
         
-        let validators_len = <pallet_session::Pallet<T>>::validators().len() as u32;
+        let validators_len = Keys::<T>::decode_len().unwrap_or_default() as u32;
         //Create and initialize a verification receipt
         let receipt = VerificationReceipt {
             task_tuple_id,

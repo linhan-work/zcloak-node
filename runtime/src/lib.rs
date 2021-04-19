@@ -6,14 +6,15 @@
 #[cfg(feature = "std")]
 include!(concat!(env!("OUT_DIR"), "/wasm_binary.rs"));
 
+use codec::{Encode, Decode};
 use sp_std::prelude::*;
 use sp_core::{crypto::KeyTypeId, OpaqueMetadata};
-use sp_runtime::{
+use sp_runtime::{SaturatedConversion,
 	ApplyExtrinsicResult, generic, create_runtime_str, impl_opaque_keys, MultiSignature,
 	transaction_validity::{TransactionValidity, TransactionSource, TransactionPriority},
 };
-use sp_runtime::traits::{
-	BlakeTwo256, Block as BlockT, AccountIdLookup, Verify, IdentifyAccount, NumberFor,
+use sp_runtime::traits::{self, BlakeTwo256, Block as BlockT, 
+	AccountIdLookup, Verify, IdentifyAccount, NumberFor, OpaqueKeys,
 };
 use sp_api::impl_runtime_apis;
 use sp_consensus_aura::sr25519::AuthorityId as AuraId;
@@ -26,9 +27,12 @@ use sp_version::NativeVersion;
 // A few exports that help ease life for downstream crates.
 #[cfg(any(feature = "std", test))]
 pub use sp_runtime::BuildStorage;
-pub use pallet_timestamp::Call as TimestampCall;
+#[cfg(any(feature = "std", test))]
 pub use pallet_balances::Call as BalancesCall;
+#[cfg(any(feature = "std", test))]
+pub use frame_system::Call as SystemCall;
 pub use sp_runtime::{Permill, Perbill};
+use sp_runtime::generic::Era;
 pub use frame_support::{
 	construct_runtime, parameter_types, StorageValue,
 	traits::{KeyOwnerProofSystem, Randomness},
@@ -38,6 +42,7 @@ pub use frame_support::{
 	},
 };
 use pallet_transaction_payment::CurrencyAdapter;
+use pallet_starks_verifier::crypto::AuthorityId as VerifierId;
 
 /// An index to a block.
 pub type BlockNumber = u32;
@@ -265,9 +270,97 @@ impl pallet_sudo::Config for Runtime {
 	type Event = Event;
 	type Call = Call;
 }
+
 parameter_types! {
 	pub const StorePeriod: BlockNumber = 1024;
 	pub const VerifierPriority: TransactionPriority = TransactionPriority::max_value();
+	pub const DisabledValidatorsThreshold: Perbill = Perbill::from_percent(17);
+	pub const Period: BlockNumber = 10;
+	pub const Offset: BlockNumber = 10;
+}
+
+impl_opaque_keys! {
+	pub struct SessionKeys {
+		pub grandpa: Grandpa,
+		pub aura: Aura,
+		// pub starks_verifier: StarksVerifier,
+	}
+}
+
+
+impl pallet_session::Config for Runtime {
+	type Event = Event;
+	type ValidatorId = <Self as frame_system::Config>::AccountId;
+	type ValidatorIdOf = pallet_validator_set::ValidatorOf<Runtime>;
+	type ShouldEndSession = pallet_session::PeriodicSessions<Period, Offset>;
+	type NextSessionRotation = pallet_session::PeriodicSessions<Period, Offset>;
+	type SessionManager = ();
+	type SessionHandler = <SessionKeys as OpaqueKeys>::KeyTypeIdProviders;
+	type Keys = SessionKeys;
+	type DisabledValidatorsThreshold = DisabledValidatorsThreshold;
+	type WeightInfo = pallet_session::weights::SubstrateWeight<Runtime>;
+}
+
+impl pallet_validator_set::Config for Runtime {
+	type Event = Event;
+}
+
+impl<LocalCall> frame_system::offchain::CreateSignedTransaction<LocalCall> for Runtime
+	where
+		Call: From<LocalCall>,
+{
+	fn create_transaction<C: frame_system::offchain::AppCrypto<Self::Public, Self::Signature>>(
+		call: Call,
+		public: <Signature as traits::Verify>::Signer,
+		account: AccountId,
+		nonce: Index,
+	) -> Option<(Call, <UncheckedExtrinsic as traits::Extrinsic>::SignaturePayload)> {
+		let tip = 0;
+		// take the biggest period possible.
+		let period = BlockHashCount::get()
+			.checked_next_power_of_two()
+			.map(|c| c / 2)
+			.unwrap_or(2) as u64;
+		let current_block = System::block_number()
+			.saturated_into::<u64>()
+			// The `System::block_number` is initialized with `n+1`,
+			// so the actual block number is `n`.
+			.saturating_sub(1);
+		let era = Era::mortal(period, current_block);
+		let extra = (
+			frame_system::CheckSpecVersion::<Runtime>::new(),
+			frame_system::CheckTxVersion::<Runtime>::new(),
+			frame_system::CheckGenesis::<Runtime>::new(),
+			frame_system::CheckEra::<Runtime>::from(era),
+			frame_system::CheckNonce::<Runtime>::from(nonce),
+			frame_system::CheckWeight::<Runtime>::new(),
+			pallet_transaction_payment::ChargeTransactionPayment::<Runtime>::from(tip),
+		);
+		let raw_payload = SignedPayload::new(call, extra)
+			.map_err(|e| {
+				log::warn!("Unable to create signed payload: {:?}", e);
+			})
+			.ok()?;
+		let signature = raw_payload
+			.using_encoded(|payload| {
+				C::sign(payload, public)
+			})?;
+		let address = Address::from(account);
+		let (call, extra, _) = raw_payload.deconstruct();
+		Some((call, (address, signature.into(), extra)))
+	}
+}
+
+impl frame_system::offchain::SigningTypes for Runtime {
+	type Public = <Signature as traits::Verify>::Signer;
+	type Signature = Signature;
+}
+
+impl<C> frame_system::offchain::SendTransactionTypes<C> for Runtime where
+	Call: From<C>,
+{
+	type Extrinsic = UncheckedExtrinsic;
+	type OverarchingCall = Call;
 }
 
 impl pallet_starks_verifier::Config for Runtime {
@@ -288,11 +381,14 @@ construct_runtime!(
 		System: frame_system::{Pallet, Call, Config, Storage, Event<T>},
 		RandomnessCollectiveFlip: pallet_randomness_collective_flip::{Pallet, Call, Storage},
 		Timestamp: pallet_timestamp::{Pallet, Call, Storage, Inherent},
+		Session: pallet_session::{Pallet, Call, Storage, Event, Config<T>},
+		ValidatorSet: pallet_validator_set::{Pallet, Call, Storage, Event<T>, Config<T>},
 		Aura: pallet_aura::{Pallet, Config<T>},
 		Grandpa: pallet_grandpa::{Pallet, Call, Storage, Config, Event},
 		Balances: pallet_balances::{Pallet, Call, Storage, Config<T>, Event<T>},
 		TransactionPayment: pallet_transaction_payment::{Pallet, Storage},
 		Sudo: pallet_sudo::{Pallet, Call, Config<T>, Storage, Event<T>},
+		StarksVerifier: pallet_starks_verifier::{Pallet, Call, Storage, Event<T>, ValidateUnsigned},
 	}
 );
 
@@ -318,6 +414,8 @@ pub type SignedExtra = (
 );
 /// Unchecked extrinsic type as expected by this runtime.
 pub type UncheckedExtrinsic = generic::UncheckedExtrinsic<Address, Call, Signature, SignedExtra>;
+/// The payload being signed in transactions.
+pub type SignedPayload = generic::SignedPayload<Call, SignedExtra>;
 /// Extrinsic type that has already been checked.
 pub type CheckedExtrinsic = generic::CheckedExtrinsic<AccountId, Call, SignedExtra>;
 /// Executive: handles dispatch to the various modules.

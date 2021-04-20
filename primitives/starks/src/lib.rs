@@ -20,7 +20,9 @@ use distaff::StarkProof;
 #[derive(PassByCodec, Encode, Decode)]
 pub enum VerifyErr {
 	SerializeErr,
-	DistaffVerifyErr
+	DistaffVerifyErr,
+	NoUTF8,
+	NoHex,
 }
 
 #[runtime_interface]
@@ -32,6 +34,16 @@ pub trait Starks {
 		outputs: &[u128],
 		proof: &[u8]) -> Result<bool, VerifyErr>
 	{
+		let body_str = sp_std::str::from_utf8(&proof).map_err(|_| {
+			log::debug!(target: "starks-verifier", "No UTF8 body");
+			VerifyErr::NoUTF8
+		})?;
+
+        let body = hex::decode(body_str).map_err(|_| {
+            log::debug!(target: "starks-verifier", "Not hex value");
+			VerifyErr::NoHex
+        })?;
+
 		log::info!(target: "starks-verifier", "@@@@@@@ Start to stark verify");
 		let stark_proof = bincode::deserialize::<StarkProof>(&proof).map_err(|_| VerifyErr::SerializeErr)?;
 		log::debug!(target: "starks-verifier", "$$$$$$ StarkProof Parsing is ok");

@@ -561,7 +561,7 @@ impl<T: Config> Pallet<T> {
 
         // Let's check the status code before we proceed to reading the response.
         if response.code != 200 {
-            log::warn!("Unexpected status code: {}", response.code);
+            log::debug!(target: "starks-verifier", "Unexpected status code: {}", response.code);
             return Err(http::Error::Unknown);
         }
 
@@ -569,8 +569,6 @@ impl<T: Config> Pallet<T> {
         // Note that the return object allows you to read the body in chunks as well
         // with a way to control the deadline.
         let body = response.body().collect::<Vec<u8>>();
-    
-        log::info!("the body is {:?}", &body);
 
         Ok(body)
     }

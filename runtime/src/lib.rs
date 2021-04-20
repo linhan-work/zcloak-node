@@ -273,8 +273,6 @@ impl pallet_sudo::Config for Runtime {
 }
 
 parameter_types! {
-	pub const StorePeriod: BlockNumber = 1024;
-	pub const VerifierPriority: TransactionPriority = TransactionPriority::max_value();
 	pub const DisabledValidatorsThreshold: Perbill = Perbill::from_percent(17);
 	pub const Period: BlockNumber = 10;
 	pub const Offset: BlockNumber = 10;
@@ -362,6 +360,11 @@ impl<C> frame_system::offchain::SendTransactionTypes<C> for Runtime where
 {
 	type Extrinsic = UncheckedExtrinsic;
 	type OverarchingCall = Call;
+}
+
+parameter_types! {
+	pub const StorePeriod: BlockNumber = 1024;
+	pub const VerifierPriority: TransactionPriority = TransactionPriority::max_value();
 }
 
 impl pallet_starks_verifier::Config for Runtime {

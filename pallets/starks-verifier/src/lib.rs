@@ -244,6 +244,8 @@ pub mod pallet {
         RemoveVerifier(T::AccountId),
         /// A new task is created.
         TaskCreated([u8; 32]),
+        /// A verification submitted on chain
+        VerificationSubmitted,
     }
 
     #[pallet::error]
@@ -304,6 +306,9 @@ pub mod pallet {
             _signature: <T::AuthorityId as RuntimeAppPublic>::Signature,
         ) -> DispatchResult {
             ensure_none(origin)?;
+            log::info!(target: "starks-verifier",
+                "~~!~~!~~! Submitting Verificartion!"
+            );
             let account = receipt.clone().task_tuple_id.0;
             let class = receipt.clone().task_tuple_id.1;
             <OngoingTasks<T>>::try_mutate_exists(
@@ -328,13 +333,13 @@ pub mod pallet {
                     // Change expiration.
                     let expiration = receipt.submit_at + T::StorePeriod::get();
                     // If ayes >= threshold，pass the task and store it on-chain with a `true`.
-                    if status.ayes >= threshold {
+                    if status.ayes > threshold {
                         // Pass the verification
                         SettledTasks::<T>::insert(expiration, &(account, class), true);
                         *last_status = None;
                     
                     // If nays >= threshold，reject the task and store it on-chain with a `false`.
-                    } else if status.nays >= threshold {
+                    } else if status.nays > threshold {
                         // fail the verification
                         SettledTasks::<T>::insert(expiration, &(account, class), false);
                         *last_status = None;
@@ -342,6 +347,8 @@ pub mod pallet {
                         // Otherwise, update the task status
                         *last_status = Some(status);
                     }
+
+                    Self::deposit_event(Event::VerificationSubmitted);
                     Ok(())
             })
         }
@@ -569,7 +576,7 @@ impl<T: Config> Pallet<T> {
         // Note that the return object allows you to read the body in chunks as well
         // with a way to control the deadline.
         let body = response.body().collect::<Vec<u8>>();
-
+        // log::debug!(target: "starks-verifier", "BODY is {:?}", &body);
         Ok(body)
     }
 
@@ -580,6 +587,11 @@ impl<T: Config> Pallet<T> {
         outputs: Vec<u128>,
         proof: &[u8]) -> OffchainResult<T, bool> {
         //To verify program hash，inputs，outputs，proof. 
+        log::debug!(target: "starks-verifier",
+            "~~~~~~Inside the pallet the program hash is {:?}",
+            program_hash
+        );
+
         sp_starks::starks::verify(program_hash, &inputs, &outputs, proof)
             .map_err(|_| OffchainErr::VerificationFailed)
     }

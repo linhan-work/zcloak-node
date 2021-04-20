@@ -508,12 +508,12 @@ impl<T: Config> Pallet<T> {
     ) -> OffchainResult<T, ()> {
         let TaskInfo {proof_id, inputs, outputs, program_hash } = Self::task_params(&task_tuple_id.0, &task_tuple_id.1);
         
-        log::info!("$$$$$$$ FETCHING");
+        log::info!(target: "starks-verifier", "$$$$$$$ FETCHING");
         // To fetch proof and verify it.
         let proof = Self::fetch_proof(&proof_id).map_err(|_| OffchainErr::FailedToFetchProof)?;
         let is_success: bool = Self::stark_verify(&program_hash, inputs,outputs, &proof)?;
         
-        log::debug!("$$$$$$$ SUCCESS or NOT :{:?}", is_success);
+        log::debug!(target: "starks-verifier", "$$$$$$$ SUCCESS or NOT :{:?}", is_success);
         
 
         let validators_len = Keys::<T>::decode_len().unwrap_or_default() as u32;

@@ -134,10 +134,7 @@ pub enum OffchainErr<BlockNumber> {
     NotValidator,
     NoTaskToExecute,
     FailToAcquireLock,
-    // HttpError(10) => DeadlineReached
-    // HttpError(20) => IoError
-    // HttpError(0) => Unknown
-    HttpError(u32),
+    FailedToFetchProof,
     FailedSigning,
     SubmitTransaction(BlockNumber),
     VerificationFailed,
@@ -149,7 +146,7 @@ impl<BlockNumber: sp_std::fmt::Debug> sp_std::fmt::Debug for OffchainErr<BlockNu
             OffchainErr::NotValidator => write!(fmt, "Failed to sign heartbeat"),
             OffchainErr::NoTaskToExecute => write!(fmt, "No task to Execute"),
             OffchainErr::FailToAcquireLock => write!(fmt, "Failed to acquire lock"),
-            OffchainErr::HttpError(ref e) => write!(fmt, "Got an HttpError({:?})", e),
+            OffchainErr::FailedToFetchProof => write!(fmt, "Failed to fetch proof"),
             OffchainErr::FailedSigning => write!(fmt, "Failed to sign the result"),
             OffchainErr::SubmitTransaction(ref now) =>
                 write!(fmt, "Failed to submit transaction at block {:?}", now),
@@ -358,6 +355,11 @@ pub mod pallet {
         }
 
         fn offchain_worker(now: T::BlockNumber) {
+            log::debug!( 
+                target: "starks-verifier",
+                "=====STARTS now at {:?}!",
+                now,
+            );
             // Only send messages if we are a potential validator.
             if sp_io::offchain::is_validator() {
 				for res in Self::send_verification_output(now).into_iter().flatten() {
@@ -505,14 +507,15 @@ impl<T: Config> Pallet<T> {
         task_tuple_id: (T::AccountId, Class)
     ) -> OffchainResult<T, ()> {
         let TaskInfo {proof_id, inputs, outputs, program_hash } = Self::task_params(&task_tuple_id.0, &task_tuple_id.1);
-        // To fetch proof and verify it.
-        let is_success: bool = Self::fetch_proof(&proof_id)
-            .map(
-                |proof| {
-                    Self::stark_verify(&program_hash, inputs,outputs, &proof)
-                    }
-            )??;
         
+        log::info!("$$$$$$$ FETCHING");
+        // To fetch proof and verify it.
+        let proof = Self::fetch_proof(&proof_id).map_err(|_| OffchainErr::FailedToFetchProof)?;
+        let is_success: bool = Self::stark_verify(&program_hash, inputs,outputs, &proof)?;
+        
+        log::debug!("$$$$$$$ SUCCESS or NOT :{:?}", is_success);
+        
+
         let validators_len = Keys::<T>::decode_len().unwrap_or_default() as u32;
         //Create and initialize a verification receipt
         let receipt = VerificationReceipt {
@@ -543,29 +546,23 @@ impl<T: Config> Pallet<T> {
     }
 
     /// Fetch the proof     
-    fn fetch_proof(proof_id: &Vec<u8>) -> OffchainResult<T, Vec<u8>> {
-        let deadline = sp_io::offchain::timestamp().add(Duration::from_millis(8_000));
+    fn fetch_proof(proof_id: &Vec<u8>) -> Result<Vec<u8>, http::Error> {
+        let deadline = sp_io::offchain::timestamp().add(Duration::from_millis(100_000));
         // Combine the the `proof_id` with a certain url 
         let url = "https://ipfs.infura.io:5001/api/v0/cat?arg=".to_owned() + sp_std::str::from_utf8(proof_id).unwrap();
         let request = http::Request::get(&url);
         let pending = request
             .deadline(deadline)
             .send()
-            //Reach the deadline set
-            .map_err(|_| OffchainErr::HttpError(10))?;
+            .map_err(|_| http::Error::IoError)?;
 
         let response = pending.try_wait(deadline)
-            .map_err(|_| OffchainErr::HttpError(20))?;
-
-        let response = match response {
-            Ok(r) => r,
-            Err(_e) => return Err(OffchainErr::HttpError(20)),
-        };
+			.map_err(|_| http::Error::DeadlineReached)??;
 
         // Let's check the status code before we proceed to reading the response.
         if response.code != 200 {
             log::warn!("Unexpected status code: {}", response.code);
-            return Err(OffchainErr::HttpError(0));
+            return Err(http::Error::Unknown);
         }
 
         // Next we want to fully read the response body and collect it to a vector of bytes.

@@ -6890,6 +6890,8 @@ version = "0.1.0"
 dependencies = [
  "bincode",
  "distaff",
+ "log",
+ "parity-scale-codec",
  "sp-runtime-interface",
 ]
 

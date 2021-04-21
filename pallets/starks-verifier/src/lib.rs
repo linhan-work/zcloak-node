@@ -330,19 +330,23 @@ pub mod pallet {
                     } else {
                         status.nays += 1;
                     }
+                    log::debug!(target: "starks-verifier","ayes={:?},nays={:?},threshold={:?}",status.ayes,status.nays,threshold);
                     // Change expiration.
                     let expiration = receipt.submit_at + T::StorePeriod::get();
+                    log::debug!(target:"starks-verifier","expiration={:?}",expiration);
                     // If ayes >= threshold，pass the task and store it on-chain with a `true`.
                     if status.ayes > threshold {
                         // Pass the verification
                         SettledTasks::<T>::insert(expiration, &(account, class), true);
                         *last_status = None;
+                        log::info!(target:"starks-verifier","$$$$ <settledtasks> insert true");
                     
                     // If nays >= threshold，reject the task and store it on-chain with a `false`.
                     } else if status.nays > threshold {
                         // fail the verification
                         SettledTasks::<T>::insert(expiration, &(account, class), false);
                         *last_status = None;
+                        log::info!(target:"starks-verifier","$$$$ <settledtasks> insert falase");
                     } else {
                         // Otherwise, update the task status
                         *last_status = Some(status);

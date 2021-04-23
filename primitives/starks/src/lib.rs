@@ -35,30 +35,17 @@ pub trait Starks {
 		proof: &[u8]) -> Result<bool, VerifyErr>
 	{
 		let mut body_str = sp_std::str::from_utf8(&proof).map_err(|_| {
-			log::debug!(target: "starks-verifier", "No UTF8 body");
 			VerifyErr::NoUTF8
 		})?;
 
-		log::info!(target: "starks-verifier",
-			"******** The body str is {:?}",
-			&body_str
-		);
         let proof = hex::decode(&body_str[0..body_str.len()-1]).map_err(|_| {
-            log::debug!(target: "starks-verifier", "Not hex value");
 			VerifyErr::NoHex
         })?;
 
-		log::info!(target: "starks-verifier", "&&&&&the proof length is {}", &proof.len());
-		log::info!(target: "starks-verifier", "@@@@@@@ Start to stark verify");
 		let stark_proof = bincode::deserialize::<StarkProof>(&proof).map_err(|_| VerifyErr::SerializeErr)?;
-		log::debug!(target: "starks-verifier", "$$$$$$ StarkProof Parsing is ok");
-		log::debug!(target: "starks-verifier", "****program hash is {:?}", program_hash);
-		log::debug!(target: "starks-verifier", "****input is {:?}", public_inputs);
-		log::debug!(target: "starks-verifier", "****output is {:?}", outputs);
+		
 		let res = distaff::verify(program_hash, public_inputs, outputs, &stark_proof);
-		
-		log::debug!(target: "starks-verifier", "@@##$$@@##$$@@##$$ THE RES IS {:?}", res);
-		
+				
 		res.map_err(|_| VerifyErr::DistaffVerifyErr)
 	}
 }

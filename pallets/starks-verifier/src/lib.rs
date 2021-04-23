@@ -203,7 +203,7 @@ pub mod pallet {
     #[pallet::storage]
     #[pallet::getter(fn keys)]
     /// Current set of keys that are allowed to execute verification tasks
-    pub(super) type Keys<T: Config> = StorageValue <_,  Vec<T::AuthorityId> , ValueQuery>;
+    pub(super) type Keys<T: Config> = StorageValue<_, Vec<T::AuthorityId>, ValueQuery>;
 
     #[pallet::storage]
     #[pallet::getter(fn task_params)]

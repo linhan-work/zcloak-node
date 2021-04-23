@@ -567,7 +567,6 @@ impl<T: Config> Pallet<T> {
         // Note that the return object allows you to read the body in chunks as well
         // with a way to control the deadline.
         let body = response.body().collect::<Vec<u8>>();
-        log::info!("the body is {:?}", &body);
         Ok(body)
     }
 

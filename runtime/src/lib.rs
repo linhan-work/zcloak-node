@@ -293,7 +293,7 @@ impl pallet_session::Config for Runtime {
 	type ValidatorIdOf = pallet_validator_set::ValidatorOf<Runtime>;
 	type ShouldEndSession = pallet_session::PeriodicSessions<Period, Offset>;
 	type NextSessionRotation = pallet_session::PeriodicSessions<Period, Offset>;
-	type SessionManager = ();
+	type SessionManager = ValidatorSet;
 	type SessionHandler = <SessionKeys as OpaqueKeys>::KeyTypeIdProviders;
 	type Keys = SessionKeys;
 	type DisabledValidatorsThreshold = DisabledValidatorsThreshold;

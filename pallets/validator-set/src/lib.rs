@@ -145,19 +145,6 @@ impl<T: Config> pallet_session::SessionManager<T::AccountId> for Pallet<T> {
 	fn start_session(_start_index: u32) {}
 }
 
-// impl<T: Config> frame_support::traits::EstimateNextSessionRotation<T::BlockNumber> for Pallet<T> {
-// 	fn average_session_length() -> T::BlockNumber {
-// 		Zero::zero()
-// 	}
-
-// 	fn estimate_current_session_progress(now: BlockNumber) -> (Option<Percent>, Weight) {
-// 		(None, Zero::zero())
-// 	}
-
-// 	fn estimate_next_session_rotation(_: BlockNumber) -> (Option<T::BlockNumber>, Weight) {
-// 		(None, Zero::zero())
-// 	}
-// }
 
 /// Implementation of Convert trait for mapping ValidatorId with AccountId.
 /// This is mainly used to map stash and controller keys.

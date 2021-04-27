@@ -4,7 +4,6 @@ use std::cell::RefCell;
 use crate::Config;
 use sp_runtime::Perbill;
 use sp_staking::SessionIndex;
-use pallet_session::historical as pallet_session_historical;
 use sp_runtime::testing::{Header, UintAuthorityId, TestXt};
 use sp_runtime::traits::{IdentityLookup, BlakeTwo256, ConvertInto};
 use sp_core::H256;
@@ -13,7 +12,6 @@ use crate as verifier;
 
 type UncheckedExtrinsic = frame_system::mocking::MockUncheckedExtrinsic<Test>;
 type Block = frame_system::mocking::MockBlock<Test>;
-
 
 frame_support::construct_runtime!(
 	pub enum Test where
@@ -35,7 +33,6 @@ thread_local! {
 	]));
 }
 
-
 pub struct TestSessionManager;
 impl pallet_session::SessionManager<u64> for TestSessionManager {
 	fn new_session(_new_index: SessionIndex) -> Option<Vec<u64>> {
@@ -47,7 +44,6 @@ impl pallet_session::SessionManager<u64> for TestSessionManager {
 
 /// An extrinsic type used for tests.
 pub type Extrinsic = TestXt<Call, ()>;
-type IdentificationTuple = (u64, u64);
 
 
 parameter_types! {
@@ -128,15 +124,12 @@ impl<LocalCall> frame_system::offchain::SendTransactionTypes<LocalCall> for Test
 	type Extrinsic = Extrinsic;
 }
 
-
-
 pub fn new_test_ext() -> sp_io::TestExternalities {
 	let t = frame_system::GenesisConfig::default()
 		.build_storage::<Test>()
 		.unwrap();
 	t.into()
 }
-
 
 pub fn built_in_verifiers() -> Vec<UintAuthorityId> {
 	Session::validators().into_iter().map(UintAuthorityId).collect()
@@ -151,8 +144,6 @@ pub fn advance_session() {
 	assert_eq!(Session::current_index(), (now / Period::get()) as u32);
 	assert_eq!(Session::validators().len(), Verifier::keys().len()); 
 }
-
-
 
 pub fn new_proof() -> std::io::Result<Vec<u8>> {
 	let mut buf = Vec::new();

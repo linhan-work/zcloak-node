@@ -26,7 +26,6 @@
 // Ensure we're `no_std` when compiling for Wasm.
 #![cfg_attr(not(feature = "std"), no_std)]
 
-
 use sp_application_crypto::RuntimeAppPublic;
 use codec::{Encode, Decode};
 use sp_std::prelude::*;
@@ -36,23 +35,16 @@ use sp_std::{
     collections::btree_set::BTreeSet,
     convert::From,
 };
+
 use sp_runtime::{
     offchain::{http, Duration, storage::StorageValueRef},
-    RuntimeDebug,
-    transaction_validity::{
-        TransactionValidity, ValidTransaction, InvalidTransaction, TransactionSource,
-        TransactionPriority,
-    },
+    RuntimeDebug
 };
-
 use sp_core::crypto::KeyTypeId;
 use frame_support::{
-    dispatch::DispatchResult,
-    decl_module, decl_event, decl_storage, Parameter, debug, decl_error, ensure,
-    traits::{EstimateNextSessionRotation, Get, OneSessionHandler, ValidatorSet,
-		ValidatorSetWithIdentification},
+    traits::OneSessionHandler
 };
-use frame_system::{ensure_signed, ensure_none};
+// use frame_system::{ensure_signed, ensure_none};
 use frame_system::offchain::{
     SendTransactionTypes,
     SubmitTransaction,
@@ -163,7 +155,6 @@ const DB_PREFIX: &[u8] = b"starksnetwork/verification-tasks/";
 pub type OffchainResult<T, A> = Result<A, OffchainErr<<T as frame_system::Config>::BlockNumber>>;
 
 #[frame_support::pallet]
-
 pub mod pallet {
     use frame_support::{
         dispatch::DispatchResult,
@@ -171,7 +162,6 @@ pub mod pallet {
     };
     use frame_system::pallet_prelude::*;
 	use super::*;
-    
     #[pallet::config]
     #[pallet::disable_frame_system_supertrait_check]
     pub trait Config: frame_system::Config + SendTransactionTypes<Call<Self>> {
@@ -338,7 +328,7 @@ pub mod pallet {
                         // Pass the verification
                         SettledTasks::<T>::insert(expiration, &(account, class), true);
                         *last_status = None;
-
+                    
                     // If nays >= threshold，reject the task and store it on-chain with a `false`.
                     } else if status.nays >= threshold {
                         // fail the verification
@@ -367,7 +357,7 @@ pub mod pallet {
             if sp_io::offchain::is_validator() {
 				for res in Self::send_verification_output(now).into_iter().flatten() {
 					if let Err(e) = res {
-						log::debug!(
+						log::warn!(
 							target: "starks-verifier",
 							"Skipping verifying at {:?}: {:?}",
 							now,
@@ -510,9 +500,11 @@ impl<T: Config> Pallet<T> {
         task_tuple_id: (T::AccountId, Class)
     ) -> OffchainResult<T, ()> {
         let TaskInfo {proof_id, inputs, outputs, program_hash } = Self::task_params(&task_tuple_id.0, &task_tuple_id.1);
+        
         // To fetch proof and verify it.
         let proof = Self::fetch_proof(&proof_id).map_err(|_| OffchainErr::FailedToFetchProof)?;
         let is_success: bool = Self::stark_verify(&program_hash, inputs,outputs, &proof)?;
+        
 
         let validators_len = Keys::<T>::decode_len().unwrap_or_default() as u32;
         //Create and initialize a verification receipt
@@ -526,9 +518,8 @@ impl<T: Config> Pallet<T> {
         };
 
         let signature = key.sign(&receipt.encode()).ok_or(OffchainErr::FailedSigning)?;
-
         let call = Call::submit_verification(receipt, signature);
-   
+
         log::info!(
             target: "starks-verifier",
             "[index: {:?} report verification: {:?},  at block: {:?}]",
@@ -559,7 +550,7 @@ impl<T: Config> Pallet<T> {
 
         // Let's check the status code before we proceed to reading the response.
         if response.code != 200 {
-            log::warn!("Unexpected status code: {}", response.code);
+            log::warn!(target: "starks-verifier", "Unexpected status code: {}", response.code);
             return Err(http::Error::Unknown);
         }
 
@@ -567,6 +558,7 @@ impl<T: Config> Pallet<T> {
         // Note that the return object allows you to read the body in chunks as well
         // with a way to control the deadline.
         let body = response.body().collect::<Vec<u8>>();
+        // log::debug!(target: "starks-verifier", "BODY is {:?}", &body);
         Ok(body)
     }
 
@@ -576,7 +568,6 @@ impl<T: Config> Pallet<T> {
         inputs: Vec<u128>,
         outputs: Vec<u128>,
         proof: &[u8]) -> OffchainResult<T, bool> {
-        //To verify program hash，inputs，outputs，proof. 
         sp_starks::starks::verify(program_hash, &inputs, &outputs, proof)
             .map_err(|_| OffchainErr::VerificationFailed)
     }
@@ -623,6 +614,7 @@ impl<T: Config> Pallet<T> {
         }
     }
 
+    #[allow(dead_code)]
     fn set_keys(keys: &Vec<T::AuthorityId>) {
         Keys::<T>::put(&keys)
     }
@@ -645,7 +637,7 @@ impl<T: Config> OneSessionHandler<T::AccountId> for Pallet<T> {
     }
 
     fn on_new_session<'a, I: 'a>(_changed: bool, validators: I, _queued_validators: I)
-        where I: Iterator<Item=(&'a T::AccountId, T::AuthorityId)> 
+        where I: Iterator<Item=(&'a T::AccountId, T::AuthorityId)>
     {
 
         // Remember who the authorities are for the new session.

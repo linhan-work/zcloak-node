@@ -9,8 +9,7 @@
 use sp_std::prelude::*;
 use frame_support::pallet;
 pub use pallet::*;
-use sp_runtime::traits::{Convert, Zero};
-use frame_support::traits::{ValidatorSet, ValidatorSetWithIdentification};
+use sp_runtime::traits::Convert;
 
 #[pallet]
 pub mod pallet {
@@ -122,7 +121,6 @@ impl<T: Config> Pallet<T> {
     }
 }
 
-	
 /// Indicates to the session module if the session should be rotated.
 /// We set this flag to true when we add/remove a validator.
 impl<T: Config> pallet_session::ShouldEndSession<T::BlockNumber> for Pallet<T> {
@@ -139,12 +137,9 @@ impl<T: Config> pallet_session::SessionManager<T::AccountId> for Pallet<T> {
 
 		Self::validators()
 	}
-
 	fn end_session(_end_index: u32) {}
-
 	fn start_session(_start_index: u32) {}
 }
-
 
 /// Implementation of Convert trait for mapping ValidatorId with AccountId.
 /// This is mainly used to map stash and controller keys.

@@ -4,7 +4,6 @@ use std::cell::RefCell;
 use crate::Config;
 use sp_runtime::Perbill;
 use sp_staking::SessionIndex;
-use pallet_session::historical as pallet_session_historical;
 use sp_runtime::testing::{Header, UintAuthorityId, TestXt};
 use sp_runtime::traits::{IdentityLookup, BlakeTwo256, ConvertInto};
 use sp_core::H256;
@@ -47,7 +46,6 @@ impl pallet_session::SessionManager<u64> for TestSessionManager {
 
 /// An extrinsic type used for tests.
 pub type Extrinsic = TestXt<Call, ()>;
-type IdentificationTuple = (u64, u64);
 
 
 parameter_types! {

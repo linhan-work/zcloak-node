@@ -1,5 +1,5 @@
 
-#![warn(missing_docs)]
+// #![warn(missing_docs)]
 
 #![cfg_attr(not(feature = "std"), no_std)]
 #![cfg_attr(not(feature = "std"), feature(alloc_error_handler))]
@@ -10,13 +10,12 @@
    doc = "Substrate's runtime standard library as compiled without Rust's standard library.")]
 
 
-use sp_runtime_interface::{runtime_interface, Pointer,
-	pass_by::{PassBy, PassByCodec}
+use sp_runtime_interface::{runtime_interface,
+	pass_by::PassByCodec
 };
 use codec::{Encode, Decode};
 #[cfg(feature = "std")]
 use distaff::StarkProof;
-#[cfg(feature = "std")]
 use sp_runtime::RuntimeDebug;
 
 
@@ -37,7 +36,7 @@ pub trait Starks {
 		outputs: &[u128],
 		proof: &[u8]) -> Result<bool, VerifyErr>
 	{
-		let mut body_str = sp_std::str::from_utf8(&proof).map_err(|_| {
+		let body_str = sp_std::str::from_utf8(&proof).map_err(|_| {
 			VerifyErr::NoUTF8
 		})?;
 

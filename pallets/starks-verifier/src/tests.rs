@@ -1,5 +1,3 @@
-use core::slice;
-use std::convert::TryInto;
 
 use super::*;
 use crate::mock::*;
@@ -10,11 +8,10 @@ use sp_core::offchain::{
 	TransactionPoolExt,
 	testing::{self as testing, TestOffchainExt, TestTransactionPoolExt},
 };
-use sp_core::H256;
-use frame_support::{dispatch, assert_ok, assert_noop, traits::OnFinalize};
-use sp_runtime::{testing::UintAuthorityId, transaction_validity::TransactionValidityError};
+use frame_support::{assert_ok, traits::OnFinalize};
+use sp_runtime::{testing::UintAuthorityId};
 use frame_support::traits::OffchainWorker;
-use sp_runtime::testing::TestSignature;
+use sp_runtime::transaction_validity::TransactionSource;
 
 #[test]
 fn set_key_works() {
@@ -54,7 +51,7 @@ fn should_create_task() {
 	ext.execute_with( || {
 		let (progam_hash, inputs, outputs, proof_id) = task_params();
 		let class = b"class".to_vec();
-		Verifier::create_task(Origin::signed(1), class, progam_hash, inputs.clone(), outputs.clone(), proof_id.clone());
+		assert_ok!(Verifier::create_task(Origin::signed(1), class, progam_hash, inputs.clone(), outputs.clone(), proof_id.clone()));
 		
 		let class = b"class".to_vec();
 		
@@ -88,7 +85,7 @@ fn should_parse_http_response() {
 	ext.register_extension(OffchainWorkerExt::new(offchain));
 	ext.register_extension(TaskExecutorExt::new(TaskExecutor::new()));
 
-	let (program_hash, inputs, outputs, proof_id) = task_params();
+	let (_, _, _, proof_id) = task_params();
 
 	{
 		let mut state = offchain_state.write();
@@ -115,7 +112,7 @@ fn basic_starks_verifier_works() {
 	new_test_ext().execute_with(|| {
 		// get proof
 		let proof = new_proof().unwrap();
-		let (prog_hash,inputs, outputs, proof_id) = task_params();
+		let (prog_hash,inputs, outputs, _) = task_params();
 		// let program_hash = [19, 23, 145, 150, 7, 226, 183, 94, 42, 36, 220, 169, 148, 89, 125, 153, 113, 250, 202, 142, 187, 167, 14, 144, 186, 217, 89, 214, 222, 234, 43, 214];
 		
 		// let public_inputs = vec![1, 0];
@@ -136,7 +133,7 @@ fn should_send_extrinsic() {
 	ext.register_extension(OffchainDbExt::new(offchain.clone()));
 	ext.register_extension(OffchainWorkerExt::new(offchain));
 
-	let (program_hash, inputs, outputs, proof_id) = task_params();
+	let (program_hash, _, _, _) = task_params();
 	let class = b"class".to_vec();
 	three_http_request(&mut offchain_state.write());
 
@@ -254,7 +251,7 @@ fn set_key_and_tasks() {
 	// craete task
 	let (progam_hash, inputs, outputs, proof_id) = task_params();
 	let class = b"class".to_vec();
-	Verifier::create_task(Origin::signed(1), class, progam_hash.clone(), inputs.clone(), outputs.clone(), proof_id.clone());
+	assert_ok!(Verifier::create_task(Origin::signed(1), class, progam_hash.clone(), inputs.clone(), outputs.clone(), proof_id.clone()));
 }
 
 // return program_hash, inputs, outputs, proof_id
@@ -268,7 +265,7 @@ fn task_params() -> ([u8; 32], Vec<u128>, Vec<u128>, Vec<u8>) {
 }
 
 fn three_http_request(state: &mut testing::OffchainState)  {
-	let (program_hash, inputs, outputs, proof_id) = task_params();
+	let (_, _, _, proof_id) = task_params();
 	let uri = "https://ipfs.infura.io:5001/api/v0/cat?arg=".to_owned() + sp_std::str::from_utf8(&proof_id[..]).unwrap();
 	state.expect_request(testing::PendingRequest {
 		method: "GET".into(),
@@ -295,38 +292,38 @@ fn three_http_request(state: &mut testing::OffchainState)  {
 	});
 }
 
-fn prepare_submission(
-	block_number: u64,
-	auth_index: u32,
-	id: UintAuthorityId,
-	task_tuple_id: (u64,Class)
-) -> dispatch::DispatchResult {
-	use frame_support::unsigned::ValidateUnsigned;
-	let (progam_hash, inputs, outputs, proof_id) = task_params();
+// fn prepare_submission(
+// 	block_number: u64,
+// 	auth_index: u32,
+// 	id: UintAuthorityId,
+// 	task_tuple_id: (u64,Class)
+// ) -> dispatch::DispatchResult {
+// 	use frame_support::unsigned::ValidateUnsigned;
+// 	let (progam_hash, _, _, _) = task_params();
 
 
-	let verification_receipt = VerificationReceipt {
-		task_tuple_id: task_tuple_id,
-		program_hash: progam_hash,
-		// when a task is passed or not
-		passed: true,
-		submit_at: block_number,
-		// submitted by who
-		auth_index: auth_index,
-		validators_len: Session::validators().len() as u32,
-	};
+// 	let verification_receipt = VerificationReceipt {
+// 		task_tuple_id: task_tuple_id,
+// 		program_hash: progam_hash,
+// 		// when a task is passed or not
+// 		passed: true,
+// 		submit_at: block_number,
+// 		// submitted by who
+// 		auth_index: auth_index,
+// 		validators_len: Session::validators().len() as u32,
+// 	};
 
-	let signature = id.sign(&verification_receipt.encode()).unwrap();
+// 	let signature = id.sign(&verification_receipt.encode()).unwrap();
 	
-	Verifier::pre_dispatch(&crate::Call::submit_verification(verification_receipt.clone(), signature.clone()))
-		.map_err(|e| match e {
-			TransactionValidityError::Invalid(InvalidTransaction::Custom(INVALID_VALIDATORS_LEN)) =>
-				"invalid validators len",
-			e @ _ => <&'static str>::from(e),
-	})?;
+// 	Verifier::pre_dispatch(&crate::Call::submit_verification(verification_receipt.clone(), signature.clone()))
+// 		.map_err(|e| match e {
+// 			TransactionValidityError::Invalid(InvalidTransaction::Custom(_)) =>
+// 				"invalid validators len",
+// 			e @ _ => <&'static str>::from(e),
+// 	})?;
 
-	Verifier::submit_verification(Origin::none(), verification_receipt, signature)
-}
+// 	Verifier::submit_verification(Origin::none(), verification_receipt, signature)
+// }
 
 
 

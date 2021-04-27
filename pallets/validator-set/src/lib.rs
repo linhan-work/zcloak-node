@@ -9,8 +9,7 @@
 use sp_std::prelude::*;
 use frame_support::pallet;
 pub use pallet::*;
-use sp_runtime::traits::{Convert, Zero};
-use frame_support::traits::{ValidatorSet, ValidatorSetWithIdentification};
+use sp_runtime::traits::Convert;
 
 #[pallet]
 pub mod pallet {

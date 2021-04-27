@@ -16,8 +16,11 @@ use sp_runtime_interface::{runtime_interface, Pointer,
 use codec::{Encode, Decode};
 #[cfg(feature = "std")]
 use distaff::StarkProof;
+#[cfg(feature = "std")]
+use sp_runtime::RuntimeDebug;
 
-#[derive(PassByCodec, Encode, Decode)]
+
+#[derive(PassByCodec, Encode, Decode, RuntimeDebug)]
 pub enum VerifyErr {
 	SerializeErr,
 	DistaffVerifyErr,

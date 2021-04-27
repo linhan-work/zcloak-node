@@ -3918,6 +3918,7 @@ dependencies = [
  "frame-system",
  "log",
  "pallet-session",
+ "pallet-validator-set",
  "parity-scale-codec",
  "serde",
  "sp-application-crypto",
@@ -6876,6 +6877,7 @@ dependencies = [
  "hex",
  "log",
  "parity-scale-codec",
+ "sp-runtime",
  "sp-runtime-interface",
  "sp-std",
 ]

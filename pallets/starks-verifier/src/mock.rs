@@ -23,8 +23,7 @@ frame_support::construct_runtime!(
 	{
 		System: frame_system::{Pallet, Call, Config, Storage, Event<T>},
 		Session: pallet_session::{Pallet, Call, Storage, Event, Config<T>},
-		Historical: pallet_session_historical::{Pallet},
-		Verifier: verifier::{Pallet, Call, Storage, Config<T>, Event<T>, ValidateUnsigned},
+		Verifier: verifier::{Pallet, Call, Storage, Event<T>, ValidateUnsigned},
 	}
 );
 
@@ -35,6 +34,7 @@ thread_local! {
 		3,
 	]));
 }
+
 
 pub struct TestSessionManager;
 impl pallet_session::SessionManager<u64> for TestSessionManager {
@@ -117,7 +117,6 @@ parameter_types! {
 impl Config for Test {
 	type Event = Event;
 	type AuthorityId = UintAuthorityId;
-	type ValidatorSet = Historical;
 	type StorePeriod = StoragePeriod;
 	type UnsignedPriority = UnsignedPriority;
 }
@@ -157,7 +156,7 @@ pub fn advance_session() {
 
 pub fn new_proof() -> std::io::Result<Vec<u8>> {
 	let mut buf = Vec::new();
-	let mut f = std::fs::File::open("proof.txt")?;
+	let mut f = std::fs::File::open("proof.proof")?;
 	use std::io::Read;
 	f.read_to_end(&mut buf)?;
 	Ok(buf)

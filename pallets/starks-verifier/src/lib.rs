@@ -519,6 +519,15 @@ impl<T: Config> Pallet<T> {
 
         let signature = key.sign(&receipt.encode()).ok_or(OffchainErr::FailedSigning)?;
         let call = Call::submit_verification(receipt, signature);
+
+        log::info!(
+            target: "starks-verifier",
+            "[index: {:?} report verification: {:?},  at block: {:?}]",
+            auth_index,
+            call,
+            block_number
+        );
+
         SubmitTransaction::<T, Call<T>>::submit_unsigned_transaction(call.into())
             .map_err(|_| OffchainErr::SubmitTransaction(block_number))?;
         

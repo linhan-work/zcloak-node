@@ -334,13 +334,13 @@ pub mod pallet {
                     // Change expiration.
                     let expiration = receipt.submit_at + T::StorePeriod::get();
                     // If ayes >= threshold，pass the task and store it on-chain with a `true`.
-                    if status.ayes > threshold {
+                    if status.ayes >= threshold {
                         // Pass the verification
                         SettledTasks::<T>::insert(expiration, &(account, class), true);
                         *last_status = None;
 
                     // If nays >= threshold，reject the task and store it on-chain with a `false`.
-                    } else if status.nays > threshold {
+                    } else if status.nays >= threshold {
                         // fail the verification
                         SettledTasks::<T>::insert(expiration, &(account, class), false);
                         *last_status = None;

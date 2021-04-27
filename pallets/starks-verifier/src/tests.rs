@@ -16,7 +16,6 @@ use sp_runtime::{testing::UintAuthorityId, transaction_validity::TransactionVali
 use frame_support::traits::OffchainWorker;
 use sp_runtime::testing::TestSignature;
 
-
 #[test]
 fn set_key_works() {
 	new_test_ext().execute_with(|| {
@@ -54,18 +53,23 @@ fn should_create_task() {
 
 	ext.execute_with( || {
 		let (progam_hash, inputs, outputs, proof_id) = task_params();
-		Verifier::create_task(Origin::signed(1), progam_hash, inputs.clone(), outputs.clone(), proof_id.clone());
+		let class = b"class".to_vec();
+		Verifier::create_task(Origin::signed(1), class, progam_hash, inputs.clone(), outputs.clone(), proof_id.clone());
+		
+		let class = b"class".to_vec();
+		
 		assert_eq!(
-			Verifier::task_params(&progam_hash),
+			Verifier::task_params(&1,&class),
 			TaskInfo {
-				proof_id: b"QmSmn1rSSXmu1PyFFTosBtcL2KGzEssetk9MVFYyDHoCGa".to_vec(),
+				proof_id: b"QmRLkDFVqqDNKUarn7x5Bfu2YdW9R1qznA78cP4XFuxfaa".to_vec(),
 				inputs,
-				outputs
+				outputs,
+				program_hash:progam_hash
 			}
 		);
 
 		assert_eq!(
-			Verifier::ongoing_tasks(&progam_hash),
+			Verifier::ongoing_tasks(&1,&class),
 			Some(Status {
 				verifiers: Vec::<u32>::new(),
 				ayes: 0,
@@ -100,7 +104,7 @@ fn should_parse_http_response() {
 
 	ext.execute_with(|| {
 		set_key_and_tasks();
-		let proof = Verifier::fetch_proof(&program_hash);
+		let proof = Verifier::fetch_proof(&proof_id);
 		assert_eq!(proof.unwrap(), new_proof().unwrap());
 	});
 }
@@ -111,9 +115,13 @@ fn basic_starks_verifier_works() {
 	new_test_ext().execute_with(|| {
 		// get proof
 		let proof = new_proof().unwrap();
-		let (program_hash, inputs, outputs, proof_id) = task_params();
-		let program_hash = [19, 23, 145, 150, 7, 226, 183, 94, 42, 36, 220, 169, 148, 89, 125, 153, 113, 250, 202, 142, 187, 167, 14, 144, 186, 217, 89, 214, 222, 234, 43, 214];
-		let res = sp_starks::starks::verify(&program_hash, &inputs, &outputs, &proof);
+		let (prog_hash,inputs, outputs, proof_id) = task_params();
+		// let program_hash = [19, 23, 145, 150, 7, 226, 183, 94, 42, 36, 220, 169, 148, 89, 125, 153, 113, 250, 202, 142, 187, 167, 14, 144, 186, 217, 89, 214, 222, 234, 43, 214];
+		
+		// let public_inputs = vec![1, 0];
+		// let outputs = vec![8];
+		let res = sp_starks::starks::verify(&prog_hash, &inputs, &outputs, &proof);
+		// println!("---------- -----  {:?}",res.err());
 		assert!(res.is_ok());
 	});
 }
@@ -129,11 +137,12 @@ fn should_send_extrinsic() {
 	ext.register_extension(OffchainWorkerExt::new(offchain));
 
 	let (program_hash, inputs, outputs, proof_id) = task_params();
+	let class = b"class".to_vec();
 	three_http_request(&mut offchain_state.write());
 
 	ext.execute_with(|| {
 		UintAuthorityId::set_all_keys(vec![1, 2, 3]);
-		assert_eq!(Verifier::ongoing_tasks(&program_hash), None);
+		assert_eq!(Verifier::ongoing_tasks(&1, &class.clone()), None);
 		set_key_and_tasks();
 		assert_eq!(Session::validators(), vec![1, 2, 3]);
 		assert_eq!(Verifier::keys(), vec![UintAuthorityId(1), UintAuthorityId(2), UintAuthorityId(3)]);
@@ -155,6 +164,7 @@ fn should_send_extrinsic() {
 
 		// pop the last one
 		assert_eq!(receipt.clone(), VerificationReceipt {
+			task_tuple_id: (1,b"class".to_vec()),
 			program_hash: program_hash,
     		passed: true,
     		submit_at: System::block_number(),
@@ -174,7 +184,7 @@ fn should_send_extrinsic() {
 		let _ = Verifier::submit_verification(Origin::none(), receipt, signature);
 
 		// check the online status
-		let status = Verifier::ongoing_tasks(&program_hash);
+		let status = Verifier::ongoing_tasks(&1,&class);
 		assert_eq!(status, Some(Status {
 			verifiers: vec![2],
 			ayes: 1,
@@ -196,6 +206,7 @@ fn should_send_extrinsic() {
 
 		// pop the last one
 		assert_eq!(receipt.clone(), VerificationReceipt {
+			task_tuple_id: (1,class),
 			program_hash: program_hash,
     		passed: true,
     		submit_at: System::block_number(),
@@ -215,15 +226,16 @@ fn should_send_extrinsic() {
 		let _ = Verifier::submit_verification(Origin::none(), receipt, signature);
 
 		let block_number = System::block_number() + 20;
+		let class = b"class".to_vec();
 		// check the online status, should be removed
-		let status = Verifier::ongoing_tasks(&program_hash);
+		let status = Verifier::ongoing_tasks(&1,&class);
 		assert_eq!(status, None);
-		let settled_task = Verifier::settled_tasks(&block_number, &program_hash);
+		let settled_task = Verifier::settled_tasks(&block_number, &(1,b"class".to_vec()));
 		assert_eq!(settled_task, true);
 
 		Verifier::on_finalize(block_number);
 		
-		assert_eq!(Verifier::settled_tasks(&block_number, &program_hash), false);
+		assert_eq!(Verifier::settled_tasks(&block_number, &(1,b"class".to_vec())), false);
 
 
 	});
@@ -241,16 +253,17 @@ fn set_key_and_tasks() {
 	assert_eq!(Verifier::keys(), vec![UintAuthorityId(1), UintAuthorityId(2), UintAuthorityId(3)]);
 	// craete task
 	let (progam_hash, inputs, outputs, proof_id) = task_params();
-	Verifier::create_task(Origin::signed(1), progam_hash.clone(), inputs.clone(), outputs.clone(), proof_id.clone());
+	let class = b"class".to_vec();
+	Verifier::create_task(Origin::signed(1), class, progam_hash.clone(), inputs.clone(), outputs.clone(), proof_id.clone());
 }
 
 // return program_hash, inputs, outputs, proof_id
-fn task_params() -> (H256, Vec<u128>, Vec<u128>, Vec<u8>) {
+fn task_params() -> ([u8; 32], Vec<u128>, Vec<u128>, Vec<u8>) {
 	(
-		[19, 23, 145, 150, 7, 226, 183, 94, 42, 36, 220, 169, 148, 89, 125, 153, 113, 250, 202, 142, 187, 167, 14, 144, 186, 217, 89, 214, 222, 234, 43, 214].into(),
-		vec![1u128, 0u128],
+		[19, 23, 145, 150, 7, 226, 183, 94, 42, 36, 220, 169, 148, 89, 125, 153, 113, 250, 202, 142, 187, 167, 14, 144, 186, 217, 89, 214, 222, 234, 43, 214],
+		vec![1u128,0u128],
 		vec![8u128],
-		b"QmSmn1rSSXmu1PyFFTosBtcL2KGzEssetk9MVFYyDHoCGa".to_vec()
+		b"QmRLkDFVqqDNKUarn7x5Bfu2YdW9R1qznA78cP4XFuxfaa".to_vec()
 	)
 }
 
@@ -286,19 +299,21 @@ fn prepare_submission(
 	block_number: u64,
 	auth_index: u32,
 	id: UintAuthorityId,
-	hash: H256,
-	validators: Vec<u64>
+	task_tuple_id: (u64,Class)
 ) -> dispatch::DispatchResult {
 	use frame_support::unsigned::ValidateUnsigned;
+	let (progam_hash, inputs, outputs, proof_id) = task_params();
+
 
 	let verification_receipt = VerificationReceipt {
-		program_hash: hash,
+		task_tuple_id: task_tuple_id,
+		program_hash: progam_hash,
 		// when a task is passed or not
 		passed: true,
 		submit_at: block_number,
 		// submitted by who
 		auth_index: auth_index,
-		validators_len: validators.len() as u32,
+		validators_len: Session::validators().len() as u32,
 	};
 
 	let signature = id.sign(&verification_receipt.encode()).unwrap();

@@ -24,6 +24,7 @@ sp-starks = { path = "../../primitives/starks", default-features = false }
 [dev-dependencies]
 pallet-session = { git = "https://github.com/zCloak-Network/substrate" }
 sp-staking = { git = "https://github.com/zCloak-Network/substrate" }
+pallet-validator-set = { path = "../validator-set"}
 
 [features]
 default = ["std"]

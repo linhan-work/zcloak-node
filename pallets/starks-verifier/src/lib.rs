@@ -300,9 +300,6 @@ pub mod pallet {
             _signature: <T::AuthorityId as RuntimeAppPublic>::Signature,
         ) -> DispatchResult {
             ensure_none(origin)?;
-            log::info!(target: "starks-verifier",
-                "~~!~~!~~! Submitting Verificartion!"
-            );
             let account = receipt.clone().task_tuple_id.0;
             let class = receipt.clone().task_tuple_id.1;
             <OngoingTasks<T>>::try_mutate_exists(
@@ -356,16 +353,11 @@ pub mod pallet {
         }
 
         fn offchain_worker(now: T::BlockNumber) {
-            log::debug!( 
-                target: "starks-verifier",
-                "=====STARTS now at {:?}!",
-                now,
-            );
             // Only send messages if we are a potential validator.
             if sp_io::offchain::is_validator() {
 				for res in Self::send_verification_output(now).into_iter().flatten() {
 					if let Err(e) = res {
-						log::debug!(
+						log::warn!(
 							target: "starks-verifier",
 							"Skipping verifying at {:?}: {:?}",
 							now,
@@ -509,12 +501,9 @@ impl<T: Config> Pallet<T> {
     ) -> OffchainResult<T, ()> {
         let TaskInfo {proof_id, inputs, outputs, program_hash } = Self::task_params(&task_tuple_id.0, &task_tuple_id.1);
         
-        log::info!(target: "starks-verifier", "$$$$$$$ FETCHING");
         // To fetch proof and verify it.
         let proof = Self::fetch_proof(&proof_id).map_err(|_| OffchainErr::FailedToFetchProof)?;
         let is_success: bool = Self::stark_verify(&program_hash, inputs,outputs, &proof)?;
-        
-        log::debug!(target: "starks-verifier", "$$$$$$$ SUCCESS or NOT :{:?}", is_success);
         
 
         let validators_len = Keys::<T>::decode_len().unwrap_or_default() as u32;
@@ -529,17 +518,7 @@ impl<T: Config> Pallet<T> {
         };
 
         let signature = key.sign(&receipt.encode()).ok_or(OffchainErr::FailedSigning)?;
-
         let call = Call::submit_verification(receipt, signature);
-   
-        log::info!(
-            target: "starks-verifier",
-            "[index: {:?} report verification: {:?},  at block: {:?}]",
-            auth_index,
-            call,
-            block_number
-        );
-
         SubmitTransaction::<T, Call<T>>::submit_unsigned_transaction(call.into())
             .map_err(|_| OffchainErr::SubmitTransaction(block_number))?;
         
@@ -562,7 +541,7 @@ impl<T: Config> Pallet<T> {
 
         // Let's check the status code before we proceed to reading the response.
         if response.code != 200 {
-            log::debug!(target: "starks-verifier", "Unexpected status code: {}", response.code);
+            log::warn!(target: "starks-verifier", "Unexpected status code: {}", response.code);
             return Err(http::Error::Unknown);
         }
 
@@ -580,12 +559,6 @@ impl<T: Config> Pallet<T> {
         inputs: Vec<u128>,
         outputs: Vec<u128>,
         proof: &[u8]) -> OffchainResult<T, bool> {
-        //To verify program hash，inputs，outputs，proof. 
-        log::debug!(target: "starks-verifier",
-            "~~~~~~Inside the pallet the program hash is {:?}",
-            program_hash
-        );
-
         sp_starks::starks::verify(program_hash, &inputs, &outputs, proof)
             .map_err(|_| OffchainErr::VerificationFailed)
     }
@@ -596,7 +569,6 @@ impl<T: Config> Pallet<T> {
         let authorities = Keys::<T>::get();
         // Local keystore
         let mut local_keys = T::AuthorityId::all();
-
         local_keys.sort();
         authorities.into_iter()
             .enumerate()

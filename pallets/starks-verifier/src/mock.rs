@@ -24,7 +24,6 @@ frame_support::construct_runtime!(
 		System: frame_system::{Pallet, Call, Config, Storage, Event<T>},
 		Session: pallet_session::{Pallet, Call, Storage, Event, Config<T>},
 		Verifier: verifier::{Pallet, Call, Storage, Event<T>, ValidateUnsigned},
-		Historical: pallet_session_historical::{Pallet},
 	}
 );
 

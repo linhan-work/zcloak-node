@@ -6877,6 +6877,7 @@ dependencies = [
  "hex",
  "log",
  "parity-scale-codec",
+ "sp-runtime",
  "sp-runtime-interface",
  "sp-std",
 ]

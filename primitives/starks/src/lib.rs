@@ -17,10 +17,10 @@ use codec::{Encode, Decode};
 #[cfg(feature = "std")]
 use distaff::StarkProof;
 #[cfg(feature = "std")]
-use std::fmt::Debug;
+use sp_runtime::RuntimeDebug;
 
 
-#[derive(PassByCodec, Encode, Decode, Debug)]
+#[derive(PassByCodec, Encode, Decode, RuntimeDebug)]
 pub enum VerifyErr {
 	SerializeErr,
 	DistaffVerifyErr,

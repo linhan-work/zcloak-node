@@ -518,7 +518,7 @@ impl<T: Config> Pallet<T> {
         block_number: T::BlockNumber,
         task_tuple_id: (T::AccountId, Class)
     ) -> OffchainResult<T, ()> {
-        let TaskInfo {proof_id, inputs, outputs, program_hash ,taskfinish,expiration} = Self::task_params(&task_tuple_id.0, &task_tuple_id.1);
+        let TaskInfo {proof_id, inputs, outputs, program_hash ,taskfinish, expiration} = Self::task_params(&task_tuple_id.0, &task_tuple_id.1);
         // To fetch proof and verify it.
         let proof = Self::fetch_proof(&proof_id).map_err(|_| OffchainErr::FailedToFetchProof)?;
         let is_success = Self::stark_verify(&program_hash, inputs,outputs, &proof);

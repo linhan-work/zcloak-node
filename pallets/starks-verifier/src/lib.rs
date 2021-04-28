@@ -100,7 +100,7 @@ pub struct Status {
 
 /// Receipt about any verification occured
 #[derive(Encode, Decode, Clone, PartialEq, Eq, RuntimeDebug)]
-pub struct VerificationReceipt<AccountId, BlockNumber> {
+pub struct VerificationReceipt<AccountId, BlockNumber>{
     task_tuple_id: (AccountId, Class),
     // The Hash of a certain task to be verified
     program_hash: [u8; 32],
@@ -116,7 +116,7 @@ pub struct VerificationReceipt<AccountId, BlockNumber> {
 
 /// Info of a certain task
 #[derive(Encode, Decode, Default, PartialEq, Eq, RuntimeDebug)]
-pub struct TaskInfo {
+pub struct TaskInfo <BlockNumber>{
     // The id of the proof,combined with a url to fetch the complete proof later
     proof_id: Vec<u8>,
     // Inputs of the task 
@@ -124,8 +124,14 @@ pub struct TaskInfo {
     // Outputs of the task
     outputs: Vec<u128>,
     // The hash of the program
-    program_hash: [u8; 32]
+    program_hash: [u8; 32],
+    // If false,expiration is the time task created;
+    // If true ,expiration is the time task expired.
+    taskfinish : Option<bool>,
+    expiration: Option<BlockNumber>,
 }
+
+
 
 /// Class of the privacy in raw
 type Class = Vec<u8>;
@@ -179,7 +185,6 @@ pub mod pallet {
         type AuthorityId: Member + Parameter + RuntimeAppPublic + Default + Ord + MaybeSerializeDeserialize;
         /// The overarching event type.
         type Event: From<Event<Self>> + IsType<<Self as frame_system::Config>::Event>;
-
         /// A type for retrieving the validators supposed to be online in a session.
     	// type ValidatorSet: ValidatorSetWithIdentification<Self::AccountId>;
     
@@ -212,7 +217,7 @@ pub mod pallet {
         _,
         Twox64Concat, T::AccountId,
         Twox64Concat, Class,
-        TaskInfo,
+        TaskInfo<T::BlockNumber>,
         ValueQuery,
     >;
 
@@ -235,7 +240,7 @@ pub mod pallet {
         _,
         Twox64Concat, T::BlockNumber,
         Twox64Concat, (T::AccountId, Class),
-        bool,
+        Option<bool>,
         ValueQuery,
     >;
     #[pallet::event]
@@ -247,7 +252,7 @@ pub mod pallet {
         /// A verifier is removed with `AccountId`.
         RemoveVerifier(T::AccountId),
         /// A new task is created.
-        TaskCreated([u8; 32]),
+        TaskCreated(T::AccountId, Class, Vec<u8>),
         /// A verification submitted on chain
         VerificationSubmitted,
     }
@@ -289,9 +294,9 @@ pub mod pallet {
             let who = ensure_signed(origin)?;
             // Ensure task has not been created
             ensure!(!TaskParams::<T>::try_get(&who, &class).is_ok(), Error::<T>::TaskAlreadyExists);
-            <TaskParams<T>>::insert(&who, &class, TaskInfo{proof_id, inputs, outputs, program_hash: program_hash});
+            <TaskParams<T>>::insert(&who, &class, TaskInfo{ proof_id: proof_id.clone(), inputs, outputs, program_hash: program_hash, taskfinish: Some(false), expiration: Some(<frame_system::Module<T>>::block_number())});
             <OngoingTasks<T>>::insert(&who, &class, Status::default());
-            Self::deposit_event(Event::TaskCreated(program_hash));
+            Self::deposit_event(Event::TaskCreated(who, class, proof_id));
             Ok(())
         }
 
@@ -333,27 +338,31 @@ pub mod pallet {
                     }
                     // Change expiration.
                     let expiration = receipt.submit_at + T::StorePeriod::get();
-                    // If ayes >= threshold，pass the task and store it on-chain with a `true`.
-                    if status.ayes >= threshold {
+                    let TaskInfo { proof_id, inputs, outputs, program_hash, taskfinish, expiration: block} = Self::task_params(&account, &class);
+                    // If ayes > threshold，pass the task and store it on-chain with a `true`.
+                    if status.ayes > threshold {
                         // Pass the verification
-                        SettledTasks::<T>::insert(expiration, &(account, class), true);
+                        SettledTasks::<T>::insert(expiration, &(account.clone(),class.clone()), Some(true));
+                        <TaskParams<T>>::insert(&account, &class, TaskInfo{ proof_id, inputs, outputs, program_hash: program_hash, taskfinish: Some(true), expiration: Some(expiration)});
                         *last_status = None;
 
-                    // If nays >= threshold，reject the task and store it on-chain with a `false`.
-                    } else if status.nays >= threshold {
+
+                    // If nays > threshold，reject the task and store it on-chain with a `false`.
+                    } else if status.nays > threshold {
                         // fail the verification
-                        SettledTasks::<T>::insert(expiration, &(account, class), false);
+                        SettledTasks::<T>::insert(expiration, &(account.clone(), class.clone()), Some(false));
+                        <TaskParams<T>>::insert(&account, &class, TaskInfo{ proof_id, inputs, outputs, program_hash: program_hash, taskfinish: Some(true), expiration: Some(expiration)});
                         *last_status = None;
                     } else {
                         // Otherwise, update the task status
                         *last_status = Some(status);
                     }
-
                     Self::deposit_event(Event::VerificationSubmitted);
+
                     Ok(())
-            })
+                })
+            }
         }
-    }
 
     // Runs after every block.  
     #[pallet::hooks]
@@ -509,17 +518,17 @@ impl<T: Config> Pallet<T> {
         block_number: T::BlockNumber,
         task_tuple_id: (T::AccountId, Class)
     ) -> OffchainResult<T, ()> {
-        let TaskInfo {proof_id, inputs, outputs, program_hash } = Self::task_params(&task_tuple_id.0, &task_tuple_id.1);
+        let TaskInfo {proof_id, inputs, outputs, program_hash ,taskfinish,expiration} = Self::task_params(&task_tuple_id.0, &task_tuple_id.1);
         // To fetch proof and verify it.
         let proof = Self::fetch_proof(&proof_id).map_err(|_| OffchainErr::FailedToFetchProof)?;
-        let is_success: bool = Self::stark_verify(&program_hash, inputs,outputs, &proof)?;
-
+        let is_success = Self::stark_verify(&program_hash, inputs,outputs, &proof);
+        let res = if let Ok(r) = is_success { r } else {false};
         let validators_len = Keys::<T>::decode_len().unwrap_or_default() as u32;
         //Create and initialize a verification receipt
         let receipt = VerificationReceipt {
             task_tuple_id,
             program_hash: program_hash,
-            passed: is_success,
+            passed: res,
             submit_at: block_number,
             auth_index: auth_index,
             validators_len

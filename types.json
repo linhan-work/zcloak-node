@@ -16,6 +16,8 @@
       "proof_id": "Vec<u8>",
       "inputs": "Vec<u128>",
       "outputs": "Vec<u128>",
-      "program_hash": "[u8; 32]"
+      "program_hash": "[u8; 32]",
+      "taskfinish":"Option<bool>",
+      "expiration" :"Option<BlockNumber>"
     }
 }

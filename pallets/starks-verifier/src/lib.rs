@@ -119,7 +119,7 @@ pub struct TaskInfo <BlockNumber>{
     program_hash: [u8; 32],
     // If false,expiration is the time task created;
     // If true ,expiration is the time task expired.
-    taskfinish : Option<bool>,
+    is_task_finish : Option<bool>,
     expiration: Option<BlockNumber>,
 }
 
@@ -244,7 +244,7 @@ pub mod pallet {
         /// A new task is created.
         TaskCreated(T::AccountId, Class, Vec<u8>),
         /// A verification submitted on chain
-        VerificationSubmitted,
+        VerificationSubmitted(T::AccountId, Class, bool, u32, u32, u32),
     }
 
     #[pallet::error]
@@ -284,7 +284,7 @@ pub mod pallet {
             let who = ensure_signed(origin)?;
             // Ensure task has not been created
             ensure!(!TaskParams::<T>::try_get(&who, &class).is_ok(), Error::<T>::TaskAlreadyExists);
-            <TaskParams<T>>::insert(&who, &class, TaskInfo{ proof_id: proof_id.clone(), inputs, outputs, program_hash: program_hash, taskfinish: Some(false), expiration: Some(<frame_system::Module<T>>::block_number())});
+            <TaskParams<T>>::insert(&who, &class, TaskInfo{ proof_id: proof_id.clone(), inputs, outputs, program_hash: program_hash, is_task_finish: Some(false), expiration: Some(<frame_system::Module<T>>::block_number())});
             <OngoingTasks<T>>::insert(&who, &class, Status::default());
             Self::deposit_event(Event::TaskCreated(who, class, proof_id));
             Ok(())
@@ -328,26 +328,27 @@ pub mod pallet {
                     }
                     // Change expiration.
                     let expiration = receipt.submit_at + T::StorePeriod::get();
-                    let TaskInfo { proof_id, inputs, outputs, program_hash, taskfinish, expiration: block} = Self::task_params(&account, &class);
+                    let TaskInfo { proof_id, inputs, outputs, program_hash, is_task_finish, expiration: block} = Self::task_params(&account, &class);
                     // If ayes > threshold，pass the task and store it on-chain with a `true`.
                     if status.ayes > threshold {
                         // Pass the verification
                         SettledTasks::<T>::insert(expiration, &(account.clone(),class.clone()), Some(true));
-                        <TaskParams<T>>::insert(&account, &class, TaskInfo{ proof_id, inputs, outputs, program_hash: program_hash, taskfinish: Some(true), expiration: Some(expiration)});
+                        <TaskParams<T>>::insert(&account, &class, TaskInfo{ proof_id, inputs, outputs, program_hash: program_hash, is_task_finish: Some(true), expiration: Some(expiration)});
                         *last_status = None;
+                        Self::deposit_event(Event::VerificationSubmitted(account, class, true, status.ayes, status.nays, Self::authority_len()));
 
                     // If nays > threshold，reject the task and store it on-chain with a `false`.
                     } else if status.nays > threshold {
 
                         // fail the verification
                         SettledTasks::<T>::insert(expiration, &(account.clone(), class.clone()), Some(false));
-                        <TaskParams<T>>::insert(&account, &class, TaskInfo{ proof_id, inputs, outputs, program_hash: program_hash, taskfinish: Some(true), expiration: Some(expiration)});
+                        <TaskParams<T>>::insert(&account, &class, TaskInfo{ proof_id, inputs, outputs, program_hash: program_hash, is_task_finish: Some(true), expiration: Some(expiration)});
                         *last_status = None;
+                        Self::deposit_event(Event::VerificationSubmitted(account, class, false, status.ayes, status.nays, Self::authority_len()));
                     } else {
                         // Otherwise, update the task status
                         *last_status = Some(status);
                     }
-                    Self::deposit_event(Event::VerificationSubmitted);
 
                     Ok(())
                 })
@@ -508,7 +509,7 @@ impl<T: Config> Pallet<T> {
         block_number: T::BlockNumber,
         task_tuple_id: (T::AccountId, Class)
     ) -> OffchainResult<T, ()> {
-        let TaskInfo {proof_id, inputs, outputs, program_hash ,taskfinish, expiration} = Self::task_params(&task_tuple_id.0, &task_tuple_id.1);
+        let TaskInfo {proof_id, inputs, outputs, program_hash ,is_task_finish, expiration} = Self::task_params(&task_tuple_id.0, &task_tuple_id.1);
         // To fetch proof and verify it.
         let proof = Self::fetch_proof(&proof_id).map_err(|_| OffchainErr::FailedToFetchProof)?;
         let is_success = Self::stark_verify(&program_hash, inputs,outputs, &proof);

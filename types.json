@@ -17,7 +17,7 @@
       "inputs": "Vec<u128>",
       "outputs": "Vec<u128>",
       "program_hash": "[u8; 32]",
-      "taskfinish":"Option<bool>",
+      "is_task_finish":"Option<bool>",
       "expiration" :"Option<BlockNumber>"
     }
 }

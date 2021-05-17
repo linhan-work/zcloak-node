@@ -245,6 +245,9 @@ pub mod pallet {
         TaskCreated(T::AccountId, Class, Vec<u8>),
         /// A verification submitted on chain
         VerificationSubmitted(T::AccountId, Class, bool, u32, u32, u32),
+        /// A verification submitted by a single verifier
+        SingleVerification(T::AccountId, Class, bool, u32, u32),
+
     }
 
     #[pallet::error]
@@ -330,6 +333,8 @@ pub mod pallet {
                     let expiration = receipt.submit_at + T::StorePeriod::get();
                     let TaskInfo { proof_id, inputs, outputs, program_hash, is_task_finish, expiration: block} = Self::task_params(&account, &class);
                     // If ayes > threshold，pass the task and store it on-chain with a `true`.
+                    Self::deposit_event(Event::SingleVerification(account.clone(), class.clone(), receipt.passed, status.ayes.clone(), Self::authority_len()));
+                    // 
                     if status.ayes > threshold {
                         // Pass the verification
                         SettledTasks::<T>::insert(expiration, &(account.clone(),class.clone()), Some(true));
@@ -339,7 +344,6 @@ pub mod pallet {
 
                     // If nays > threshold，reject the task and store it on-chain with a `false`.
                     } else if status.nays > threshold {
-
                         // fail the verification
                         SettledTasks::<T>::insert(expiration, &(account.clone(), class.clone()), Some(false));
                         <TaskParams<T>>::insert(&account, &class, TaskInfo{ proof_id, inputs, outputs, program_hash: program_hash, is_task_finish: Some(true), expiration: Some(expiration)});
@@ -349,7 +353,6 @@ pub mod pallet {
                         // Otherwise, update the task status
                         *last_status = Some(status);
                     }
-
                     Ok(())
                 })
             }

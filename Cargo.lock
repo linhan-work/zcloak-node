@@ -3843,7 +3843,6 @@ source = "git+https://github.com/zCloak-Network/substrate#bc668ef1aa1919b589f417
 dependencies = [
  "frame-support",
  "frame-system",
- "log",
  "pallet-session",
  "pallet-timestamp",
  "parity-scale-codec",
@@ -3927,7 +3926,6 @@ dependencies = [
  "frame-support",
  "frame-system",
  "impl-trait-for-tuples",
- "log",
  "pallet-timestamp",
  "parity-scale-codec",
  "serde",

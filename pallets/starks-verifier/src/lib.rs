@@ -25,7 +25,6 @@
 //! 
 // Ensure we're `no_std` when compiling for Wasm.
 #![cfg_attr(not(feature = "std"), no_std)]
-
 use sp_application_crypto::RuntimeAppPublic;
 use codec::{Encode, Decode};
 use sp_std::prelude::*;
@@ -35,7 +34,7 @@ use sp_std::{
     collections::btree_set::BTreeSet,
     convert::From,
 };
-
+use sp_runtime::SaturatedConversion;
 use sp_runtime::{
     offchain::{http, Duration, storage::StorageValueRef},
     RuntimeDebug
@@ -138,6 +137,7 @@ pub enum OffchainErr<BlockNumber> {
     FailedSigning,
     SubmitTransaction(BlockNumber),
     VerificationFailed,
+    NotMyTurn(BlockNumber),
 }
 
 impl<BlockNumber: sp_std::fmt::Debug> sp_std::fmt::Debug for OffchainErr<BlockNumber> {
@@ -151,6 +151,7 @@ impl<BlockNumber: sp_std::fmt::Debug> sp_std::fmt::Debug for OffchainErr<BlockNu
             OffchainErr::SubmitTransaction(ref now) =>
                 write!(fmt, "Failed to submit transaction at block {:?}", now),
             OffchainErr::VerificationFailed => write!(fmt, "Failed to verify"),
+            OffchainErr::NotMyTurn(ref now) =>write!(fmt,"Block {:?} is not my turn", now),
         }
     }
 }
@@ -367,24 +368,24 @@ pub mod pallet {
 
         fn offchain_worker(now: T::BlockNumber) {
             // Only send messages if we are a potential validator.
-            if sp_io::offchain::is_validator() {
-				for res in Self::send_verification_output(now).into_iter().flatten() {
-					if let Err(e) = res {
-						log::warn!(
-							target: "starks-verifier",
-							"Skipping verifying at {:?}: {:?}",
-							now,
-							e,
-						)
-					}
-				}
-			} else {
-				log::trace!(
-					target: "starks-verifier",
-					"Skipping verifying at {:?}. Not a validator.",
-					now,
-				)
-			}
+                if sp_io::offchain::is_validator() {
+                        for res in Self::send_verification_output(now).into_iter().flatten() {
+                            if let Err(e) = res {
+                                log::warn!(
+                                    target: "starks-verifier",
+                                    "Skipping verifying at {:?}: {:?}",
+                                    now,
+                                    e,
+                                )
+                            }
+                        }
+                }else{
+                        log::trace!(
+                        target: "starks-verifier",
+                        "Skipping verifying at {:?}. Not a validator.",
+                        now,
+                        )
+                }           
         }
     }
 
@@ -435,9 +436,7 @@ pub mod pallet {
             }
         }
     }
-
 }
-
 
 impl<T: Config> Pallet<T> {
     /// The internal entry of offchain worker   
@@ -456,11 +455,14 @@ impl<T: Config> Pallet<T> {
         key: T::AuthorityId,
         block_number: T::BlockNumber,
     ) -> OffchainResult<T, ()> {
+        let res = Self::is_my_turn(auth_index, block_number);
+        if res { 
         let storage_key = {
             let mut prefix = DB_PREFIX.to_vec();
             prefix.extend(auth_index.encode());
             prefix
         };
+        // 1 represent odd,the odd-index-validators should verify
         let storage = StorageValueRef::persistent(&storage_key);
 
         let mut task_id_tuple: (T::AccountId, Class) = Default::default();
@@ -502,8 +504,19 @@ impl<T: Config> Pallet<T> {
             storage.set(&local_tasks);
         }
         res
+    }else{
+        return Err(OffchainErr::NotMyTurn(block_number));
     }
+}
+    ///To justify if a validator should do verification in this block
+    fn is_my_turn(
+        auth_index: u32,
+        block_number: T::BlockNumber
+    )->bool{
+        let number: u32 = block_number.saturated_into();     
+        return ((number % 2) == (auth_index % 2))
 
+    }
 
     /// Fetch proof, verify, sign and submit the transaction
     fn prepare_submission(

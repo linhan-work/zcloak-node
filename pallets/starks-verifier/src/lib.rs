@@ -461,7 +461,6 @@ impl<T: Config> Pallet<T> {
             prefix.extend(auth_index.encode());
             prefix
         };
-        // 1 represent odd,the odd-index-validators should verify
         let storage = StorageValueRef::persistent(&storage_key);
 
         let mut task_id_tuple: (T::AccountId, Class) = Default::default();
@@ -507,6 +506,7 @@ impl<T: Config> Pallet<T> {
         return Err(OffchainErr::NotMyTurn(block_number));
     }
 }
+
     /// To justify if a validator should do verification in this block
     fn is_my_turn(
         auth_index: u32,

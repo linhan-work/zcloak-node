@@ -151,7 +151,7 @@ impl<BlockNumber: sp_std::fmt::Debug> sp_std::fmt::Debug for OffchainErr<BlockNu
             OffchainErr::SubmitTransaction(ref now) =>
                 write!(fmt, "Failed to submit transaction at block {:?}", now),
             OffchainErr::VerificationFailed => write!(fmt, "Failed to verify"),
-            OffchainErr::NotMyTurn(ref now) =>write!(fmt,"Block {:?} is not my turn", now),
+            OffchainErr::NotMyTurn(ref now) => write!(fmt, "Block {:?} is not my turn", now),
         }
     }
 }
@@ -288,7 +288,7 @@ pub mod pallet {
             let who = ensure_signed(origin)?;
             // Ensure task has not been created
             ensure!(!TaskParams::<T>::try_get(&who, &class).is_ok(), Error::<T>::TaskAlreadyExists);
-            <TaskParams<T>>::insert(&who, &class, TaskInfo{ proof_id: proof_id.clone(), inputs, outputs, program_hash: program_hash, is_task_finish: Some(false), expiration: Some(<frame_system::Module<T>>::block_number())});
+            <TaskParams<T>>::insert(&who, &class, TaskInfo{proof_id: proof_id.clone(), inputs, outputs, program_hash: program_hash, is_task_finish: Some(false), expiration: Some(<frame_system::Pallet<T>>::block_number())});
             <OngoingTasks<T>>::insert(&who, &class, Status::default());
             Self::deposit_event(Event::TaskCreated(who, class, proof_id));
             Ok(())
@@ -332,14 +332,14 @@ pub mod pallet {
                     }
                     // Change expiration.
                     let expiration = receipt.submit_at + T::StorePeriod::get();
-                    let TaskInfo { proof_id, inputs, outputs, program_hash, is_task_finish, expiration: block} = Self::task_params(&account, &class);
+                    let TaskInfo {proof_id, inputs, outputs, program_hash, ..} = Self::task_params(&account, &class);
                     // If ayes > threshold，pass the task and store it on-chain with a `true`.
                     Self::deposit_event(Event::SingleVerification(account.clone(), class.clone(), receipt.passed, status.ayes.clone(), Self::authority_len()));
                     // 
                     if status.ayes > threshold {
                         // Pass the verification
                         SettledTasks::<T>::insert(expiration, &(account.clone(),class.clone()), Some(true));
-                        <TaskParams<T>>::insert(&account, &class, TaskInfo{ proof_id, inputs, outputs, program_hash: program_hash, is_task_finish: Some(true), expiration: Some(expiration)});
+                        <TaskParams<T>>::insert(&account, &class, TaskInfo{proof_id, inputs, outputs, program_hash: program_hash, is_task_finish: Some(true), expiration: Some(expiration)});
                         *last_status = None;
                         Self::deposit_event(Event::VerificationSubmitted(account, class, true, status.ayes, status.nays, Self::authority_len()));
 
@@ -347,7 +347,7 @@ pub mod pallet {
                     } else if status.nays > threshold {
                         // fail the verification
                         SettledTasks::<T>::insert(expiration, &(account.clone(), class.clone()), Some(false));
-                        <TaskParams<T>>::insert(&account, &class, TaskInfo{ proof_id, inputs, outputs, program_hash: program_hash, is_task_finish: Some(true), expiration: Some(expiration)});
+                        <TaskParams<T>>::insert(&account, &class, TaskInfo{proof_id, inputs, outputs, program_hash: program_hash, is_task_finish: Some(true), expiration: Some(expiration)});
                         *last_status = None;
                         Self::deposit_event(Event::VerificationSubmitted(account, class, false, status.ayes, status.nays, Self::authority_len()));
                     } else {
@@ -368,27 +368,26 @@ pub mod pallet {
 
         fn offchain_worker(now: T::BlockNumber) {
             // Only send messages if we are a potential validator.
-                if sp_io::offchain::is_validator() {
-                        for res in Self::send_verification_output(now).into_iter().flatten() {
-                            if let Err(e) = res {
-                                log::warn!(
-                                    target: "starks-verifier",
-                                    "Skipping verifying at {:?}: {:?}",
-                                    now,
-                                    e,
-                                )
-                            }
-                        }
-                }else{
-                        log::trace!(
-                        target: "starks-verifier",
-                        "Skipping verifying at {:?}. Not a validator.",
-                        now,
-                        )
-                }           
+            if sp_io::offchain::is_validator() {
+				for res in Self::send_verification_output(now).into_iter().flatten() {
+					if let Err(e) = res {
+						log::warn!(
+							target: "starks-verifier",
+							"Skipping verifying at {:?}: {:?}",
+							now,
+							e,
+						)
+					}
+				}
+			} else {
+				log::trace!(
+					target: "starks-verifier",
+					"Skipping verifying at {:?}. Not a validator.",
+					now,
+				)
+			}
         }
     }
-
     /// Invalid transaction custom error. Returned when validators_len field in Receipt is incorrect.
     const INVALID_VALIDATORS_LEN: u8 = 10;
   #[pallet::validate_unsigned]
@@ -456,7 +455,7 @@ impl<T: Config> Pallet<T> {
         block_number: T::BlockNumber,
     ) -> OffchainResult<T, ()> {
         let res = Self::is_my_turn(auth_index, block_number);
-        if res { 
+        if res {
         let storage_key = {
             let mut prefix = DB_PREFIX.to_vec();
             prefix.extend(auth_index.encode());
@@ -508,13 +507,13 @@ impl<T: Config> Pallet<T> {
         return Err(OffchainErr::NotMyTurn(block_number));
     }
 }
-    ///To justify if a validator should do verification in this block
+    /// To justify if a validator should do verification in this block
     fn is_my_turn(
         auth_index: u32,
         block_number: T::BlockNumber
     )->bool{
         let number: u32 = block_number.saturated_into();     
-        return ((number % 2) == (auth_index % 2))
+        return number % 2 == auth_index % 2
 
     }
 
@@ -525,7 +524,7 @@ impl<T: Config> Pallet<T> {
         block_number: T::BlockNumber,
         task_tuple_id: (T::AccountId, Class)
     ) -> OffchainResult<T, ()> {
-        let TaskInfo {proof_id, inputs, outputs, program_hash ,is_task_finish, expiration} = Self::task_params(&task_tuple_id.0, &task_tuple_id.1);
+        let TaskInfo {proof_id, inputs, outputs, program_hash, ..} = Self::task_params(&task_tuple_id.0, &task_tuple_id.1);
         // To fetch proof and verify it.
         let proof = Self::fetch_proof(&proof_id).map_err(|_| OffchainErr::FailedToFetchProof)?;
         let is_success = Self::stark_verify(&program_hash, inputs,outputs, &proof);

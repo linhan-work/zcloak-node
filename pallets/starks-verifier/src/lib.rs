@@ -67,9 +67,9 @@ pub mod crypto {
     }
 
     sp_application_crypto::with_pair! {
-		/// A starks verifier keypair using sr25519 as its crypto.
-		pub type AuthorityPair = app_sr25519::Pair;
-	}
+        /// A starks verifier keypair using sr25519 as its crypto.
+        pub type AuthorityPair = app_sr25519::Pair;
+    }
 
     /// A starks verifier signature using sr25519 as its crypto.
     pub type AuthoritySignature = app_sr25519::Signature;
@@ -105,6 +105,25 @@ pub struct VerificationReceipt<AccountId, BlockNumber>{
     validators_len: u32
 }
 
+#[derive(Clone, Copy, Encode, Decode, PartialEq, Eq)]
+pub enum TaskStatus {
+    JustCreated,
+    Verifying,
+    VerifiedTrue,
+    VerifiedFalse,
+}
+
+impl sp_std::fmt::Debug for TaskStatus {
+    fn fmt(&self, fmt: &mut sp_std::fmt::Formatter) -> sp_std::fmt::Result {
+        match *self {
+            TaskStatus::JustCreated => write!(fmt, "JustCreated"),
+            TaskStatus::Verifying => write!(fmt, "Verifying"),
+            TaskStatus::VerifiedTrue => write!(fmt, "VerifiedTrue"),
+            TaskStatus::VerifiedFalse => write!(fmt, "VerifiedFalse"),
+        }
+    }
+}
+
 /// Info of a certain task
 #[derive(Encode, Decode, Default, PartialEq, Eq, RuntimeDebug)]
 pub struct TaskInfo <BlockNumber>{
@@ -118,7 +137,7 @@ pub struct TaskInfo <BlockNumber>{
     program_hash: [u8; 32],
     // If false,expiration is the time task created;
     // If true ,expiration is the time task expired.
-    is_task_finish : Option<bool>,
+    is_task_finish : Option<TaskStatus>,
     expiration: Option<BlockNumber>,
 }
 
@@ -165,10 +184,10 @@ pub type OffchainResult<T, A> = Result<A, OffchainErr<<T as frame_system::Config
 pub mod pallet {
     use frame_support::{
         dispatch::DispatchResult,
-		pallet_prelude::*,
+        pallet_prelude::*,
     };
     use frame_system::pallet_prelude::*;
-	use super::*;
+    use super::*;
     #[pallet::config]
     #[pallet::disable_frame_system_supertrait_check]
     pub trait Config: frame_system::Config + SendTransactionTypes<Call<Self>> {
@@ -177,7 +196,7 @@ pub mod pallet {
         /// The overarching event type.
         type Event: From<Event<Self>> + IsType<<Self as frame_system::Config>::Event>;
         /// A type for retrieving the validators supposed to be online in a session.
-    	// type ValidatorSet: ValidatorSetWithIdentification<Self::AccountId>;
+        // type ValidatorSet: ValidatorSetWithIdentification<Self::AccountId>;
     
         /// After a task is verified, it can still be stored on chain for a `StorePeriod` of time
         #[pallet::constant]
@@ -193,8 +212,8 @@ pub mod pallet {
     }
 
     #[pallet::pallet]
-	#[pallet::generate_store(pub(super) trait Store)]
-	pub struct Pallet<T>(PhantomData<T>);
+    #[pallet::generate_store(pub(super) trait Store)]
+    pub struct Pallet<T>(PhantomData<T>);
 
     #[pallet::storage]
     #[pallet::getter(fn keys)]
@@ -235,8 +254,8 @@ pub mod pallet {
         ValueQuery,
     >;
     #[pallet::event]
-	#[pallet::generate_deposit(pub(super) fn deposit_event)]
-	#[pallet::metadata(T::AccountId = "AccountId")]
+    #[pallet::generate_deposit(pub(super) fn deposit_event)]
+    #[pallet::metadata(T::AccountId = "AccountId")]
     pub enum Event<T: Config> {
         /// A new verifier is added with `AccountId`.
         AddVerifier(T::AccountId),
@@ -254,24 +273,24 @@ pub mod pallet {
     #[pallet::error]
     pub enum Error<T> {
         /// It's not allowed to recreated an existed task.
-		TaskAlreadyExists,
-		/// Only permitted verifiers can submit the result
-		NotAllowed,
-		/// Task does not exist
-		TaskNotExists,
-		/// Duplicated Submission
-		DuplicatedSubmission,
+        TaskAlreadyExists,
+        /// Only permitted verifiers can submit the result
+        NotAllowed,
+        /// Task does not exist
+        TaskNotExists,
+        /// Duplicated Submission
+        DuplicatedSubmission,
     }
 
     #[pallet::call]
-	impl<T: Config> Pallet<T> {
+    impl<T: Config> Pallet<T> {
         /// To create a new task for verifiers to verify,make sure that this task hasn't be stored on-chain yet.
         /// If qualified,store the task on-chain ( <TaskParam> & <OngoingTasks> )
         /// 
         /// The dispatch origin for this call must be _Signed_.
         /// 
-		/// - `program_hash`: The hash of task to be verified.
-		/// - `inputs`: Inputs of the task.
+        /// - `program_hash`: The hash of task to be verified.
+        /// - `inputs`: Inputs of the task.
         /// - `outputs`: Outputs of the task.
         /// - `proof_id`: The id of the proof,combined with a url to fetch the complete proof later
         /// 
@@ -288,7 +307,7 @@ pub mod pallet {
             let who = ensure_signed(origin)?;
             // Ensure task has not been created
             ensure!(!TaskParams::<T>::try_get(&who, &class).is_ok(), Error::<T>::TaskAlreadyExists);
-            <TaskParams<T>>::insert(&who, &class, TaskInfo{proof_id: proof_id.clone(), inputs, outputs, program_hash: program_hash, is_task_finish: Some(false), expiration: Some(<frame_system::Pallet<T>>::block_number())});
+            <TaskParams<T>>::insert(&who, &class, TaskInfo{proof_id: proof_id.clone(), inputs, outputs, program_hash: program_hash, is_task_finish: Some(TaskStatus::JustCreated), expiration: Some(<frame_system::Pallet<T>>::block_number())});
             <OngoingTasks<T>>::insert(&who, &class, Status::default());
             Self::deposit_event(Event::TaskCreated(who, class, proof_id));
             Ok(())
@@ -331,23 +350,23 @@ pub mod pallet {
                         status.nays += 1;
                     }
                     // Change expiration.
-                    let expiration = receipt.submit_at + T::StorePeriod::get();
-                    let TaskInfo {proof_id, inputs, outputs, program_hash, ..} = Self::task_params(&account, &class);
-                    // If ayes > threshold，pass the task and store it on-chain with a `true`.
+                    let TaskInfo {proof_id, inputs, outputs, program_hash, expiration, ..} = Self::task_params(&account, &class);
                     Self::deposit_event(Event::SingleVerification(account.clone(), class.clone(), receipt.passed, status.ayes.clone(), Self::authority_len()));
-                    // 
-                    if status.ayes > threshold {
+                    <TaskParams<T>>::insert(&account, &class, TaskInfo{proof_id: proof_id.clone(), inputs: inputs.clone(), outputs: outputs.clone(), program_hash: program_hash, is_task_finish: Some(TaskStatus::Verifying), expiration});
+                    let expiration = receipt.submit_at + T::StorePeriod::get();
+                    // If ayes > threshold，pass the task and store it on-chain with a `true`.
+
+                    if status.ayes >= threshold {
                         // Pass the verification
                         SettledTasks::<T>::insert(expiration, &(account.clone(),class.clone()), Some(true));
-                        <TaskParams<T>>::insert(&account, &class, TaskInfo{proof_id, inputs, outputs, program_hash: program_hash, is_task_finish: Some(true), expiration: Some(expiration)});
+                        <TaskParams<T>>::insert(&account, &class, TaskInfo{proof_id, inputs, outputs, program_hash: program_hash, is_task_finish: Some(TaskStatus::VerifiedTrue), expiration: Some(expiration)});
                         *last_status = None;
-                        Self::deposit_event(Event::VerificationSubmitted(account, class, true, status.ayes, status.nays, Self::authority_len()));
-
-                    // If nays > threshold，reject the task and store it on-chain with a `false`.
-                    } else if status.nays > threshold {
+                        Self::deposit_event(Event::VerificationSubmitted(account.clone(), class.clone(), true, status.ayes, status.nays, Self::authority_len()));
+                        // If nays > threshold，reject the task and store it on-chain with a `false`.
+                    } else if status.nays >= threshold {
                         // fail the verification
                         SettledTasks::<T>::insert(expiration, &(account.clone(), class.clone()), Some(false));
-                        <TaskParams<T>>::insert(&account, &class, TaskInfo{proof_id, inputs, outputs, program_hash: program_hash, is_task_finish: Some(true), expiration: Some(expiration)});
+                        <TaskParams<T>>::insert(&account, &class, TaskInfo{proof_id, inputs, outputs, program_hash: program_hash, is_task_finish: Some(TaskStatus::VerifiedFalse), expiration: Some(expiration)});
                         *last_status = None;
                         Self::deposit_event(Event::VerificationSubmitted(account, class, false, status.ayes, status.nays, Self::authority_len()));
                     } else {
@@ -569,7 +588,7 @@ impl<T: Config> Pallet<T> {
             .map_err(|_| http::Error::IoError)?;
 
         let response = pending.try_wait(deadline)
-			.map_err(|_| http::Error::DeadlineReached)??;
+        .map_err(|_| http::Error::DeadlineReached)??;
 
         // Let's check the status code before we proceed to reading the response.
         if response.code != 200 {
@@ -671,3 +690,4 @@ impl<T: Config> OneSessionHandler<T::AccountId> for Pallet<T> {
         // Ignore
     }
 }
+

@@ -14,7 +14,7 @@ use sp_runtime_interface::{runtime_interface,
 };
 use codec::{Encode, Decode};
 #[cfg(feature = "std")]
-use distaff::StarkProof;
+use starksVM::StarkProof;
 use sp_runtime::RuntimeDebug;
 
 
@@ -42,7 +42,7 @@ pub trait Starks {
 			VerifyErr::NoHex
         })?;
 		let stark_proof = bincode::deserialize::<StarkProof>(&proof).map_err(|_| VerifyErr::SerializeErr)?;
-		let res = distaff::verify(program_hash, public_inputs, outputs, &stark_proof);
+		let res = starksVM::verify(program_hash, public_inputs, outputs, &stark_proof);
 		res.map_err(|_| VerifyErr::DistaffVerifyErr)
 	}
 }

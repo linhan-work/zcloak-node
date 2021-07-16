@@ -1,5 +1,5 @@
 use criterion::{ black_box, criterion_group, Criterion };
-use starksVM::math::{ field, fft };
+use distaff::math::{ field, fft };
 
 pub fn fft_in_place(c: &mut Criterion) {
 

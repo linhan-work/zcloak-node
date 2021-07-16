@@ -1,5 +1,5 @@
 use criterion::{ black_box, criterion_group, Criterion };
-use starksVM::math::{ field, parallel };
+use distaff::math::{ field, parallel };
 
 pub fn add128(c: &mut Criterion) {
     let x = field::rand();

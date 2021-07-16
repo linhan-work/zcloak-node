@@ -25,7 +25,6 @@ structopt = '0.3.8'
 # local dependencies
 zcloak-runtime = { path = '../runtime' }
 sp-starks = { path = "../primitives/starks"}
-
 # Substrate dependencies
 sc-cli = { version = "0.9.0", git = "https://github.com/zCloak-Network/substrate", features = ["wasmtime"] }
 sp-core = { version = "3.0.0", git = "https://github.com/zCloak-Network/substrate" }

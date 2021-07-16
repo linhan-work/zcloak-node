@@ -2,9 +2,9 @@ use sp_std::ops::Range;
 use sp_std::convert::TryInto;
 use rand::prelude::*;
 use rand::distributions::{ Distribution, Uniform };
-use rand::thread_rng;
 use crate::utils::{ uninit_vector };
 use sp_std::vec::Vec;
+// use wasm_bindgen_test::console_log;
 // CONSTANTS
 // ================================================================================================
 
@@ -236,11 +236,19 @@ pub fn get_root_of_unity(order: usize) -> u128 {
 
 /// Generates a vector with values [1, b, b^2, b^3, b^4, ..., b^length].
 pub fn get_power_series(b: u128, length: usize) -> Vec<u128> {
+    // console_log!("b is{:?},length is {:?}",b,length);
+
     let mut result = uninit_vector(length);
+    // console_log!("get_power_series result is {:?},len is {:?}",result,result.len());
+
+
     result[0] = ONE;
     for i in 1..result.len() {
         result[i] = mul(result[i - 1], b);
+
     }    
+     log::debug!(target:"starks-verifier","aftfer for result is {:?}",result);
+
     return result;
 }
 
@@ -250,14 +258,14 @@ pub fn get_power_series(b: u128, length: usize) -> Vec<u128> {
 /// Generates a random field element.
 pub fn rand() -> u128 {
     let range = Uniform::from(RANGE);
-    let mut g = thread_rng();
+    let mut g = rand::thread_rng();
     return g.sample(range);
 }
 
 /// Generates a vector of random field elements.
 pub fn rand_vector(length: usize) -> Vec<u128> {
     let range = Uniform::from(RANGE);
-    let g = thread_rng();
+    let g = rand::thread_rng();
     return g.sample_iter(range).take(length).collect();
 }
 

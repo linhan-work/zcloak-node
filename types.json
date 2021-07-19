@@ -8,6 +8,13 @@
       "VerifiedFalse"
     ]
   },
+  "UserTaskStatus": {
+    "_enum": [
+      "JustCreated",
+      "VerifiedTrue",
+      "VerifiedFalse"
+    ]
+  },
   "Status": {
     "verifiers": "Vec<u32>",
     "ayes": "u32",
@@ -27,5 +34,12 @@
     "program_hash": "[u8; 32]",
     "is_task_finish": "Option<TaskStatus>",
     "expiration": "Option<BlockNumber>"
+  },
+  "UserTaskInfo": {
+    "proof": "Vec<u8>",
+    "inputs": "Vec<u128>",
+    "outputs": "Vec<u128>",
+    "program_hash": "[u8; 32]",
+    "is_task_finish": "Option<UserTaskStatus>"
   }
 }

@@ -374,6 +374,21 @@ impl pallet_starks_verifier::Config for Runtime {
 	type UnsignedPriority = VerifierPriority;
 }
 
+impl pallet_starks_verifier_user::Config for Runtime {
+	type AuthorityId = VerifierId;
+	type Event = Event;
+	type StorePeriod = StorePeriod;
+	type UnsignedPriority = VerifierPriority;
+}
+
+// impl pallet_crowdfunding::Config for Runtime {
+// 	type AuthorityId = VerifierId;
+// 	type Event = Event;
+// 	type StorePeriod = StorePeriod;
+// 	type UnsignedPriority = VerifierPriority;
+// 	type Balance = Balance;
+// 	type Check = StarksVerifier;
+// }
 
 // Create the runtime by composing the FRAME pallets that were previously configured.
 construct_runtime!(
@@ -393,6 +408,9 @@ construct_runtime!(
 		TransactionPayment: pallet_transaction_payment::{Pallet, Storage},
 		Sudo: pallet_sudo::{Pallet, Call, Config<T>, Storage, Event<T>},
 		StarksVerifier: pallet_starks_verifier::{Pallet, Call, Storage, Event<T>, ValidateUnsigned},
+		StarksVerifierUser: pallet_starks_verifier_user::{Pallet, Call, Storage, Event<T>},
+		// StarksCrowdfundng: pallet_crowdfunding::{Pallet, Call, Storage, Event<T>},
+
 	}
 );
 

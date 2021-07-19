@@ -1,6 +1,9 @@
 use rand::prelude::*;
 use rand::distributions::Uniform;
-use rand::{Rng, SeedableRng};
+use rand::{Rng};
+// use rand_chacha::rand_core::SeedableRng;
+// use rand_chacha::rand_core;
+// use crate::stark::trace::trace_state::fmt::string::lossy::char::methods::unicode::N;
 
 use super::{ ProofOptions, MAX_CONSTRAINT_DEGREE };
 use sp_std::vec::Vec;
@@ -27,10 +30,10 @@ pub fn get_incremental_trace_degree(trace_length: usize) -> usize {
 }
 
 pub fn compute_query_positions(seed: &[u8; 32], domain_size: usize, options: &ProofOptions) -> Vec<usize> {
-    let range = Uniform::from(0..domain_size);
-    log::debug!(target:"starks-verifier","seeeeed is {:?}",seed);
+    let domain_size2 = domain_size as i32;
+    let range = Uniform::from(0..domain_size2);
+    // console_log!("seeed is {:?},domainsize is {:?}",seed,domain_size);
 
-    // console_log!("seeeeed is {:?}",seed);
     let mut index_iter = StdRng::from_seed(*seed).sample_iter(range);
     let num_queries = options.num_queries();
 
@@ -38,7 +41,7 @@ pub fn compute_query_positions(seed: &[u8; 32], domain_size: usize, options: &Pr
     log::debug!(target:"starks-verifier","range is {:?},index_iter is {:?},num_queries is {:?}.result is {:?}",range,index_iter,num_queries,result);
 
     for _ in 0..1000 {
-        let value = index_iter.next().unwrap();
+        let value = index_iter.next().unwrap() as usize;
         // console_log!("value is {:?}",value);
 
         if value % options.extension_factor() == 0 { continue; }
@@ -49,7 +52,6 @@ pub fn compute_query_positions(seed: &[u8; 32], domain_size: usize, options: &Pr
         if result.len() >= num_queries { break; }
     }
     // console_log!("result after for1000 is {:?},len is {:?}",result,result.len());
-    log::debug!(target:"starks-verifier","result after for1000 is {:?},len is {:?}",result,result.len());
     if result.len() < num_queries {
         panic!("needed to generate {} query positions, but generated only {}", num_queries, result.len());
     }

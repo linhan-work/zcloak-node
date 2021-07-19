@@ -14,8 +14,6 @@ use sp_runtime_interface::{runtime_interface,
 };
 use codec::{Encode, Decode};
 
-#[cfg(feature = "std")]
-use starksVM::StarkProof;
 use sp_runtime::RuntimeDebug;
 
 
@@ -44,7 +42,7 @@ pub trait Starks {
 			VerifyErr::NoHex
         })?;
 		log::debug!(target:"starks-verifier","proof is{:?} ", proof);
-		let stark_proof = bincode::deserialize::<StarkProof>(&proof).map_err(|_| VerifyErr::SerializeErr)?;
+		let stark_proof = bincode::deserialize::<starksVM::StarkProof>(&proof).map_err(|_| VerifyErr::SerializeErr)?;
 
 		let res = starksVM::verify(program_hash, public_inputs, outputs, &stark_proof);
 

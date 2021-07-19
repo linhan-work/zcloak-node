@@ -22,8 +22,7 @@ log = { version = "0.4.14", default-features = false }
 # local dependencies
 pallet-starks-verifier = { path = '../pallets/starks-verifier', default-features = false }
 pallet-validator-set = { path = '../pallets/validator-set', default-features = false }
-pallet-starks-verifier-user = { path = '../pallets/starks-verifier-user', default-features = false }
-# pallet-crowdfunding = { path = '../pallets/crowdfunding', default-features = false }
+
 # runtime 
 frame-benchmarking = { default-features = false, git = "https://github.com/zCloak-Network/substrate", optional = true }
 frame-executive = { default-features = false, git = "https://github.com/zCloak-Network/substrate" }
@@ -83,9 +82,7 @@ std = [
     'pallet-session/std',
     'pallet-sudo/std',
     'pallet-starks-verifier/std',
-    'pallet-starks-verifier-user/std',
     'pallet-validator-set/std',
-    # "pallet-crowdfunding/std",
     'pallet-timestamp/std',
     'pallet-transaction-payment/std',
     'pallet-transaction-payment-rpc-runtime-api/std',

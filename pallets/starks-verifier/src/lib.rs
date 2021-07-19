@@ -49,20 +49,12 @@ use frame_system::offchain::{
     SubmitTransaction,
 };
 pub use pallet::*;
-use crate::alloc::string::ToString;
-
-extern crate alloc;
-use alloc::string::String;
 
 #[cfg(all(feature = "std", test))]
 mod mock;
 
 #[cfg(all(feature = "std", test))]
 mod tests;
-
-pub trait Check<AccountId> {
-    fn checkkyc(who: AccountId, kycclass:Class, ioc_program_hash: Vec<u8>) -> Result<bool, CheckError>;
-}
 
 /// The key type of which to sign the starks verification transactions
 pub const KEY_TYPE: KeyTypeId = KeyTypeId(*b"zkst");
@@ -119,17 +111,6 @@ pub enum TaskStatus {
     Verifying,
     VerifiedTrue,
     VerifiedFalse,
-}
-
-#[derive(Clone, Copy, Encode, Decode, PartialEq, Eq)]
-pub enum CheckError{
-    //Not on chain
-    ICOVerifyFailedNotOnChain,
-    //KYC onchain, but not allowed to do crowdfunding
-    ICOVerifyFailedNotAllowed,  
-    //KYC onchain, but the corresponding program is not ICOprogram
-    ICOVerifyFailedTaskProgramWrong,  
-
 }
 
 impl sp_std::fmt::Debug for TaskStatus {
@@ -566,7 +547,6 @@ impl<T: Config> Pallet<T> {
         // To fetch proof and verify it.
         let proof = Self::fetch_proof(&proof_id).map_err(|_| OffchainErr::FailedToFetchProof)?;
         let is_success = Self::stark_verify(&program_hash, inputs,outputs, &proof);
-        log::debug!(target:"starks-verifier","err is {:?}",is_success);
         let res = if let Ok(r) = is_success { r } else {false};
         let validators_len = Keys::<T>::decode_len().unwrap_or_default() as u32;
         //Create and initialize a verification receipt
@@ -612,6 +592,7 @@ impl<T: Config> Pallet<T> {
 
         // Let's check the status code before we proceed to reading the response.
         if response.code != 200 {
+            log::warn!(target: "starks-verifier", "Unexpected status code: {}", response.code);
             return Err(http::Error::Unknown);
         }
 
@@ -619,8 +600,6 @@ impl<T: Config> Pallet<T> {
         // Note that the return object allows you to read the body in chunks as well
         // with a way to control the deadline.
         let body = response.body().collect::<Vec<u8>>();
-        // log::warn!(target: "starks-verifier", " body is : {:?}", body.clone());
-
         // log::debug!(target: "starks-verifier", "BODY is {:?}", &body);
         Ok(body)
     }
@@ -631,7 +610,6 @@ impl<T: Config> Pallet<T> {
         inputs: Vec<u128>,
         outputs: Vec<u128>,
         proof: &[u8]) -> OffchainResult<T, bool> {
-            log::debug!(target:"starks-verifier","program is {:?},inputs is {:?}, outputs is {:?}",program_hash.clone(),inputs.clone(),outputs.clone());
         sp_starks::starks::verify(program_hash, &inputs, &outputs, proof)
             .map_err(|_| OffchainErr::VerificationFailed)
     }
@@ -681,32 +659,6 @@ impl<T: Config> Pallet<T> {
     #[allow(dead_code)]
     fn set_keys(keys: &Vec<T::AuthorityId>) {
         Keys::<T>::put(&keys)
-    }
-
-}
-
-impl<T: Config> Check<T::AccountId> for Pallet<T> {
-    fn checkkyc(who: T::AccountId, kycclass:Class, ioc_program_hash: Vec<u8>) -> Result<bool, CheckError>{
-        log::debug!(target:"buyztoken","hi im in checkkyc");
-        let kyc_is_exist = TaskParams::<T>::try_get(&who, &kycclass).is_ok();
-        if kyc_is_exist {
-            let TaskInfo {outputs, program_hash, ..} = Self::task_params(&who, &kycclass);
-            let program_hash_res = core::str::from_utf8(&program_hash).unwrap().to_string();
-            let ioc_program_hash_res = String::from_utf8(ioc_program_hash).expect("Found invalid UTF-8");
-            log::debug!(target:"buyztoken","program_hash_res1 is {:?},program_hash_res2 is {:?}",program_hash_res,ioc_program_hash_res);
-            if program_hash_res.eq(&ioc_program_hash_res) && outputs == vec![1] {
-                return Ok(true);
-            }
-            else {
-                if  program_hash_res.eq(&ioc_program_hash_res){
-                    return Err(CheckError::ICOVerifyFailedNotAllowed);
-                }else{
-                    return Err(CheckError::ICOVerifyFailedTaskProgramWrong);
-                }
-            }
-        }else {
-            return Err(CheckError::ICOVerifyFailedNotOnChain);
-        }
     }
 }
 

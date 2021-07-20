@@ -106,8 +106,8 @@ pub const VERSION: RuntimeVersion = RuntimeVersion {
 	//   `spec_version`, and `authoring_version` are the same between Wasm and native.
 	// This value is set to 100 to notify Polkadot-JS App (https://polkadot.js.org/apps) to use
 	//   the compatible custom types.
-	spec_version: 100,
-	impl_version: 1,
+	spec_version: 101,
+	impl_version: 2,
 	apis: RUNTIME_API_VERSIONS,
 	transaction_version: 1,
 };
@@ -374,6 +374,21 @@ impl pallet_starks_verifier::Config for Runtime {
 	type UnsignedPriority = VerifierPriority;
 }
 
+impl pallet_starks_verifier_user::Config for Runtime {
+	type AuthorityId = VerifierId;
+	type Event = Event;
+	type StorePeriod = StorePeriod;
+	type UnsignedPriority = VerifierPriority;
+}
+
+// impl pallet_crowdfunding::Config for Runtime {
+// 	type AuthorityId = VerifierId;
+// 	type Event = Event;
+// 	type StorePeriod = StorePeriod;
+// 	type UnsignedPriority = VerifierPriority;
+// 	type Balance = Balance;
+// 	type Check = StarksVerifier;
+// }
 
 // Create the runtime by composing the FRAME pallets that were previously configured.
 construct_runtime!(
@@ -393,6 +408,9 @@ construct_runtime!(
 		TransactionPayment: pallet_transaction_payment::{Pallet, Storage},
 		Sudo: pallet_sudo::{Pallet, Call, Config<T>, Storage, Event<T>},
 		StarksVerifier: pallet_starks_verifier::{Pallet, Call, Storage, Event<T>, ValidateUnsigned},
+		StarksVerifierUser: pallet_starks_verifier_user::{Pallet, Call, Storage, Event<T>},
+		// StarksCrowdfundng: pallet_crowdfunding::{Pallet, Call, Storage, Event<T>},
+
 	}
 );
 

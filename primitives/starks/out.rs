@@ -7,7 +7,7 @@ use std::prelude::v1::*;
 extern crate std;
 use sp_runtime_interface::{runtime_interface, Pointer};
 #[cfg(feature = "std")]
-use distaff::StarkProof;
+use starksVM::StarkProof;
 pub mod starks {
     use super::*;
     #[doc(hidden)]
@@ -89,7 +89,7 @@ pub mod starks {
             proof: &[u8],
         ) -> Result<bool, ()> {
             let stark_proof = bincode::deserialize::<StarkProof>(&proof).unwrap();
-            distaff::verify(program_hash, public_inputs, outputs, &stark_proof).map_err(|_e| ())
+            starksVM::verify(program_hash, public_inputs, outputs, &stark_proof).map_err(|_e| ())
         }
     }
     trait Starks {

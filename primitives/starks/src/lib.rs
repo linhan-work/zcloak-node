@@ -1,5 +1,5 @@
 
-// #![warn(missing_docs)]
+#![warn(missing_docs)]
 
 #![cfg_attr(not(feature = "std"), no_std)]
 #![cfg_attr(not(feature = "std"), feature(alloc_error_handler))]
@@ -13,8 +13,7 @@ use sp_runtime_interface::{runtime_interface,
 	pass_by::PassByCodec
 };
 use codec::{Encode, Decode};
-#[cfg(feature = "std")]
-use distaff::StarkProof;
+
 use sp_runtime::RuntimeDebug;
 
 
@@ -38,11 +37,15 @@ pub trait Starks {
 		let body_str = sp_std::str::from_utf8(&proof).map_err(|_| {
 			VerifyErr::NoUTF8
 		})?;
+
         let proof = hex::decode(&body_str[0..body_str.len()-1]).map_err(|_| {
 			VerifyErr::NoHex
         })?;
-		let stark_proof = bincode::deserialize::<StarkProof>(&proof).map_err(|_| VerifyErr::SerializeErr)?;
-		let res = distaff::verify(program_hash, public_inputs, outputs, &stark_proof);
+		let stark_proof = bincode::deserialize::<starksVM::StarkProof>(&proof).map_err(|_| VerifyErr::SerializeErr)?;
+
+		let res = starksVM::verify(program_hash, public_inputs, outputs, &stark_proof);
+
 		res.map_err(|_| VerifyErr::DistaffVerifyErr)
+
 	}
 }

@@ -3947,6 +3947,20 @@ dependencies = [
 ]
 
 [[package]]
+name = "pallet-assets"
+version = "3.0.0"
+source = "git+https://github.com/zCloak-Network/substrate#bc668ef1aa1919b589f41772eb8484f2273e7424"
+dependencies = [
+ "frame-benchmarking",
+ "frame-support",
+ "frame-system",
+ "parity-scale-codec",
+ "serde",
+ "sp-runtime",
+ "sp-std 3.0.0 (git+https://github.com/zCloak-Network/substrate)",
+]
+
+[[package]]
 name = "pallet-aura"
 version = "3.0.0"
 source = "git+https://github.com/zCloak-Network/substrate#bc668ef1aa1919b589f41772eb8484f2273e7424"
@@ -3990,6 +4004,25 @@ dependencies = [
  "parity-scale-codec",
  "serde",
  "sp-runtime",
+ "sp-std 3.0.0 (git+https://github.com/zCloak-Network/substrate)",
+]
+
+[[package]]
+name = "pallet-crowdfunding"
+version = "0.1.0"
+dependencies = [
+ "frame-support",
+ "frame-system",
+ "log",
+ "pallet-assets",
+ "pallet-balances",
+ "pallet-session",
+ "pallet-starks-verifier",
+ "parity-scale-codec",
+ "serde",
+ "sp-application-crypto",
+ "sp-runtime",
+ "sp-staking",
  "sp-std 3.0.0 (git+https://github.com/zCloak-Network/substrate)",
 ]
 
@@ -9046,8 +9079,10 @@ dependencies = [
  "frame-system-rpc-runtime-api",
  "hex-literal",
  "log",
+ "pallet-assets",
  "pallet-aura",
  "pallet-balances",
+ "pallet-crowdfunding",
  "pallet-grandpa",
  "pallet-randomness-collective-flip",
  "pallet-session",

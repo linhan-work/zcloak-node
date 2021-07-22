@@ -5,8 +5,14 @@
 // Make the WASM binary available.
 #[cfg(feature = "std")]
 include!(concat!(env!("OUT_DIR"), "/wasm_binary.rs"));
+pub mod constants;
 
 use codec::Encode;
+use frame_system::{
+	EnsureOneOf, EnsureRoot,
+};
+// use pallet_xcm::{EnsureXcm, IsMajorityOfBody, XcmPassthrough};
+
 use sp_std::prelude::*;
 use sp_core::{crypto::KeyTypeId, OpaqueMetadata};
 use sp_runtime::{SaturatedConversion,
@@ -69,6 +75,8 @@ pub type Hash = sp_core::H256;
 
 /// Digest item type.
 pub type DigestItem = generic::DigestItem<Hash>;
+
+pub type AssetId = u32;
 
 /// Opaque types. These are used by the CLI to instantiate machinery that don't need to know
 /// the specifics of the runtime. They can then be made to be agnostic over specific formats
@@ -364,7 +372,15 @@ impl<C> frame_system::offchain::SendTransactionTypes<C> for Runtime where
 
 parameter_types! {
 	pub const StorePeriod: BlockNumber = 1024;
+	pub const AssetDeposit: Balance = 100 * constants::currency::DOLLARS; // 100 DOLLARS deposit to create asset
+
 	pub const VerifierPriority: TransactionPriority = TransactionPriority::max_value();
+	pub const MetadataDepositBase: Balance = 10 * constants::currency::DOLLARS;
+	pub const MetadataDepositPerByte: Balance = 1 * constants::currency::DOLLARS;
+	pub const ApprovalDeposit: Balance = constants::currency::EXISTENTIAL_DEPOSIT;
+	pub const StringLimit: u32 = 50;
+
+
 }
 
 impl pallet_starks_verifier::Config for Runtime {
@@ -380,15 +396,40 @@ impl pallet_starks_verifier_user::Config for Runtime {
 	type StorePeriod = StorePeriod;
 	type UnsignedPriority = VerifierPriority;
 }
+use frame_support::traits::fungibles::Inspect;
+impl pallet_crowdfunding::Config for Runtime {
+	type AuthorityId = VerifierId;
+	type Event = Event;
+	type StorePeriod = StorePeriod;
+	type UnsignedPriority = VerifierPriority;
+	type Balance = Balance;
+	type Check = StarksVerifier;
+	type AssetId = u32;
+	type Inspect = Assets;
+}
 
-// impl pallet_crowdfunding::Config for Runtime {
-// 	type AuthorityId = VerifierId;
-// 	type Event = Event;
-// 	type StorePeriod = StorePeriod;
-// 	type UnsignedPriority = VerifierPriority;
-// 	type Balance = Balance;
-// 	type Check = StarksVerifier;
-// }
+// /// We allow root and the Relay Chain council to execute privileged asset operations.
+// pub type AssetsForceOrigin = EnsureOneOf<
+// 	AccountId,
+// 	EnsureRoot<AccountId>,
+// 	EnsureXcm<IsMajorityOfBody<DotLocation, ExecutiveBody>>,
+// >;
+
+impl pallet_assets::Config for Runtime {
+	type Event = Event;
+	type Balance = Balance;
+	type AssetId = u32;
+	type Currency = Balances;
+	type ForceOrigin = EnsureRoot<AccountId>;
+	type AssetDeposit = AssetDeposit;
+	type MetadataDepositBase = MetadataDepositBase;
+	type MetadataDepositPerByte = MetadataDepositPerByte;
+	type ApprovalDeposit = ApprovalDeposit;
+	type StringLimit = StringLimit;
+	type Freezer = ();
+	type Extra = ();
+	type WeightInfo = ();
+}
 
 // Create the runtime by composing the FRAME pallets that were previously configured.
 construct_runtime!(
@@ -409,7 +450,8 @@ construct_runtime!(
 		Sudo: pallet_sudo::{Pallet, Call, Config<T>, Storage, Event<T>},
 		StarksVerifier: pallet_starks_verifier::{Pallet, Call, Storage, Event<T>, ValidateUnsigned},
 		StarksVerifierUser: pallet_starks_verifier_user::{Pallet, Call, Storage, Event<T>},
-		// StarksCrowdfundng: pallet_crowdfunding::{Pallet, Call, Storage, Event<T>},
+		StarksCrowdfundng: pallet_crowdfunding::{Pallet, Call, Storage, Event<T>},
+		Assets: pallet_assets::{Pallet, Call, Storage, Event<T>},
 
 	}
 );
@@ -609,6 +651,7 @@ impl_runtime_apis! {
 			add_benchmark!(params, batches, pallet_balances, Balances);
 			add_benchmark!(params, batches, pallet_timestamp, Timestamp);
 			add_benchmark!(params, batches, pallet_template, TemplateModule);
+			add_benchmark!(params, batches, pallet_assets, Assets);
 
 			if batches.is_empty() { return Err("Benchmark not found for this pallet.".into()) }
 			Ok(batches)

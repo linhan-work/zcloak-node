@@ -9,6 +9,7 @@
 use sp_std::prelude::*;
 use frame_support::pallet;
 pub use pallet::*;
+
 #[macro_use]
 extern crate alloc;
 use alloc::string::String;
@@ -55,7 +56,7 @@ pub struct CrowfundingStatus<AccountId, AssetId, BlockNumber, Balance> {
     // Amount of assets to be dispense 
     pub remain_funding: Balance,
     // Whether the crowdfundation is still going or not 
-    pub is_funding_proceed: bool,
+    pub is_funding_proceed: Option<bool>,
     
 }
 
@@ -74,6 +75,7 @@ pub enum CheckError{
 pub mod pallet {
     use frame_support::{dispatch::DispatchResult, pallet_prelude::*, traits::fungibles::Inspect};
 	use frame_system::{pallet, pallet_prelude::*};
+use pallet_balances::AccountData;
 	use super::*;
 
     #[pallet::pallet]
@@ -82,7 +84,8 @@ pub mod pallet {
 
     #[pallet::config]
     #[pallet::disable_frame_system_supertrait_check]
-    pub trait Config: frame_system::Config + SendTransactionTypes<Call<Self>> {
+    pub trait Config: frame_system::Config + pallet_assets::Config
+    {
         /// The identifier type for an offchain worker.
         type AuthorityId: Member + Parameter + RuntimeAppPublic + Default + Ord + MaybeSerializeDeserialize;
         /// The overarching event type.
@@ -101,13 +104,16 @@ pub mod pallet {
         #[pallet::constant]
         type UnsignedPriority: Get<TransactionPriority>;
     	
-        type Balance: AtLeast32BitUnsigned + FullCodec + Copy + MaybeSerializeDeserialize + Debug + Default;
-
+        // type Balance: AtLeast32BitUnsigned + FullCodec + Copy + MaybeSerializeDeserialize  ;
+ 
         type Check: Check<Self::AccountId>;
 
-        type AssetId: Member + Parameter + Default + Copy + HasCompact; 
-
         type Inspect: frame_support::traits::fungibles::Inspect<Self::AccountId>;
+
+        type CrowdFundingLimit: Get<Self::BlockNumber>;
+
+        type CrowdFundingMetadataDepositBase: Get<<Self as pallet_assets::Config>::Balance>;
+
     }
 
 
@@ -146,7 +152,8 @@ pub mod pallet {
         // KYC onchain, but the corresponding program is not ICOprogram
         ICOVerifyFailedTaskProgramWrong,  
         OtherErr,
-
+        // A CrowdFundation just created,with AssetId,Admin,FundingAccount and total_amount of this crowdfundation
+        CrowdFundationCreated(T::AssetId, T::AccountId, T::AccountId, T::Balance),
 		//Founding successfly ,with xdots deducted and going to transfer Ztokens to this account.
         FoundingSuccess(T::AccountId, T::Balance, T::Balance),
     }
@@ -160,6 +167,14 @@ pub mod pallet {
         ICOVerifyFailedNotAllowed,  
         // KYC onchain, but the corresponding program is not ICOprogram
         ICOVerifyFailedTaskProgramWrong,  
+        // In creating crowdfundation, admin doesn't have enough asset to dispense
+        AdminNotHaveEnoughAsset,
+        // The crowdFundation period must less than `CrowdFundingLimit`
+        CrowdFundingTimeTooLong,
+        // A Crowdfundation is created shouldn't create another one.
+        CrowdFundingAlreadyGoingOn,
+        // CrowdFunding shouldn't be zero
+        CrowdFundingAmountIsZero,
         OtherErr,
     }
 
@@ -176,9 +191,41 @@ pub mod pallet {
             funding_period: T::BlockNumber,
             total_asset: T::Balance
         ) -> DispatchResult{
-            let who = ensure_signed(origin)?;
-            // let admin_own = T::Inspect::balance(asset_id,&admin);
-            // log::debug!(target:"starks-verifier","own is {:?}",admin_own);
+            let _who = ensure_signed(origin)?;
+            let CrowfundingStatus{is_funding_proceed, ..} = Self::crowdfunding_process(asset_id);
+            log::debug!(target:"starks-verifier","is funding_proceed is {:?}",is_funding_proceed);
+            ensure!(
+                is_funding_proceed == None,
+                Error::<T>::CrowdFundingAlreadyGoingOn
+            );
+            let admin_own = pallet_assets::Pallet::<T>::balance(asset_id, &admin);
+            // let decimal = pallet_assets::Metadata::<T>::get(asset_id);
+            
+            log::debug!(target:"starks-verifier","owns is {:?},total is {:?}, div is {:?},total div is {:?}",admin_own,total_asset,T::CrowdFundingMetadataDepositBase::get(),total_asset / T::CrowdFundingMetadataDepositBase::get());
+            
+            ensure!(
+				total_asset != T::Balance::default() ,
+                Error::<T>::CrowdFundingAmountIsZero
+			);
+
+            ensure!(
+				total_asset / T::CrowdFundingMetadataDepositBase::get() <= admin_own,
+                Error::<T>::AdminNotHaveEnoughAsset
+			);
+            let funding_asset = total_asset / T::CrowdFundingMetadataDepositBase::get();
+            ensure!(
+                funding_period < T::CrowdFundingLimit::get(),
+                Error::<T>::CrowdFundingTimeTooLong
+            );
+            let now = <frame_system::Pallet<T>>::block_number();
+            let funding_begin = now;
+            let funding_expiration = now + funding_period;
+
+
+            <CrowdfundingProcess<T>>::insert(&asset_id,CrowfundingStatus{asset_id: Some(asset_id), admin: Some(admin.clone()), funding_account: Some(funding_account.clone()), funding_begin: funding_begin, funding_expiration: funding_expiration, total_funding: funding_asset, remain_funding: total_asset, is_funding_proceed: Some(true)});
+            
+            Self::deposit_event(Event::CrowdFundationCreated(asset_id, admin, funding_account,total_asset));
+            
             Ok(())
         }
 

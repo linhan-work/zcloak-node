@@ -379,6 +379,9 @@ parameter_types! {
 	pub const MetadataDepositPerByte: Balance = 1 * constants::currency::DOLLARS;
 	pub const ApprovalDeposit: Balance = constants::currency::EXISTENTIAL_DEPOSIT;
 	pub const StringLimit: u32 = 50;
+	pub const CrowdFundingLimit: BlockNumber = 4096;
+	pub const CrowdFundingMetadataDepositBase: Balance = 100_000_000_000;
+
 
 
 }
@@ -402,10 +405,10 @@ impl pallet_crowdfunding::Config for Runtime {
 	type Event = Event;
 	type StorePeriod = StorePeriod;
 	type UnsignedPriority = VerifierPriority;
-	type Balance = Balance;
 	type Check = StarksVerifier;
-	type AssetId = u32;
 	type Inspect = Assets;
+	type CrowdFundingLimit = CrowdFundingLimit;
+	type CrowdFundingMetadataDepositBase = CrowdFundingMetadataDepositBase;
 }
 
 // /// We allow root and the Relay Chain council to execute privileged asset operations.

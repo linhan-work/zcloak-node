@@ -7,42 +7,31 @@
 #![cfg_attr(not(feature = "std"), no_std)]
 
 use sp_std::prelude::*;
-use frame_support::pallet;
 pub use pallet::*;
 
-#[macro_use]
 extern crate alloc;
-use alloc::string::String;
+
+use frame_support::traits::{Currency,ExistenceRequirement::{AllowDeath}};
 // use frame_system::RawOrigin as SystemOrigin;
 use frame_support::traits::tokens::fungibles::Transfer;
-use sp_runtime::traits::Convert;
 use sp_application_crypto::RuntimeAppPublic;
-use sp_runtime::{
-	traits::{AtLeast32BitUnsigned, MaybeSerializeDeserialize},
-	DispatchError, DispatchResult,
-};
+
 use pallet_starks_verifier::{Check};
 
-use codec::{Codec, Encode, Decode, FullCodec, HasCompact};
+use codec::{ Encode, Decode};
 use sp_std::{
 	cmp::{Eq, PartialEq},
-	convert::{TryFrom, TryInto},
-	fmt::Debug,
-	result,
+	convert::{TryInto},
 };
-use frame_system::offchain::{
-    SendTransactionTypes,
-    SubmitTransaction,
-};
-use frame_support::traits::tokens::{ExistenceRequirement, WithdrawReasons, BalanceStatus};
+
 use sp_runtime::RuntimeDebug;
 type Class = Vec<u8>;
-type AssetId = u32;
+
 
 #[derive(Encode, Decode, Default, PartialEq, Eq, RuntimeDebug)]
-pub struct CrowfundingStatus<AccountId, AssetId, BlockNumber, Balance> {
+pub struct CrowfundingStatus<AccountId, BlockNumber, Balance> {
     // AssetId to get crowdfundation
-    pub asset_id: Option<AssetId>,
+    // pub asset_id: Option<AssetId>,
     // Admin's job is to dispense asset(e.g. Ztoken-1001)
     pub admin: Option<AccountId>,
     // Account to attain dots from customers.
@@ -57,6 +46,9 @@ pub struct CrowfundingStatus<AccountId, AssetId, BlockNumber, Balance> {
     pub remain_funding: Balance,
     // Whether the crowdfundation is still going or not 
     pub is_funding_proceed: Option<bool>,
+
+    // For primitive version ratio stand for 1dot :xZtokens; e.g. ratio = 4, 1dot can buy 4Ztokens.
+    pub ratio: Balance,
     
 }
 
@@ -71,11 +63,13 @@ pub enum CheckError{
 
 }
 
+
+
 #[frame_support::pallet]
 pub mod pallet {
-    use frame_support::{dispatch::DispatchResult, pallet_prelude::*, traits::fungibles::Inspect};
-	use frame_system::{pallet, pallet_prelude::*};
-use pallet_balances::AccountData;
+    use frame_support::{dispatch::DispatchResult, pallet_prelude::*, traits::fungible::Inspect};
+	use frame_system::{ pallet_prelude::*};
+use sp_runtime::{SaturatedConversion};
 	use super::*;
 
     #[pallet::pallet]
@@ -84,7 +78,9 @@ use pallet_balances::AccountData;
 
     #[pallet::config]
     #[pallet::disable_frame_system_supertrait_check]
-    pub trait Config: frame_system::Config + pallet_assets::Config
+    pub trait Config: pallet_assets::Config + frame_system::Config 
+
+
     {
         /// The identifier type for an offchain worker.
         type AuthorityId: Member + Parameter + RuntimeAppPublic + Default + Ord + MaybeSerializeDeserialize;
@@ -104,9 +100,9 @@ use pallet_balances::AccountData;
         #[pallet::constant]
         type UnsignedPriority: Get<TransactionPriority>;
     	
-        // type Balance: AtLeast32BitUnsigned + FullCodec + Copy + MaybeSerializeDeserialize  ;
- 
         type Check: Check<Self::AccountId>;
+
+        // type Currency: Currency<Self::AccountId>;
 
         type Inspect: frame_support::traits::fungibles::Inspect<Self::AccountId>;
 
@@ -114,17 +110,18 @@ use pallet_balances::AccountData;
 
         type CrowdFundingMetadataDepositBase: Get<<Self as pallet_assets::Config>::Balance>;
 
+        // type Transfer: frame_support::traits::tokens::fungibles::Transfer<Self::AccountId>;
+        type Transfer: frame_support::traits::tokens::fungibles::Transfer<<Self as frame_system::Config>::AccountId>;
     }
 
+    pub type BalanceOf<T> = <<T as pallet_assets::Config>::Currency as Currency<<T as frame_system::Config>::AccountId>>::Balance;
 
-
-    #[pallet::hooks]
-	impl<T: Config> Hooks<BlockNumberFor<T>> for Pallet<T> {}
 
     #[pallet::storage]
     #[pallet::getter(fn funding_account)]
-    pub type FundingAccount<T: Config> = StorageMap<
+    pub type FundingAccount<T: Config> = StorageDoubleMap<
         _, 
+        Twox64Concat, T::AssetId,
         Twox64Concat, T::AccountId,
         T::Balance,
         ValueQuery
@@ -135,8 +132,18 @@ use pallet_balances::AccountData;
     pub type CrowdfundingProcess<T: Config> = StorageMap<
         _, 
         Twox64Concat, T::AssetId,
-        CrowfundingStatus<T::AccountId, T::AssetId, T::BlockNumber, T::Balance>,
+        CrowfundingStatus<T::AccountId, T::BlockNumber, T::Balance>,
         ValueQuery
+    >;
+
+    #[pallet::storage]
+    #[pallet::getter(fn settled_crowdfundation)]
+    pub(super) type SettledCrowdfundation<T: Config> = StorageDoubleMap<
+        _,
+        Twox64Concat, T::BlockNumber,
+        Twox64Concat, (T::AccountId, T::AssetId),
+        Option<bool>,
+        ValueQuery,
     >;
 
     #[pallet::event]
@@ -156,6 +163,8 @@ use pallet_balances::AccountData;
         CrowdFundationCreated(T::AssetId, T::AccountId, T::AccountId, T::Balance),
 		//Founding successfly ,with xdots deducted and going to transfer Ztokens to this account.
         FoundingSuccess(T::AccountId, T::Balance, T::Balance),
+        // Changing Crowdfundation's proceeding status. May stop one or restart one.
+        SwitchCrowdfundationStatusTo(T::AssetId, bool),
     }
 
     #[pallet::error]
@@ -169,12 +178,28 @@ use pallet_balances::AccountData;
         ICOVerifyFailedTaskProgramWrong,  
         // In creating crowdfundation, admin doesn't have enough asset to dispense
         AdminNotHaveEnoughAsset,
+        // Admin Account doesn't have enough ztoken
+        AdminNotHavaEnoughZtoken,
         // The crowdFundation period must less than `CrowdFundingLimit`
         CrowdFundingTimeTooLong,
         // A Crowdfundation is created shouldn't create another one.
         CrowdFundingAlreadyGoingOn,
         // CrowdFunding shouldn't be zero
         CrowdFundingAmountIsZero,
+        // No corresponding Crowdfudation is on-chain
+        CrowdFundationNotOnchain,
+        // The Crowdfudation is stoped
+        CrowdFundingStopped,
+        // Already exceed DDL.
+        CrowdfundingIsOver,
+        // The remainingZtokens is not enought for this transaction.
+        NotEnoughZtokensAvailable,
+        // The buyer doesn't have enough Dot.
+        NotHaveEnoughDotToBuy,
+        // Not Crowdfundation's admin have no right to do so
+        HaveNoRightToModify,
+        // Don't have to change ,already in that status.
+        AlreadyInThatStatus,
         OtherErr,
     }
 
@@ -189,30 +214,28 @@ use pallet_balances::AccountData;
             admin: T::AccountId,
             funding_account: T::AccountId,
             funding_period: T::BlockNumber,
-            total_asset: T::Balance
+            total_asset: T::Balance,
+            ratio: T::Balance,
         ) -> DispatchResult{
             let _who = ensure_signed(origin)?;
+
             let CrowfundingStatus{is_funding_proceed, ..} = Self::crowdfunding_process(asset_id);
-            log::debug!(target:"starks-verifier","is funding_proceed is {:?}",is_funding_proceed);
             ensure!(
                 is_funding_proceed == None,
                 Error::<T>::CrowdFundingAlreadyGoingOn
             );
             let admin_own = pallet_assets::Pallet::<T>::balance(asset_id, &admin);
             // let decimal = pallet_assets::Metadata::<T>::get(asset_id);
-            
-            log::debug!(target:"starks-verifier","owns is {:?},total is {:?}, div is {:?},total div is {:?}",admin_own,total_asset,T::CrowdFundingMetadataDepositBase::get(),total_asset / T::CrowdFundingMetadataDepositBase::get());
-            
             ensure!(
 				total_asset != T::Balance::default() ,
                 Error::<T>::CrowdFundingAmountIsZero
 			);
-
             ensure!(
 				total_asset / T::CrowdFundingMetadataDepositBase::get() <= admin_own,
                 Error::<T>::AdminNotHaveEnoughAsset
 			);
-            let funding_asset = total_asset / T::CrowdFundingMetadataDepositBase::get();
+            //Don't know the decimal part of this asset
+            //Ensure the crowdfundation period is limited by some timelimitation.
             ensure!(
                 funding_period < T::CrowdFundingLimit::get(),
                 Error::<T>::CrowdFundingTimeTooLong
@@ -220,10 +243,9 @@ use pallet_balances::AccountData;
             let now = <frame_system::Pallet<T>>::block_number();
             let funding_begin = now;
             let funding_expiration = now + funding_period;
-
-
-            <CrowdfundingProcess<T>>::insert(&asset_id,CrowfundingStatus{asset_id: Some(asset_id), admin: Some(admin.clone()), funding_account: Some(funding_account.clone()), funding_begin: funding_begin, funding_expiration: funding_expiration, total_funding: funding_asset, remain_funding: total_asset, is_funding_proceed: Some(true)});
-            
+            //Insert new CrowdfundingStatus on-chain.
+            <CrowdfundingProcess<T>>::insert(&asset_id,CrowfundingStatus{admin: Some(admin.clone()), funding_account: Some(funding_account.clone()), funding_begin: funding_begin, funding_expiration: funding_expiration, total_funding: total_asset, remain_funding: total_asset, is_funding_proceed: Some(true), ratio: ratio});
+            <SettledCrowdfundation<T>>::insert(&funding_expiration,&(admin.clone(), asset_id.clone()),Some(true) );
             Self::deposit_event(Event::CrowdFundationCreated(asset_id, admin, funding_account,total_asset));
             
             Ok(())
@@ -233,31 +255,57 @@ use pallet_balances::AccountData;
 
 
         #[pallet::weight(10000)]
-        pub fn BuyZtoken(
+        pub fn buy_ztoken(
             origin: OriginFor<T>,
-            ZtokenToBuy: T::Balance,
+            asset_id: T::AssetId,
+            ztoken_to_buy:  T::Balance,
         ) -> DispatchResult{
             let who = ensure_signed(origin)?;
-            let IOCProgramString=[208, 194, 130, 197, 164, 24, 192, 43, 169, 199, 5, 5, 30, 49, 190, 137, 168, 29, 175, 111, 254, 108, 138, 242, 161, 201, 76, 10, 238, 140, 97, 14];
-            let KYCclass:Class = [22].to_vec();
-
-            let check_result = T::Check::checkkyc(who.clone(), KYCclass.clone(),IOCProgramString); 
+            ensure!(CrowdfundingProcess::<T>::try_get(&asset_id).is_ok(), Error::<T>::CrowdFundationNotOnchain);
+            let CrowfundingStatus{admin, funding_account, funding_begin, funding_expiration, total_funding, remain_funding, is_funding_proceed, ratio} = Self::crowdfunding_process(asset_id);
+            ensure!(
+                funding_expiration > <frame_system::Pallet<T>>::block_number(),
+                Error::<T>::CrowdfundingIsOver
+            );
+            ensure!(
+                is_funding_proceed == Some(true),
+                Error::<T>::CrowdFundingStopped
+            );
+            ensure!(
+                remain_funding > ztoken_to_buy,
+                Error::<T>::NotEnoughZtokensAvailable
+            );
+            // The KYC-Verifying program, to check whether this KYCproof is stored and VerifiedPass on-chain
+            let ico_program_string=[208, 194, 130, 197, 164, 24, 192, 43, 169, 199, 5, 5, 30, 49, 190, 137, 168, 29, 175, 111, 254, 108, 138, 242, 161, 201, 76, 10, 238, 140, 97, 14];
+            let kyc_class:Class = [22].to_vec();
+            let check_result = T::Check::checkkyc(who.clone(), kyc_class.clone(),ico_program_string); 
+            // The origin has the access to buy ztokens due to SuccessProved-KYC 
             if check_result.is_ok() {
                 Self::deposit_event(Event::ICOVerifySuccuss(who.clone()));
-                <FundingAccount<T>>::insert(&who, &ZtokenToBuy);
-                // let asset_id= 2002 ;
-                
-                let dot_to_buy = ZtokenToBuy;
-                // let alice = ;
 
-                // let alice = AccountKeyring::Alice.to_account_id();
-                // let res1 = frame_support::traits::Currency::transfer(&who, dest, dot_to_buy, ExistenceRequirement::KeepAlive);
+                let dot_to_buy = (ztoken_to_buy / ratio) * T::CrowdFundingMetadataDepositBase::get();
+                let dot_in_option = TryInto::<u128>::try_into(dot_to_buy).ok();
+                // This `100` is for debug ,will modify next version
+                let dot_in_balance = BalanceOf::<T>::saturated_from(dot_in_option.unwrap());
+                let origin_own = T::Currency::free_balance(&who);
+                ensure!(
+                    dot_in_balance < origin_own,
+                    Error::<T>::NotHaveEnoughDotToBuy,
+                );
 
-                // let res2 = T::Transfer::transfer(asset_id,alice, &who,ZtokenToBuy,true);
-                
+                let result = <pallet_assets::Pallet<T> as frame_support::traits::fungibles::Inspect<T::AccountId>>::can_withdraw(asset_id, &admin.clone().unwrap(),ztoken_to_buy / T::CrowdFundingMetadataDepositBase::get() );
+                ensure!(
+                    result == frame_support::traits::tokens::WithdrawConsequence::Success,
+                    Error::<T>::AdminNotHavaEnoughZtoken
+                );
+                T::Currency::transfer(&who,&funding_account.clone().unwrap(),dot_in_balance, AllowDeath)?;
+                <pallet_assets::Pallet<T> as Transfer<T::AccountId>>::transfer(asset_id,&admin.clone().unwrap(), &who,ztoken_to_buy / T::CrowdFundingMetadataDepositBase::get(),true)?;
+                <FundingAccount<T>>::insert(&asset_id, &who,  &ztoken_to_buy);
+                <CrowdfundingProcess<T>>::insert(&asset_id, CrowfundingStatus{admin: admin.clone(), funding_account, funding_begin, funding_expiration, total_funding, remain_funding: remain_funding - ztoken_to_buy, is_funding_proceed: Some(true), ratio} );
+
             }else{
-                let CrowdfundingErr = check_result.err();
-                match CrowdfundingErr {
+                let crowdfunding_err = check_result.err();
+                match crowdfunding_err {
                     Some(pallet_starks_verifier::CheckError::ICOVerifyFailedNotAllowed) => {Self::deposit_event(Event::ICOVerifyFailedNotAllowed);return Err(Error::<T>::ICOVerifyFailedNotAllowed.into())},
                     Some(pallet_starks_verifier::CheckError::ICOVerifyFailedTaskProgramWrong) => {Self::deposit_event(Event::ICOVerifyFailedTaskProgramWrong);return Err( Error::<T>::ICOVerifyFailedTaskProgramWrong.into())},
                     Some(pallet_starks_verifier::CheckError::ICOVerifyFailedNotOnChain) => {Self::deposit_event(Event::ICOVerifyFailedNotOnChain);return Err(Error::<T>::ICOVerifyFailedNotOnChain.into())},
@@ -268,7 +316,39 @@ use pallet_balances::AccountData;
             Ok(())
         }
 
+        #[pallet::weight(10000)]
+        pub fn switch_crowdfunding_status(
+            origin: OriginFor<T>,
+            asset_id: T::AssetId,
+            switch_to: bool,
+        ) -> DispatchResult{
+            let who = ensure_signed(origin)?;
+            let CrowfundingStatus{admin, funding_account, funding_begin, funding_expiration, total_funding, remain_funding, is_funding_proceed, ratio} = Self::crowdfunding_process(asset_id);
+            ensure!(
+                funding_expiration > <frame_system::Pallet<T>>::block_number(),
+                Error::<T>::CrowdfundingIsOver
+            );
+            ensure!(
+                who == admin.clone().unwrap(),
+                Error::<T>::HaveNoRightToModify
+            );
+            ensure!(
+                switch_to != is_funding_proceed.unwrap(),
+                Error::<T>::AlreadyInThatStatus
+            );
+            <CrowdfundingProcess<T>>::insert(&asset_id, CrowfundingStatus{admin: admin.clone(), funding_account, funding_begin, funding_expiration, total_funding, remain_funding, is_funding_proceed: Some(switch_to), ratio} );
+            <SettledCrowdfundation<T>>::insert(&funding_expiration,&(admin.clone().unwrap(), asset_id.clone()),Some(switch_to) );
+            Self::deposit_event(Event::SwitchCrowdfundationStatusTo(asset_id, is_funding_proceed.unwrap()));         
+            Ok(())
 
-        
+        }
+    }
+
+    #[pallet::hooks]
+    impl<T: Config> Hooks<BlockNumberFor<T>> for Pallet<T> {
+        fn on_finalize(block: T::BlockNumber) {
+            SettledCrowdfundation::<T>::remove_prefix(block);
+        }
+
     }
 }

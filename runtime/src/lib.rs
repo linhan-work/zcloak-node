@@ -380,7 +380,7 @@ parameter_types! {
 	pub const ApprovalDeposit: Balance = constants::currency::EXISTENTIAL_DEPOSIT;
 	pub const StringLimit: u32 = 50;
 	pub const CrowdFundingLimit: BlockNumber = 4096;
-	pub const CrowdFundingMetadataDepositBase: Balance = 100_000_000_000;
+	pub const CrowdFundingMetadataDepositBase: Balance = 1_000_000_000_000;
 
 
 
@@ -400,6 +400,7 @@ impl pallet_starks_verifier_user::Config for Runtime {
 	type UnsignedPriority = VerifierPriority;
 }
 use frame_support::traits::fungibles::Inspect;
+
 impl pallet_crowdfunding::Config for Runtime {
 	type AuthorityId = VerifierId;
 	type Event = Event;
@@ -407,6 +408,7 @@ impl pallet_crowdfunding::Config for Runtime {
 	type UnsignedPriority = VerifierPriority;
 	type Check = StarksVerifier;
 	type Inspect = Assets;
+	type Transfer = Assets;
 	type CrowdFundingLimit = CrowdFundingLimit;
 	type CrowdFundingMetadataDepositBase = CrowdFundingMetadataDepositBase;
 }

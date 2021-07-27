@@ -692,8 +692,8 @@ impl<T: Config> Check<T::AccountId> for Pallet<T> {
         log::debug!(target:"starks-verifier","kyc_is_exist is {:?}.class is {:?}",kyc_is_exist,kycclass);
         if kyc_is_exist {
             let TaskInfo {outputs, program_hash, ..} = Self::task_params(&who, &kycclass);
-            let mut ioc_program_vec = ioc_program_hash.encode();
-            let mut program_hash_vec = program_hash.encode();
+            let ioc_program_vec = ioc_program_hash.encode();
+            let program_hash_vec = program_hash.encode();
             let compare_result = Self::compare_hash(ioc_program_vec, program_hash_vec);
             if compare_result == true  && outputs == vec![1] {
                 return Ok(true);
@@ -714,7 +714,7 @@ impl<T: Config> Check<T::AccountId> for Pallet<T> {
         let len1 = hash1.len();
         let len2 = hash2.len();
         if len1 == len2{
-            for i in 0..len1{
+            for _i in 0..len1{
                 if hash1.pop() == hash2.pop(){}
                 else{return false}
             }

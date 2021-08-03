@@ -23,6 +23,8 @@ log = { version = "0.4.14", default-features = false }
 pallet-starks-verifier = { path = '../pallets/starks-verifier', default-features = false }
 pallet-validator-set = { path = '../pallets/validator-set', default-features = false }
 pallet-starks-verifier-user = { path = '../pallets/starks-verifier-user', default-features = false }
+pallet-starks-verifier-seperate = { path = '../pallets/starks-verifier-seperate', default-features = false }
+
 pallet-crowdfunding = { path = '../pallets/crowdfunding', default-features = false }
 # runtime 
 frame-benchmarking = { default-features = false, git = "https://github.com/zCloak-Network/substrate", optional = true }
@@ -90,6 +92,7 @@ std = [
     'pallet-sudo/std',
     'pallet-starks-verifier/std',
     'pallet-starks-verifier-user/std',
+    'pallet-starks-verifier-seperate/std',
     'pallet-validator-set/std',
     "pallet-crowdfunding/std",
     'pallet-timestamp/std',

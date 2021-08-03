@@ -147,7 +147,7 @@ impl sp_std::fmt::Debug for TaskStatus {
 
 /// Info of a certain task
 #[derive(Encode, Decode, Default, PartialEq, Eq, RuntimeDebug)]
-pub struct TaskInfo <BlockNumber>{
+pub struct TaskInfo<BlockNumber> {
     // The id of the proof,combined with a url to fetch the complete proof later
     proof_id: Vec<u8>,
     // Inputs of the task 
@@ -247,7 +247,6 @@ pub mod pallet {
     pub(super) type TaskParams<T: Config> = StorageDoubleMap<
         _,
         Twox64Concat, T::AccountId,
-        Twox64Concat, Class,
         TaskInfo<T::BlockNumber>,
         ValueQuery,
     >;

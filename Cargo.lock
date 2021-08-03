@@ -4103,6 +4103,28 @@ dependencies = [
 ]
 
 [[package]]
+name = "pallet-starks-verifier-seperate"
+version = "0.1.0"
+dependencies = [
+ "frame-support",
+ "frame-system",
+ "log",
+ "pallet-session",
+ "pallet-sudo",
+ "pallet-validator-set",
+ "parity-scale-codec",
+ "serde",
+ "sp-application-crypto",
+ "sp-core 3.0.0 (git+https://github.com/zCloak-Network/substrate)",
+ "sp-io 3.0.0 (git+https://github.com/zCloak-Network/substrate)",
+ "sp-keystore 0.9.0 (git+https://github.com/zCloak-Network/substrate)",
+ "sp-runtime",
+ "sp-staking",
+ "sp-starks",
+ "sp-std 3.0.0 (git+https://github.com/zCloak-Network/substrate)",
+]
+
+[[package]]
 name = "pallet-starks-verifier-user"
 version = "0.1.0"
 dependencies = [
@@ -9087,6 +9109,7 @@ dependencies = [
  "pallet-randomness-collective-flip",
  "pallet-session",
  "pallet-starks-verifier",
+ "pallet-starks-verifier-seperate",
  "pallet-starks-verifier-user",
  "pallet-sudo",
  "pallet-timestamp",

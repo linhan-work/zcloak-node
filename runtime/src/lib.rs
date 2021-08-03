@@ -381,6 +381,7 @@ parameter_types! {
 	pub const StringLimit: u32 = 50;
 	pub const CrowdFundingLimit: BlockNumber = 4096;
 	pub const CrowdFundingMetadataDepositBase: Balance = 1_000_000_000_000;
+	pub const MinBalance: Balance = 1;
 
 
 
@@ -399,6 +400,15 @@ impl pallet_starks_verifier_user::Config for Runtime {
 	type StorePeriod = StorePeriod;
 	type UnsignedPriority = VerifierPriority;
 }
+
+
+impl pallet_starks_verifier_seperate::Config for Runtime {
+	type AuthorityId = VerifierId;
+	type Event = Event;
+	type StorePeriod = StorePeriod;
+	type UnsignedPriority = VerifierPriority;
+}
+
 use frame_support::traits::fungibles::Inspect;
 
 impl pallet_crowdfunding::Config for Runtime {
@@ -411,6 +421,7 @@ impl pallet_crowdfunding::Config for Runtime {
 	type Transfer = Assets;
 	type CrowdFundingLimit = CrowdFundingLimit;
 	type CrowdFundingMetadataDepositBase = CrowdFundingMetadataDepositBase;
+	type MinBalance = MinBalance;
 }
 
 // /// We allow root and the Relay Chain council to execute privileged asset operations.
@@ -455,6 +466,7 @@ construct_runtime!(
 		Sudo: pallet_sudo::{Pallet, Call, Config<T>, Storage, Event<T>},
 		StarksVerifier: pallet_starks_verifier::{Pallet, Call, Storage, Event<T>, ValidateUnsigned},
 		StarksVerifierUser: pallet_starks_verifier_user::{Pallet, Call, Storage, Event<T>},
+		StarksVerifierSeperate: pallet_starks_verifier_seperate::{Pallet, Call, Storage, Event<T>},
 		StarksCrowdfundng: pallet_crowdfunding::{Pallet, Call, Storage, Event<T>},
 		Assets: pallet_assets::{Pallet, Call, Storage, Event<T>},
 

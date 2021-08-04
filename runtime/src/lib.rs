@@ -8,9 +8,7 @@ include!(concat!(env!("OUT_DIR"), "/wasm_binary.rs"));
 pub mod constants;
 
 use codec::Encode;
-use frame_system::{
-	EnsureOneOf, EnsureRoot,
-};
+use frame_system::{EnsureRoot};
 // use pallet_xcm::{EnsureXcm, IsMajorityOfBody, XcmPassthrough};
 
 use sp_std::prelude::*;
@@ -372,6 +370,8 @@ impl<C> frame_system::offchain::SendTransactionTypes<C> for Runtime where
 
 parameter_types! {
 	pub const StorePeriod: BlockNumber = 1024;
+	pub const WhiteListPeriod: BlockNumber = 150;
+
 	pub const AssetDeposit: Balance = 100 * constants::currency::DOLLARS; // 100 DOLLARS deposit to create asset
 
 	pub const VerifierPriority: TransactionPriority = TransactionPriority::max_value();
@@ -406,10 +406,9 @@ impl pallet_starks_verifier_seperate::Config for Runtime {
 	type AuthorityId = VerifierId;
 	type Event = Event;
 	type StorePeriod = StorePeriod;
+	type WhiteListPeriod = WhiteListPeriod;
 	type UnsignedPriority = VerifierPriority;
 }
-
-use frame_support::traits::fungibles::Inspect;
 
 impl pallet_crowdfunding::Config for Runtime {
 	type AuthorityId = VerifierId;
@@ -423,13 +422,6 @@ impl pallet_crowdfunding::Config for Runtime {
 	type CrowdFundingMetadataDepositBase = CrowdFundingMetadataDepositBase;
 	type MinBalance = MinBalance;
 }
-
-// /// We allow root and the Relay Chain council to execute privileged asset operations.
-// pub type AssetsForceOrigin = EnsureOneOf<
-// 	AccountId,
-// 	EnsureRoot<AccountId>,
-// 	EnsureXcm<IsMajorityOfBody<DotLocation, ExecutiveBody>>,
-// >;
 
 impl pallet_assets::Config for Runtime {
 	type Event = Event;

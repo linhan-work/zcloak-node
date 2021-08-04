@@ -27,6 +27,7 @@ pub enum VerifyErr {
 
 #[runtime_interface]
 pub trait Starks {
+/// To verify with starksVM
 	fn verify(
 		&mut self,
 		program_hash: &[u8; 32],

@@ -67,7 +67,7 @@ pub enum CheckError{
 
 #[frame_support::pallet]
 pub mod pallet {
-    use frame_support::{dispatch::DispatchResult, pallet_prelude::*, traits::fungible::Inspect};
+    use frame_support::{dispatch::DispatchResult, pallet_prelude::*};
 	use frame_system::{ pallet_prelude::*};
 use sp_runtime::{SaturatedConversion};
 	use super::*;
@@ -144,6 +144,7 @@ use sp_runtime::{SaturatedConversion};
         _,
         Twox64Concat, T::BlockNumber,
         Twox64Concat, (T::AccountId, T::AssetId),
+        // Represent whether is going on , false means not finish, true means finish
         Option<bool>,
         ValueQuery,
     >;
@@ -162,11 +163,13 @@ use sp_runtime::{SaturatedConversion};
         ICOVerifyFailedTaskProgramWrong,  
         OtherErr,
         // A crowdfunding just created,with AssetId,Admin,FundingAccount and total_amount of this crowdfunding
-        crowdfundingCreated(T::AssetId, T::AccountId, T::AccountId, T::Balance),
+        CrowdfundingCreated(T::AssetId, T::AccountId, T::AccountId, T::Balance),
 		//Founding successfly ,with xdots deducted and going to transfer Ztokens to this account.
         FoundingSuccess(T::AccountId, T::Balance, T::Balance),
         // Changing crowdfunding's proceeding status. May stop one or restart one.
         SwitchcrowdfundingStatusTo(T::AssetId, bool),
+        // Delete crowdfunding
+        AlreadyDeleteCrowdfunding(T::AssetId, T::BlockNumber)
     }
 
     #[pallet::error]
@@ -189,7 +192,7 @@ use sp_runtime::{SaturatedConversion};
         // CrowdFunding shouldn't be zero
         CrowdFundingAmountIsZero,
         // No corresponding Crowdfudation is on-chain
-        crowdfundingNotOnchain,
+        CrowdfundingNotOnchain,
         // The Crowdfudation is stoped
         CrowdFundingStopped,
         // Already exceed DDL.
@@ -213,7 +216,6 @@ use sp_runtime::{SaturatedConversion};
         pub fn create_crowdfunding(
             origin: OriginFor<T>,
             asset_id: T::AssetId, 
-            admin: T::AccountId,
             funding_account: T::AccountId,
             funding_period: T::BlockNumber,
             total_asset: T::Balance,
@@ -225,7 +227,7 @@ use sp_runtime::{SaturatedConversion};
                 is_funding_proceed == None,
                 Error::<T>::CrowdFundingAlreadyGoingOn
             );
-            let admin_own = pallet_assets::Pallet::<T>::balance(asset_id, &admin);
+            let admin_own = pallet_assets::Pallet::<T>::balance(asset_id, &who);
             ensure!(
 				total_asset != T::Balance::default() ,
                 Error::<T>::CrowdFundingAmountIsZero
@@ -240,13 +242,14 @@ use sp_runtime::{SaturatedConversion};
                 funding_period < T::CrowdFundingLimit::get(),
                 Error::<T>::CrowdFundingTimeTooLong
             );
+  
             let now = <frame_system::Pallet<T>>::block_number();
             let funding_begin = now;
             let funding_expiration = now + funding_period;
             //Insert new CrowdfundingStatus on-chain.
-            <CrowdfundingProcess<T>>::insert(&asset_id,CrowfundingStatus{admin: Some(admin.clone()), funding_account: Some(funding_account.clone()), funding_begin: funding_begin, funding_expiration: funding_expiration, total_funding: total_asset, remain_funding: total_asset, is_funding_proceed: Some(true), ratio: ratio});
-            <Settledcrowdfunding<T>>::insert(&funding_expiration,&(admin.clone(), asset_id.clone()),Some(true) );
-            Self::deposit_event(Event::crowdfundingCreated(asset_id, admin, funding_account,total_asset));
+            <CrowdfundingProcess<T>>::insert(&asset_id,CrowfundingStatus{admin: Some(who.clone()), funding_account: Some(funding_account.clone()), funding_begin: funding_begin, funding_expiration: funding_expiration, total_funding: total_asset, remain_funding: total_asset, is_funding_proceed: Some(true), ratio: ratio});
+            <Settledcrowdfunding<T>>::insert(&funding_expiration,&(who.clone(), asset_id.clone()),Some(false) );
+            Self::deposit_event(Event::CrowdfundingCreated(asset_id, who, funding_account,total_asset));
             
             Ok(())
         }
@@ -261,7 +264,7 @@ use sp_runtime::{SaturatedConversion};
             ztoken_to_buy:  T::Balance,
         ) -> DispatchResult{
             let who = ensure_signed(origin)?;
-            ensure!(CrowdfundingProcess::<T>::try_get(&asset_id).is_ok(), Error::<T>::crowdfundingNotOnchain);
+            ensure!(CrowdfundingProcess::<T>::try_get(&asset_id).is_ok(), Error::<T>::CrowdfundingNotOnchain);
             let CrowfundingStatus{admin, funding_account, funding_begin, funding_expiration, total_funding, remain_funding, is_funding_proceed, ratio} = Self::crowdfunding_process(asset_id);
             ensure!(
                 funding_expiration > <frame_system::Pallet<T>>::block_number(),
@@ -272,9 +275,10 @@ use sp_runtime::{SaturatedConversion};
                 Error::<T>::CrowdFundingStopped
             );
             ensure!(
-                remain_funding > ztoken_to_buy,
+                remain_funding >= ztoken_to_buy,
                 Error::<T>::NotEnoughZtokensAvailable
             );
+
             // The KYC-Verifying program, to check whether this KYCproof is stored and VerifiedPass on-chain
             let ico_program_string=[208, 194, 130, 197, 164, 24, 192, 43, 169, 199, 5, 5, 30, 49, 190, 137, 168, 29, 175, 111, 254, 108, 138, 242, 161, 201, 76, 10, 238, 140, 97, 14];
             let kyc_class:Class = [22].to_vec();
@@ -321,6 +325,7 @@ use sp_runtime::{SaturatedConversion};
             origin: OriginFor<T>,
             asset_id: T::AssetId,
             switch_to: bool,
+            delete_crowdfunding: bool,
         ) -> DispatchResult{
             let who = ensure_signed(origin)?;
             let CrowfundingStatus{admin, funding_account, funding_begin, funding_expiration, total_funding, remain_funding, is_funding_proceed, ratio} = Self::crowdfunding_process(asset_id);
@@ -336,9 +341,16 @@ use sp_runtime::{SaturatedConversion};
                 switch_to != is_funding_proceed.unwrap(),
                 Error::<T>::AlreadyInThatStatus
             );
-            <CrowdfundingProcess<T>>::insert(&asset_id, CrowfundingStatus{admin: admin.clone(), funding_account, funding_begin, funding_expiration, total_funding, remain_funding, is_funding_proceed: Some(switch_to), ratio} );
-            <Settledcrowdfunding<T>>::insert(&funding_expiration,&(admin.clone().unwrap(), asset_id.clone()),Some(switch_to));
-            Self::deposit_event(Event::SwitchcrowdfundingStatusTo(asset_id, is_funding_proceed.unwrap()));         
+
+            if !delete_crowdfunding{
+                <CrowdfundingProcess<T>>::insert(&asset_id, CrowfundingStatus{admin: admin.clone(), funding_account, funding_begin, funding_expiration, total_funding, remain_funding, is_funding_proceed: Some(switch_to), ratio} );
+                Self::deposit_event(Event::SwitchcrowdfundingStatusTo(asset_id, is_funding_proceed.unwrap()));         
+            }else{
+                <CrowdfundingProcess<T>>::remove(asset_id);
+                <Settledcrowdfunding<T>>::insert(&funding_expiration,&(admin.clone().unwrap(), asset_id.clone()),Some(true));
+                Self::deposit_event(Event::AlreadyDeleteCrowdfunding(asset_id, <frame_system::Pallet<T>>::block_number()));         
+
+            }
             Ok(())
 
         }

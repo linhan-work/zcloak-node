@@ -12,7 +12,6 @@ pub use pallet::*;
 extern crate alloc;
 
 use frame_support::traits::{Currency,ExistenceRequirement::{AllowDeath}};
-// use frame_system::RawOrigin as SystemOrigin;
 use frame_support::traits::tokens::fungibles::Transfer;
 use sp_application_crypto::RuntimeAppPublic;
 
@@ -23,6 +22,7 @@ use sp_std::{
 	cmp::{Eq, PartialEq},
 	convert::{TryInto},
 };
+use sp_runtime::{traits::{StaticLookup}};
 
 use sp_runtime::RuntimeDebug;
 type Class = Vec<u8>;
@@ -78,7 +78,7 @@ use sp_runtime::{SaturatedConversion};
 
     #[pallet::config]
     #[pallet::disable_frame_system_supertrait_check]
-    pub trait Config: pallet_assets::Config + frame_system::Config 
+    pub trait Config: frame_system::Config + pallet_assets::Config 
 
 
     {
@@ -205,6 +205,10 @@ use sp_runtime::{SaturatedConversion};
         HaveNoRightToModify,
         // Don't have to change ,already in that status.
         AlreadyInThatStatus,
+        // Can't create asset
+        CreateAssetFail,
+        // Can't mint asset
+        MintAssetFail,
         OtherErr,
     }
 
@@ -213,15 +217,26 @@ use sp_runtime::{SaturatedConversion};
     impl<T: Config> Pallet<T> {
 
         #[pallet::weight(10000)]
-        pub fn create_crowdfunding(
+        pub fn create_asset_and_crowdfunding(
             origin: OriginFor<T>,
+
+            // admin: <T::Lookup as StaticLookup>::Source,
+
             asset_id: T::AssetId, 
             funding_account: T::AccountId,
             funding_period: T::BlockNumber,
             total_asset: T::Balance,
             ratio: T::Balance,
         ) -> DispatchResult{
-            let who = ensure_signed(origin)?;
+            let who = ensure_signed(origin.clone())?;
+            // let res = pallet_assets::Pallet::<T>::create(origin ,asset_id, admin, T::MinBalance::get());
+            // let res = <pallet_assets::Pallet<T>>::create(origin, asset_id, admin, T::MinBalance::get());
+            // ensure!(
+            //     res.is_ok() == true,
+            //     Error::<T>::CreateAssetFail
+            // );
+            
+
             let CrowfundingStatus{is_funding_proceed, ..} = Self::crowdfunding_process(asset_id);
             ensure!(
                 is_funding_proceed == None,
@@ -349,7 +364,6 @@ use sp_runtime::{SaturatedConversion};
                 <CrowdfundingProcess<T>>::remove(asset_id);
                 <Settledcrowdfunding<T>>::insert(&funding_expiration,&(admin.clone().unwrap(), asset_id.clone()),Some(true));
                 Self::deposit_event(Event::AlreadyDeleteCrowdfunding(asset_id, <frame_system::Pallet<T>>::block_number()));         
-
             }
             Ok(())
 
@@ -359,7 +373,7 @@ use sp_runtime::{SaturatedConversion};
     #[pallet::hooks]
     impl<T: Config> Hooks<BlockNumberFor<T>> for Pallet<T> {
         fn on_finalize(block: T::BlockNumber) {
-            Settledcrowdfunding::<T>::remove_prefix(block);
+            Settledcrowdfunding::<T>::remove_prefix(block, None);
         }
 
     }

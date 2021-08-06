@@ -116,7 +116,7 @@ pub struct TaskInfo<BlockNumber> {
 
 /// The status of a given verification task
 #[derive(Encode, Decode, Default, PartialEq, Eq, RuntimeDebug)]
-pub struct Status {
+pub struct SeperateStatus {
     // The verifiers involved so far
     pub verifiers: Vec<u32>,
     // The number of affirmative vote so far
@@ -205,7 +205,7 @@ pub mod pallet {
         _,
         Twox64Concat, T::AccountId,
         Twox64Concat, Class,
-        Status,
+        SeperateStatus,
         OptionQuery,
     >;
 
@@ -288,14 +288,14 @@ pub mod pallet {
             // Ensure task has not been created
             ensure!(!TaskParams::<T>::try_get(&who, &class).is_ok(), Error::<T>::TaskAlreadyExists);
             <TaskParams<T>>::insert(&who, &class, TaskInfo{proof_id: proof_id.clone(), inputs:inputs.clone(), outputs:outputs.clone(), program_hash: program_hash.clone(), is_task_finish: Some(TaskStatus::JustCreated),expiration: Some(<frame_system::Pallet<T>>::block_number())});
-            <OngoingTasks<T>>::insert(&who, &class, Status::default());
+            <OngoingTasks<T>>::insert(&who, &class, SeperateStatus::default());
             Self::deposit_event(Event::UserTaskCreated(who, class, program_hash, proof_id, inputs, outputs));
             Ok(())
         }
 
         #[pallet::weight(10000)]
         /// Checks that sender is the Sudo `key` before forwarding to `add_whitelist` in the pallet.
-        fn add_whitelist(
+        pub fn add_whitelist(
             origin: OriginFor<T>,
             who: T::AccountId,
         ) -> DispatchResult {
@@ -357,7 +357,7 @@ pub mod pallet {
                 WhiteListTime::<T>::insert(<frame_system::Pallet<T>>::block_number(), vec![res.clone()]);
             }
 
-            let Status{verifiers, ayes, nays, ..} = Self::ongoing_tasks(who.clone(), class.clone()).unwrap();
+            let SeperateStatus{verifiers, ayes, nays, ..} = Self::ongoing_tasks(who.clone(), class.clone()).unwrap();
             let threshold = (Self::whitelist_len() + 1) / 2;
             Self::deposit_event(Event::SingleResponseAccept(res, who.clone(), class.clone()));
 
@@ -372,9 +372,9 @@ pub mod pallet {
 
                 }else{
                     if  ayes + 1 <= nays{
-                        OngoingTasks::<T>::insert(who.clone(), class.clone(),Status{verifiers, ayes: ayes + 1, nays, come_first: Some(false)});
+                        OngoingTasks::<T>::insert(who.clone(), class.clone(),SeperateStatus{verifiers, ayes: ayes + 1, nays, come_first: Some(false)});
                     }else{
-                        OngoingTasks::<T>::insert(who.clone(), class.clone(),Status{verifiers, ayes: ayes + 1, nays, come_first: Some(true)});
+                        OngoingTasks::<T>::insert(who.clone(), class.clone(),SeperateStatus{verifiers, ayes: ayes + 1, nays, come_first: Some(true)});
                     }
                     let TaskInfo {proof_id, inputs, outputs, program_hash, expiration, ..} = Self::task_params(&who, &class);
                     <TaskParams<T>>::insert(&who.clone(), &class.clone(), TaskInfo{proof_id, inputs, outputs, program_hash: program_hash, is_task_finish: Some(TaskStatus::Verifying), expiration: expiration});
@@ -391,9 +391,9 @@ pub mod pallet {
 
                 }else{
                     if  nays + 1 <= ayes{
-                        OngoingTasks::<T>::insert(who.clone(), class.clone(),Status{verifiers, ayes, nays: nays + 1, come_first: Some(true)});
+                        OngoingTasks::<T>::insert(who.clone(), class.clone(), SeperateStatus{verifiers, ayes, nays: nays + 1, come_first: Some(true)});
                     }else{
-                        OngoingTasks::<T>::insert(who.clone(), class.clone(),Status{verifiers, ayes, nays: nays + 1, come_first: Some(false)});
+                        OngoingTasks::<T>::insert(who.clone(), class.clone(), SeperateStatus{verifiers, ayes, nays: nays + 1, come_first: Some(false)});
                     }
                     let TaskInfo {proof_id, inputs, outputs, program_hash, expiration, ..} = Self::task_params(&who, &class);
                     <TaskParams<T>>::insert(&who.clone(), &class.clone(), TaskInfo{proof_id, inputs, outputs, program_hash: program_hash, is_task_finish: Some(TaskStatus::Verifying), expiration: expiration});
@@ -416,7 +416,7 @@ pub mod pallet {
                 OngoingTasks::<T>::try_get(who.clone(), class.clone()).is_ok(),
                 Error::<T>::TaskNotGoingOn
             );
-            let Status{verifiers, ayes, nays, come_first} = Self::ongoing_tasks(who.clone(), class.clone()).unwrap();
+            let SeperateStatus{verifiers, ayes, nays, come_first} = Self::ongoing_tasks(who.clone(), class.clone()).unwrap();
             let threshold = (Self::whitelist_len() + 1) / 2;
             if ayes >= threshold && nays >= threshold {
                 if ayes > nays || (ayes == nays && come_first.unwrap()){
@@ -465,7 +465,7 @@ pub mod pallet {
     impl<T: Config> Hooks<BlockNumberFor<T>> for Pallet<T> {
         //We don't need to remove any SettledTask
         fn on_finalize(block: T::BlockNumber) {
-            SettledTasks::<T>::remove_prefix(block);
+            SettledTasks::<T>::remove_prefix(block, None);
             let expire_list = WhiteListTime::<T>::try_get(block - T::WhiteListPeriod::get());
             if expire_list.is_ok() {
                 for i in expire_list.unwrap() {

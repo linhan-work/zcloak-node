@@ -39,11 +39,12 @@ pub use sp_runtime::{Permill, Perbill};
 use sp_runtime::generic::Era;
 pub use frame_support::{
 	construct_runtime, parameter_types, StorageValue,
-	traits::{KeyOwnerProofSystem, Randomness},
+	traits::{KeyOwnerProofSystem, Randomness, LockIdentifier},
 	weights::{
 		Weight, IdentityFee,
 		constants::{BlockExecutionWeight, ExtrinsicBaseWeight, RocksDbWeight, WEIGHT_PER_SECOND},
 	},
+	PalletId,
 };
 use pallet_transaction_payment::CurrencyAdapter;
 pub use pallet_starks_verifier::crypto::AuthorityId as VerifierId;
@@ -385,6 +386,7 @@ parameter_types! {
 	pub const CrowdFundingLimit: BlockNumber = 4096;
 	pub const CrowdFundingMetadataDepositBase: Balance = 1_000_000_000_000;
 	pub const MinBalance: Balance = 1;
+	pub const CrowdfundingPalletId: PalletId = PalletId(*b"py/crdfg");
 
 
 
@@ -426,6 +428,10 @@ impl pallet_crowdfunding::Config for Runtime {
 	type CrowdFundingLimit = CrowdFundingLimit;
 	type CrowdFundingMetadataDepositBase = CrowdFundingMetadataDepositBase;
 	type MinBalance = MinBalance;
+	type PalletId = CrowdfundingPalletId;
+	// type Lookup = AccountIdLookup<AccountId, ()>;
+
+
 }
 
 impl pallet_assets::Config for Runtime {
@@ -457,6 +463,8 @@ construct_runtime!(
 		Balances: pallet_balances::{Pallet, Call, Storage, Config<T>, Event<T>},
 		Session: pallet_session::{Pallet, Call, Storage, Event, Config<T>},
 		ValidatorSet: pallet_validator_set::{Pallet, Call, Storage, Event<T>, Config<T>},
+		StarksCrowdfundng: pallet_crowdfunding::{Pallet, Call, Storage, Event<T>, Config<T>},
+
 		Aura: pallet_aura::{Pallet, Config<T>},
 		Grandpa: pallet_grandpa::{Pallet, Call, Storage, Config, Event},
 		TransactionPayment: pallet_transaction_payment::{Pallet, Storage},
@@ -464,7 +472,6 @@ construct_runtime!(
 		StarksVerifier: pallet_starks_verifier::{Pallet, Call, Storage, Event<T>, ValidateUnsigned},
 		StarksVerifierUser: pallet_starks_verifier_user::{Pallet, Call, Storage, Event<T>},
 		StarksVerifierSeperate: pallet_starks_verifier_seperate::{Pallet, Call, Storage, Event<T>},
-		StarksCrowdfundng: pallet_crowdfunding::{Pallet, Call, Storage, Event<T>},
 		Assets: pallet_assets::{Pallet, Call, Storage, Event<T>},
 
 	}

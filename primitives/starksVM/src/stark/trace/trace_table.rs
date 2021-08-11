@@ -268,6 +268,7 @@ impl TraceTable {
 // ================================================================================================
 
 #[cfg(test)]
+#[ignore]
 mod tests {
 
     use sp_std::collections::HashMap;

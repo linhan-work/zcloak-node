@@ -11,13 +11,12 @@ pub use pallet::*;
 use pallet_starks_verifier::Check;
 extern crate alloc;
 use frame_support::{log, pallet_prelude::*, transactional, PalletId};
-use frame_support::traits::{Currency,ExistenceRequirement::{AllowDeath}, LockIdentifier};
+use frame_support::traits::{Currency, ExistenceRequirement, ExistenceRequirement::{AllowDeath}, LockIdentifier};
 use frame_support::traits::tokens::fungibles::Transfer;
 use sp_application_crypto::RuntimeAppPublic;
 use sp_runtime::traits::{AccountIdConversion, IdentifyAccount, LookupError, Lookup};
+
 #[cfg(feature = "std")]
-
-
 use codec::{Codec, Decode, Encode};
 use sp_std::{
 	cmp::{Eq, PartialEq},
@@ -93,8 +92,13 @@ pub enum CrowdfundingOption{
 pub mod pallet {
     use frame_support::{dispatch::DispatchResult, pallet_prelude::*};
 	use frame_system::{ pallet_prelude::*};
-use sp_runtime::{SaturatedConversion};
+    use sp_runtime::{SaturatedConversion};
+    use zcloak_support::traits::VerifyClass;
+    use zcloak_support::traits::RegulatedCurrency;
 	use super::*;
+    extern crate zcloak_support;
+
+    // use zcloak_support::traits::{VerifyClass, RegulatedCurrency};
 
     #[pallet::pallet]
 	#[pallet::generate_store(pub(super) trait Store)]
@@ -103,30 +107,16 @@ use sp_runtime::{SaturatedConversion};
     #[pallet::config]
     #[pallet::disable_frame_system_supertrait_check]
     pub trait Config: frame_system::Config + pallet_assets::Config 
-
-
     {
-        /// The identifier type for an offchain worker.
-        type AuthorityId: Member + Parameter + RuntimeAppPublic + Default + Ord + MaybeSerializeDeserialize;
         /// The overarching event type.
         type Event: From<Event<Self>> + IsType<<Self as frame_system::Config>::Event>;
-        /// A type for retrieving the validators supposed to be online in a session.
-        // type ValidatorSet: ValidatorSetWithIdentification<Self::AccountId>;
-    
+
         /// After a task is verified, it can still be stored on chain for a `StorePeriod` of time
         #[pallet::constant]
         type StorePeriod: Get<Self::BlockNumber>;
     
-        /// A configuration for base priority of unsigned transactions.
-        ///
-        /// This is exposed so that it can be tuned for particular runtime, when
-        /// multiple pallets send unsigned transactions.
-        #[pallet::constant]
-        type UnsignedPriority: Get<TransactionPriority>;
     	
         type Check: Check<Self::AccountId>;
-
-        // type Currency: Currency<Self::AccountId>;
 
         type Inspect: frame_support::traits::fungibles::Inspect<Self::AccountId>;
 
@@ -136,19 +126,19 @@ use sp_runtime::{SaturatedConversion};
 
         type MinBalance: Get<<Self as pallet_assets::Config>::Balance>;
 
-        // type Transfer: frame_support::traits::tokens::fungibles::Transfer<Self::AccountId>;
         type Transfer: frame_support::traits::tokens::fungibles::Transfer<<Self as frame_system::Config>::AccountId>;
 
         #[pallet::constant]
 		type PalletId: Get<PalletId>;
 
-        // type Lookup: StaticLookup<Target = Self::AccountId>;
+        type RegulatedCurrency: zcloak_support::traits::tokens::currency::RegulatedCurrency<Self::AccountId>;
+
 
     }
 
     pub type BalanceOf<T> = <<T as pallet_assets::Config>::Currency as Currency<<T as frame_system::Config>::AccountId>>::Balance;
 
-
+    pub type RegulatedBalanceOf<T> = <<T as pallet::Config>::RegulatedCurrency as RegulatedCurrency<<T as frame_system::Config>::AccountId>>::Balance;
     // impl<T: Config> StaticLookup for IdentityLookup<T> {
     //     type Source = <<T as pallet::Config>::Lookup as StaticLookup>::Source;
     //     type Target = <<T as pallet::Config>::Lookup as StaticLookup>::Target;
@@ -384,7 +374,7 @@ use sp_runtime::{SaturatedConversion};
             // The KYC-Verifying program, to check whether this KYCproof is stored and VerifiedPass on-chain
             let ico_program_string=[208, 194, 130, 197, 164, 24, 192, 43, 169, 199, 5, 5, 30, 49, 190, 137, 168, 29, 175, 111, 254, 108, 138, 242, 161, 201, 76, 10, 238, 140, 97, 14];
             let kyc_class:Class = [22].to_vec();
-            let check_result = T::Check::checkkyc(who.clone(), kyc_class.clone(),ico_program_string); 
+            let check_result = T::Check::checkkyc(&who.clone(), kyc_class.clone(),ico_program_string); 
             // The origin has the access to buy ztokens due to SuccessProved-KYC 
             if check_result.is_ok() {
                 Self::deposit_event(Event::ICOVerifySuccuss(who.clone()));
@@ -456,6 +446,24 @@ use sp_runtime::{SaturatedConversion};
             }
             Ok(())
 
+        }
+
+
+        #[pallet::weight(10000)]
+        pub fn transfer(
+            origin: OriginFor<T>,
+            dest: T::AccountId,
+            value: T::Balance,
+            kyc_verify: VerifyClass,
+        ) -> DispatchResult {
+            let who = ensure_signed(origin)?;
+            let option = ExistenceRequirement::KeepAlive;
+            
+            let v1 = TryInto::<u128>::try_into(value).ok();
+            let v2 = RegulatedBalanceOf::<T>::saturated_from(v1.unwrap());
+            
+            T::RegulatedCurrency::transfer(&who, &dest, v2, option, kyc_verify)?;
+            Ok(())
         }
     }
 

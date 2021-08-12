@@ -60,10 +60,11 @@ mod mock;
 mod tests;
 
 pub trait Check<AccountId> {
-    fn checkkyc(who: AccountId, kycclass:Class, ioc_program_hash: [u8; 32]) -> Result<bool, CheckError>;
+    fn checkkyc(who: &AccountId, kycclass:Class, ioc_program_hash: [u8; 32]) -> Result<bool, CheckError>;
     fn compare_hash(hash1: Vec<u8>, hash2: Vec<u8>) -> bool;
 
 }
+
 
 /// The key type of which to sign the starks verification transactions
 pub const KEY_TYPE: KeyTypeId = KeyTypeId(*b"zkst");
@@ -86,6 +87,7 @@ pub mod crypto {
     /// A starks verifier identifier using sr25519 as its crypto.
     pub type AuthorityId = app_sr25519::Public;
 }
+
 
 /// The status of a given verification task
 #[derive(Encode, Decode, Default, PartialEq, Eq, RuntimeDebug)]
@@ -122,7 +124,7 @@ pub enum TaskStatus {
     VerifiedFalse,
 }
 
-#[derive(Clone, Copy, Encode, Decode, PartialEq, Eq)]
+#[derive(Clone, Copy, Encode, Decode, PartialEq, Eq, Debug)]
 pub enum CheckError{
     //Not on chain
     ICOVerifyFailedNotOnChain,
@@ -691,11 +693,11 @@ impl<T: Config> Pallet<T> {
 }
 
 impl<T: Config> Check<T::AccountId> for Pallet<T> {
-    fn checkkyc(who: T::AccountId, kycclass:Class, ioc_program_hash: [u8; 32]) -> Result<bool, CheckError>{
-        let kyc_is_exist = TaskParams::<T>::try_get(&who, &kycclass).is_ok();
+    fn checkkyc(who: &T::AccountId, kycclass:Class, ioc_program_hash: [u8; 32]) -> Result<bool, CheckError>{
+        let kyc_is_exist = TaskParams::<T>::try_get(who, &kycclass).is_ok();
         log::debug!(target:"starks-verifier","kyc_is_exist is {:?}.class is {:?}",kyc_is_exist,kycclass);
         if kyc_is_exist {
-            let TaskInfo {outputs, program_hash, ..} = Self::task_params(&who, &kycclass);
+            let TaskInfo {outputs, program_hash, ..} = Self::task_params(who, &kycclass);
             let ioc_program_vec = ioc_program_hash.encode();
             let program_hash_vec = program_hash.encode();
             let compare_result = Self::compare_hash(ioc_program_vec, program_hash_vec);

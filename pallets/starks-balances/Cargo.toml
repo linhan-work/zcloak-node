@@ -1,5 +1,5 @@
 [package]
-name = "pallet-crowdfunding"
+name = "pallet-starks-balances"
 version = "0.1.0"
 authors = ["Dejavukong <foxcong.yolo@gmail.com>"]
 edition = "2018"

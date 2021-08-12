@@ -10,7 +10,6 @@ pub mod constants;
 use codec::Encode;
 use frame_system::{EnsureRoot};
 // use pallet_xcm::{EnsureXcm, IsMajorityOfBody, XcmPassthrough};
-
 use sp_std::prelude::*;
 use sp_core::{crypto::KeyTypeId, OpaqueMetadata};
 use sp_runtime::{SaturatedConversion,
@@ -417,11 +416,11 @@ impl pallet_starks_verifier_seperate::Config for Runtime {
 	type UnsignedPriority = VerifierPriority;
 }
 
+pub type RegulatedCurrencyAdaptor = zcloak_support::traits::Demostruct<Runtime, Balances, StarksVerifier, AccountId>;
+
 impl pallet_crowdfunding::Config for Runtime {
-	type AuthorityId = VerifierId;
 	type Event = Event;
 	type StorePeriod = StorePeriod;
-	type UnsignedPriority = VerifierPriority;
 	type Check = StarksVerifier;
 	type Inspect = Assets;
 	type Transfer = Assets;
@@ -429,9 +428,13 @@ impl pallet_crowdfunding::Config for Runtime {
 	type CrowdFundingMetadataDepositBase = CrowdFundingMetadataDepositBase;
 	type MinBalance = MinBalance;
 	type PalletId = CrowdfundingPalletId;
-	// type Lookup = AccountIdLookup<AccountId, ()>;
+	type RegulatedCurrency = RegulatedCurrencyAdaptor;
+}
 
-
+impl pallet_starks_balances::Config for Runtime {
+	type Event = Event;
+	type StorePeriod = StorePeriod;
+	type RegulatedCurrency = RegulatedCurrencyAdaptor;
 }
 
 impl pallet_assets::Config for Runtime {
@@ -464,6 +467,7 @@ construct_runtime!(
 		Session: pallet_session::{Pallet, Call, Storage, Event, Config<T>},
 		ValidatorSet: pallet_validator_set::{Pallet, Call, Storage, Event<T>, Config<T>},
 		StarksCrowdfundng: pallet_crowdfunding::{Pallet, Call, Storage, Event<T>, Config<T>},
+		StarksBalances: pallet_starks_balances::{Pallet, Call, Storage, Event<T>},
 
 		Aura: pallet_aura::{Pallet, Config<T>},
 		Grandpa: pallet_grandpa::{Pallet, Call, Storage, Config, Event},

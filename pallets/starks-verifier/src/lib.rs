@@ -48,13 +48,22 @@ use frame_system::offchain::{
     SendTransactionTypes,
     SubmitTransaction,
 };
+use sp_runtime::offchain::storage::{StorageRetrievalError, MutateStorageError};
 pub use pallet::*;
+
+extern crate alloc;
 
 #[cfg(all(feature = "std", test))]
 mod mock;
 
 #[cfg(all(feature = "std", test))]
 mod tests;
+
+pub trait Check<AccountId> {
+    fn checkkyc(who: AccountId, kycclass:Class, ioc_program_hash: [u8; 32]) -> Result<bool, CheckError>;
+    fn compare_hash(hash1: Vec<u8>, hash2: Vec<u8>) -> bool;
+
+}
 
 /// The key type of which to sign the starks verification transactions
 pub const KEY_TYPE: KeyTypeId = KeyTypeId(*b"zkst");
@@ -111,6 +120,17 @@ pub enum TaskStatus {
     Verifying,
     VerifiedTrue,
     VerifiedFalse,
+}
+
+#[derive(Clone, Copy, Encode, Decode, PartialEq, Eq)]
+pub enum CheckError{
+    //Not on chain
+    ICOVerifyFailedNotOnChain,
+    //KYC onchain, but not allowed to do crowdfunding
+    ICOVerifyFailedNotAllowed,  
+    //KYC onchain, but the corresponding program is not ICOprogram
+    ICOVerifyFailedTaskProgramWrong,  
+
 }
 
 impl sp_std::fmt::Debug for TaskStatus {
@@ -305,6 +325,8 @@ pub mod pallet {
             proof_id: Vec<u8>
         ) -> DispatchResult {
             let who = ensure_signed(origin)?;
+            log::debug!(target:"starks-verifier","class is {:?}",class);
+
             // Ensure task has not been created
             ensure!(!TaskParams::<T>::try_get(&who, &class).is_ok(), Error::<T>::TaskAlreadyExists);
             <TaskParams<T>>::insert(&who, &class, TaskInfo{proof_id: proof_id.clone(), inputs, outputs, program_hash: program_hash, is_task_finish: Some(TaskStatus::JustCreated), expiration: Some(<frame_system::Pallet<T>>::block_number())});
@@ -382,7 +404,7 @@ pub mod pallet {
     #[pallet::hooks]
     impl<T: Config> Hooks<BlockNumberFor<T>> for Pallet<T> {
         fn on_finalize(block: T::BlockNumber) {
-            SettledTasks::<T>::remove_prefix(block);
+            SettledTasks::<T>::remove_prefix(block, None);
         }
 
         fn offchain_worker(now: T::BlockNumber) {
@@ -486,25 +508,28 @@ impl<T: Config> Pallet<T> {
         let mut initial_local_tasks = BTreeSet::new();
 
         let res = storage.mutate(
-            |tasks: Option<Option<BTreeSet<(T::AccountId, Class)>>>| {
+            |tasks: Result<Option<Option<BTreeSet<(T::AccountId, Class)>>>,StorageRetrievalError>| {
             // Check if there is already a lock for that particular task.(hash)
             // If there exists a vec of `local_tasks`,we will attempt to find a certian task which is
             // stored on-chain(<OngoingTask>) but not verified locally yet.
             // If such vec doesn't exist ,we will initialize it,with the fist task to be verified on-chain(<OngoingTask>)
             match tasks {
-                Some(Some(mut local_tasks)) =>  {
+                Ok(Some(Some(mut local_tasks))) =>  {
                     task_id_tuple = Self::task_to_execute(&mut local_tasks)?;
                     // TODO: fetch_proof, verify, and submit
                     local_tasks.insert(task_id_tuple.clone());
-                    Ok(local_tasks)
+                    Ok(Some(local_tasks))
                 },
                 _ => {
                     task_id_tuple = Self::task_to_execute(&mut BTreeSet::new())?;
                     initial_local_tasks.insert(task_id_tuple.clone());
-                    Ok(initial_local_tasks)
+                    Ok(Some(initial_local_tasks))
                 }
             }
-        })?;
+        });
+        if let Err(MutateStorageError::ValueFunctionFailed(err)) = res {
+			return Err(err)
+		}
 
         let mut local_tasks = res.map_err(|_| OffchainErr::FailToAcquireLock)?;
 
@@ -517,8 +542,10 @@ impl<T: Config> Pallet<T> {
         
         // Clear the lock in case we have failed to send transaction.
         if res.is_err() {
-            local_tasks.remove(&task_id_tuple);
-            storage.set(&local_tasks);
+            storage.set(&local_tasks.unwrap().remove(&task_id_tuple));
+
+            // local_tasks.remove(&task_id_tuple);
+            // storage.set(&local_tasks);
         }
         res
     }else{
@@ -592,7 +619,6 @@ impl<T: Config> Pallet<T> {
 
         // Let's check the status code before we proceed to reading the response.
         if response.code != 200 {
-            log::warn!(target: "starks-verifier", "Unexpected status code: {}", response.code);
             return Err(http::Error::Unknown);
         }
 
@@ -600,7 +626,8 @@ impl<T: Config> Pallet<T> {
         // Note that the return object allows you to read the body in chunks as well
         // with a way to control the deadline.
         let body = response.body().collect::<Vec<u8>>();
-        // log::debug!(target: "starks-verifier", "BODY is {:?}", &body);
+        // log::warn!(target: "starks-verifier", " body is : {:?}", body.clone());
+
         Ok(body)
     }
 
@@ -659,6 +686,46 @@ impl<T: Config> Pallet<T> {
     #[allow(dead_code)]
     fn set_keys(keys: &Vec<T::AuthorityId>) {
         Keys::<T>::put(&keys)
+    }
+
+}
+
+impl<T: Config> Check<T::AccountId> for Pallet<T> {
+    fn checkkyc(who: T::AccountId, kycclass:Class, ioc_program_hash: [u8; 32]) -> Result<bool, CheckError>{
+        let kyc_is_exist = TaskParams::<T>::try_get(&who, &kycclass).is_ok();
+        log::debug!(target:"starks-verifier","kyc_is_exist is {:?}.class is {:?}",kyc_is_exist,kycclass);
+        if kyc_is_exist {
+            let TaskInfo {outputs, program_hash, ..} = Self::task_params(&who, &kycclass);
+            let ioc_program_vec = ioc_program_hash.encode();
+            let program_hash_vec = program_hash.encode();
+            let compare_result = Self::compare_hash(ioc_program_vec, program_hash_vec);
+            if compare_result == true  && outputs == vec![1] {
+                return Ok(true);
+            }
+            else {
+                if  compare_result == true{
+                    return Err(CheckError::ICOVerifyFailedNotAllowed);
+                }else{
+                    return Err(CheckError::ICOVerifyFailedTaskProgramWrong);
+                }
+            }
+        }else {
+            return Err(CheckError::ICOVerifyFailedNotOnChain);
+        }
+    }
+
+    fn compare_hash(mut hash1: Vec<u8>, mut hash2: Vec<u8>) -> bool{
+        let len1 = hash1.len();
+        let len2 = hash2.len();
+        if len1 == len2{
+            for _i in 0..len1{
+                if hash1.pop() == hash2.pop(){}
+                else{return false}
+            }
+            return true;
+        }else{
+            return false;
+        }
     }
 }
 

@@ -388,6 +388,7 @@ mod tests {
     }
 
     #[test]
+    #[ignore]
     fn mul() {
         // identity
         let r: u128 = super::rand();

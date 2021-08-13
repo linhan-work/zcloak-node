@@ -27,6 +27,7 @@ pub enum VerifyErr {
 
 #[runtime_interface]
 pub trait Starks {
+/// To verify with starksVM
 	fn verify(
 		&mut self,
 		program_hash: &[u8; 32],
@@ -38,7 +39,7 @@ pub trait Starks {
 			VerifyErr::NoUTF8
 		})?;
 
-        let proof = hex::decode(&body_str[0..body_str.len()-1]).map_err(|_| {
+        let proof = hex::decode(&body_str[0..body_str.len()]).map_err(|_| {
 			VerifyErr::NoHex
         })?;
 		let stark_proof = bincode::deserialize::<starksVM::StarkProof>(&proof).map_err(|_| VerifyErr::SerializeErr)?;

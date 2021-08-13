@@ -77,7 +77,7 @@ pub mod pallet {
     #[pallet::call]
     impl<T: Config> Pallet<T> {
         #[pallet::weight(10000)]
-        fn add_validator(origin: OriginFor<T>, acc: T::AccountId) -> DispatchResult {
+        pub fn add_validator(origin: OriginFor<T>, acc: T::AccountId) -> DispatchResult {
             ensure_root(origin)?;
 			let mut validators = Self::validators().ok_or(Error::<T>::NoValidators)?;
 			validators.push(acc.clone());
@@ -92,7 +92,7 @@ pub mod pallet {
         }
 
         #[pallet::weight(10000)]
-        fn remove_validators(origin: OriginFor<T>, acc: T::AccountId) -> DispatchResult {
+        pub fn remove_validators(origin: OriginFor<T>, acc: T::AccountId) -> DispatchResult {
             ensure_root(origin)?;
 			let mut validators = Self::validators().ok_or(Error::<T>::NoValidators)?;
 			// Assuming that this will be a PoA network for enterprise use-cases, 

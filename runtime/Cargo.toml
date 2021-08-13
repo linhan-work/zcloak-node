@@ -23,7 +23,9 @@ log = { version = "0.4.14", default-features = false }
 pallet-starks-verifier = { path = '../pallets/starks-verifier', default-features = false }
 pallet-validator-set = { path = '../pallets/validator-set', default-features = false }
 pallet-starks-verifier-user = { path = '../pallets/starks-verifier-user', default-features = false }
-# pallet-crowdfunding = { path = '../pallets/crowdfunding', default-features = false }
+pallet-starks-verifier-seperate = { path = '../pallets/starks-verifier-seperate', default-features = false }
+
+pallet-crowdfunding = { path = '../pallets/crowdfunding', default-features = false }
 # runtime 
 frame-benchmarking = { default-features = false, git = "https://github.com/zCloak-Network/substrate", optional = true }
 frame-executive = { default-features = false, git = "https://github.com/zCloak-Network/substrate" }
@@ -56,6 +58,10 @@ pallet-transaction-payment = { default-features = false, git = "https://github.c
 pallet-transaction-payment-rpc-runtime-api = { default-features = false, git = "https://github.com/zCloak-Network/substrate" }
 pallet-session = { default-features = false, git = "https://github.com/zCloak-Network/substrate" }
 
+pallet-assets = { default-features = false, git = "https://github.com/zCloak-Network/substrate" }
+# node-primitives = { git = "https://github.com/paritytech/substrate", default-features = false, branch = "polkadot-v0.9.5" }
+
+
 [features]
 default = ['std']
 runtime-benchmarks = [
@@ -67,6 +73,8 @@ runtime-benchmarks = [
     'pallet-balances/runtime-benchmarks',
     'pallet-timestamp/runtime-benchmarks',
     'sp-runtime/runtime-benchmarks',
+    'pallet-assets/runtime-benchmarks',
+
 ]
 std = [
     'codec/std',
@@ -84,11 +92,15 @@ std = [
     'pallet-sudo/std',
     'pallet-starks-verifier/std',
     'pallet-starks-verifier-user/std',
+    'pallet-starks-verifier-seperate/std',
     'pallet-validator-set/std',
-    # "pallet-crowdfunding/std",
+    "pallet-crowdfunding/std",
     'pallet-timestamp/std',
     'pallet-transaction-payment/std',
     'pallet-transaction-payment-rpc-runtime-api/std',
+	"pallet-assets/std",
+    # "node-primitives/std",
+
     # primitives
     'sp-api/std',
     'sp-block-builder/std',

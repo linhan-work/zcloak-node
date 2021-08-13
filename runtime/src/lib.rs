@@ -5,8 +5,12 @@
 // Make the WASM binary available.
 #[cfg(feature = "std")]
 include!(concat!(env!("OUT_DIR"), "/wasm_binary.rs"));
+pub mod constants;
 
 use codec::Encode;
+use frame_system::{EnsureRoot};
+// use pallet_xcm::{EnsureXcm, IsMajorityOfBody, XcmPassthrough};
+
 use sp_std::prelude::*;
 use sp_core::{crypto::KeyTypeId, OpaqueMetadata};
 use sp_runtime::{SaturatedConversion,
@@ -35,11 +39,12 @@ pub use sp_runtime::{Permill, Perbill};
 use sp_runtime::generic::Era;
 pub use frame_support::{
 	construct_runtime, parameter_types, StorageValue,
-	traits::{KeyOwnerProofSystem, Randomness},
+	traits::{KeyOwnerProofSystem, Randomness, LockIdentifier},
 	weights::{
 		Weight, IdentityFee,
 		constants::{BlockExecutionWeight, ExtrinsicBaseWeight, RocksDbWeight, WEIGHT_PER_SECOND},
 	},
+	PalletId,
 };
 use pallet_transaction_payment::CurrencyAdapter;
 pub use pallet_starks_verifier::crypto::AuthorityId as VerifierId;
@@ -69,6 +74,8 @@ pub type Hash = sp_core::H256;
 
 /// Digest item type.
 pub type DigestItem = generic::DigestItem<Hash>;
+
+pub type AssetId = u32;
 
 /// Opaque types. These are used by the CLI to instantiate machinery that don't need to know
 /// the specifics of the runtime. They can then be made to be agnostic over specific formats
@@ -155,7 +162,7 @@ parameter_types! {
 
 impl frame_system::Config for Runtime {
 	/// The basic call filter to use in dispatchable.
-	type BaseCallFilter = ();
+	type BaseCallFilter = frame_support::traits::AllowAll;
 	/// Block & extrinsics weights: base values and limits.
 	type BlockWeights = BlockWeights;
 	/// The maximum length of a block (in bytes).
@@ -206,6 +213,7 @@ impl frame_system::Config for Runtime {
 
 impl pallet_aura::Config for Runtime {
 	type AuthorityId = AuraId;
+	type DisabledValidators = ();
 }
 
 impl pallet_grandpa::Config for Runtime {
@@ -248,6 +256,8 @@ impl pallet_balances::Config for Runtime {
 	type MaxLocks = MaxLocks;
 	/// The type for recording an account's balance.
 	type Balance = Balance;
+	type MaxReserves = ();
+	type ReserveIdentifier = [u8; 8];
 	/// The ubiquitous event type.
 	type Event = Event;
 	type DustRemoval = ();
@@ -364,8 +374,25 @@ impl<C> frame_system::offchain::SendTransactionTypes<C> for Runtime where
 
 parameter_types! {
 	pub const StorePeriod: BlockNumber = 1024;
+	pub const WhiteListPeriod: BlockNumber = 150;
+
+	pub const AssetDeposit: Balance = 100 * constants::currency::DOLLARS; // 100 DOLLARS deposit to create asset
+
 	pub const VerifierPriority: TransactionPriority = TransactionPriority::max_value();
+	pub const MetadataDepositBase: Balance = 10 * constants::currency::DOLLARS;
+	pub const MetadataDepositPerByte: Balance = 1 * constants::currency::DOLLARS;
+	pub const ApprovalDeposit: Balance = constants::currency::EXISTENTIAL_DEPOSIT;
+	pub const StringLimit: u32 = 50;
+	pub const CrowdFundingLimit: BlockNumber = 4096;
+	pub const CrowdFundingMetadataDepositBase: Balance = 1_000_000_000_000;
+	pub const MinBalance: Balance = 1;
+	pub const CrowdfundingPalletId: PalletId = PalletId(*b"py/crdfg");
+
+
+
 }
+impl pallet_randomness_collective_flip::Config for Runtime {}
+
 
 impl pallet_starks_verifier::Config for Runtime {
 	type AuthorityId = VerifierId;
@@ -381,14 +408,47 @@ impl pallet_starks_verifier_user::Config for Runtime {
 	type UnsignedPriority = VerifierPriority;
 }
 
-// impl pallet_crowdfunding::Config for Runtime {
-// 	type AuthorityId = VerifierId;
-// 	type Event = Event;
-// 	type StorePeriod = StorePeriod;
-// 	type UnsignedPriority = VerifierPriority;
-// 	type Balance = Balance;
-// 	type Check = StarksVerifier;
-// }
+
+impl pallet_starks_verifier_seperate::Config for Runtime {
+	type AuthorityId = VerifierId;
+	type Event = Event;
+	type StorePeriod = StorePeriod;
+	type WhiteListPeriod = WhiteListPeriod;
+	type UnsignedPriority = VerifierPriority;
+}
+
+impl pallet_crowdfunding::Config for Runtime {
+	type AuthorityId = VerifierId;
+	type Event = Event;
+	type StorePeriod = StorePeriod;
+	type UnsignedPriority = VerifierPriority;
+	type Check = StarksVerifier;
+	type Inspect = Assets;
+	type Transfer = Assets;
+	type CrowdFundingLimit = CrowdFundingLimit;
+	type CrowdFundingMetadataDepositBase = CrowdFundingMetadataDepositBase;
+	type MinBalance = MinBalance;
+	type PalletId = CrowdfundingPalletId;
+	// type Lookup = AccountIdLookup<AccountId, ()>;
+
+
+}
+
+impl pallet_assets::Config for Runtime {
+	type Event = Event;
+	type Balance = Balance;
+	type AssetId = u32;
+	type Currency = Balances;
+	type ForceOrigin = EnsureRoot<AccountId>;
+	type AssetDeposit = AssetDeposit;
+	type MetadataDepositBase = MetadataDepositBase;
+	type MetadataDepositPerByte = MetadataDepositPerByte;
+	type ApprovalDeposit = ApprovalDeposit;
+	type StringLimit = StringLimit;
+	type Freezer = ();
+	type Extra = ();
+	type WeightInfo = ();
+}
 
 // Create the runtime by composing the FRAME pallets that were previously configured.
 construct_runtime!(
@@ -398,18 +458,21 @@ construct_runtime!(
 		UncheckedExtrinsic = UncheckedExtrinsic
 	{
 		System: frame_system::{Pallet, Call, Config, Storage, Event<T>},
-		RandomnessCollectiveFlip: pallet_randomness_collective_flip::{Pallet, Call, Storage},
+		RandomnessCollectiveFlip: pallet_randomness_collective_flip::{Pallet, Storage},
 		Timestamp: pallet_timestamp::{Pallet, Call, Storage, Inherent},
 		Balances: pallet_balances::{Pallet, Call, Storage, Config<T>, Event<T>},
 		Session: pallet_session::{Pallet, Call, Storage, Event, Config<T>},
 		ValidatorSet: pallet_validator_set::{Pallet, Call, Storage, Event<T>, Config<T>},
+		StarksCrowdfundng: pallet_crowdfunding::{Pallet, Call, Storage, Event<T>, Config<T>},
+
 		Aura: pallet_aura::{Pallet, Config<T>},
 		Grandpa: pallet_grandpa::{Pallet, Call, Storage, Config, Event},
 		TransactionPayment: pallet_transaction_payment::{Pallet, Storage},
 		Sudo: pallet_sudo::{Pallet, Call, Config<T>, Storage, Event<T>},
 		StarksVerifier: pallet_starks_verifier::{Pallet, Call, Storage, Event<T>, ValidateUnsigned},
 		StarksVerifierUser: pallet_starks_verifier_user::{Pallet, Call, Storage, Event<T>},
-		// StarksCrowdfundng: pallet_crowdfunding::{Pallet, Call, Storage, Event<T>},
+		StarksVerifierSeperate: pallet_starks_verifier_seperate::{Pallet, Call, Storage, Event<T>},
+		Assets: pallet_assets::{Pallet, Call, Storage, Event<T>},
 
 	}
 );
@@ -489,18 +552,14 @@ impl_runtime_apis! {
 		) -> sp_inherents::CheckInherentsResult {
 			data.check_extrinsics(&block)
 		}
-
-		fn random_seed() -> <Block as BlockT>::Hash {
-			RandomnessCollectiveFlip::random_seed().0
-		}
 	}
-
 	impl sp_transaction_pool::runtime_api::TaggedTransactionQueue<Block> for Runtime {
 		fn validate_transaction(
 			source: TransactionSource,
 			tx: <Block as BlockT>::Extrinsic,
+			block_hash: <Block as BlockT>::Hash,
 		) -> TransactionValidity {
-			Executive::validate_transaction(source, tx)
+			Executive::validate_transaction(source, tx, block_hash)
 		}
 	}
 
@@ -537,6 +596,10 @@ impl_runtime_apis! {
 			Grandpa::grandpa_authorities()
 		}
 
+		fn current_set_id() -> fg_primitives::SetId {
+			Grandpa::current_set_id()
+		}
+
 		fn submit_report_equivocation_unsigned_extrinsic(
 			_equivocation_proof: fg_primitives::EquivocationProof<
 				<Block as BlockT>::Hash,
@@ -557,7 +620,6 @@ impl_runtime_apis! {
 			None
 		}
 	}
-
 	impl frame_system_rpc_runtime_api::AccountNonceApi<Block, AccountId, Index> for Runtime {
 		fn account_nonce(account: AccountId) -> Index {
 			System::account_nonce(account)
@@ -578,7 +640,6 @@ impl_runtime_apis! {
 			TransactionPayment::query_fee_details(uxt, len)
 		}
 	}
-
 	#[cfg(feature = "runtime-benchmarks")]
 	impl frame_benchmarking::Benchmark<Block> for Runtime {
 		fn dispatch_benchmark(
@@ -609,6 +670,7 @@ impl_runtime_apis! {
 			add_benchmark!(params, batches, pallet_balances, Balances);
 			add_benchmark!(params, batches, pallet_timestamp, Timestamp);
 			add_benchmark!(params, batches, pallet_template, TemplateModule);
+			add_benchmark!(params, batches, pallet_assets, Assets);
 
 			if batches.is_empty() { return Err("Benchmark not found for this pallet.".into()) }
 			Ok(batches)

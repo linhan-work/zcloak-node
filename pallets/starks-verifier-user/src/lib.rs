@@ -185,12 +185,14 @@ pub mod pallet {
     #[pallet::storage]
     #[pallet::getter(fn settled_tasks)]
     /// Completed proof tasks, will be stored onchain for a short period to be challenged
-    pub(super) type SettledTasks<T: Config> = StorageMap<
+    pub(super) type SettledTasks<T: Config> = StorageDoubleMap<
         _,
+        Twox64Concat, T::BlockNumber,
         Twox64Concat, (T::AccountId, Class),
         Option<bool>,
         ValueQuery,
     >;
+
     #[pallet::event]
     #[pallet::generate_deposit(pub(super) fn deposit_event)]
     #[pallet::metadata(T::AccountId = "AccountId")]
@@ -234,17 +236,18 @@ pub mod pallet {
             ensure!(!TaskParams::<T>::try_get(&who, &class).is_ok(), Error::<T>::TaskAlreadyExists);
             <TaskParams<T>>::insert(&who, &class, UserTaskInfo{proof: proof.clone(), inputs:inputs.clone(), outputs:outputs.clone(), program_hash: program_hash.clone(), is_task_finish: Some(UserTaskStatus::JustCreated)});
             Self::deposit_event(Event::UserTaskCreated(who.clone(), class.clone(), proof.clone()));
-
+            
+            let expiration = <frame_system::Pallet<T>>::block_number() + T::StorePeriod::get();
             let is_success = Self::stark_verify(&program_hash, inputs.clone(), outputs.clone(), &proof);
             let res = if let Ok(r) = is_success { r } else {false};
 
             if res {
                 <TaskParams<T>>::insert(&who, &class, UserTaskInfo{proof, inputs, outputs, program_hash: program_hash, is_task_finish: Some(UserTaskStatus::VerifiedTrue)});
-                SettledTasks::<T>::insert(&(who.clone(),class.clone()), Some(true));
+                SettledTasks::<T>::insert(expiration,&(who.clone(),class.clone()), Some(true));
                 Self::deposit_event(Event::UserTaskVerification(who.clone(), class.clone(), true));
             }else{
                 <TaskParams<T>>::insert(&who, &class, UserTaskInfo{proof, inputs, outputs, program_hash: program_hash, is_task_finish: Some(UserTaskStatus::VerifiedFalse)});
-                SettledTasks::<T>::insert(&(who.clone(), class.clone()), Some(false));
+                SettledTasks::<T>::insert(expiration,&(who.clone(), class.clone()), Some(false));
                 Self::deposit_event(Event::UserTaskVerification(who.clone(), class.clone(), false));
             }
             Ok(())
@@ -254,7 +257,9 @@ pub mod pallet {
     #[pallet::hooks]
     impl<T: Config> Hooks<BlockNumberFor<T>> for Pallet<T> {
         //We don't need to remove any SettledTask
-        fn on_finalize(_block: T::BlockNumber) {}
+        fn on_finalize(block: T::BlockNumber) {
+            SettledTasks::<T>::remove_prefix(block, None);
+        }
     }
 }
 

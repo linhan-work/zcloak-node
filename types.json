@@ -8,6 +8,13 @@
       "VerifiedFalse"
     ]
   },
+  "UserTaskStatus": {
+    "_enum": [
+      "JustCreated",
+      "VerifiedTrue",
+      "VerifiedFalse"
+    ]
+  },
   "Status": {
     "verifiers": "Vec<u32>",
     "ayes": "u32",
@@ -27,5 +34,49 @@
     "program_hash": "[u8; 32]",
     "is_task_finish": "Option<TaskStatus>",
     "expiration": "Option<BlockNumber>"
+  },
+
+  "AssetId": "u32",
+  "LookupSource": "MultiAddress",
+  "TAssetBalance": "u128",
+  "CrowfundingStatus": {
+    "admin": "Option<AccountId>",
+    "funding_account": "Option<AccountId>",
+    "funding_begin": "BlockNumber",
+    "funding_expiration": "BlockNumber",
+    "total_funding": "Balance",
+    "remain_funding": "Balance",
+    "is_funding_proceed": "Option<bool>",
+    "ratio": "Balance"
+  },
+  "SeperateStatus": {
+    "verifiers": "Vec<u32>",
+    "ayes": "u32",
+    "nays": "u32",
+    "come_first": "Option<bool>"
+  },
+  "VerifyClass": {
+    "_enum": [
+      "Age",
+      "Country"
+    ]
+  },
+  "KYCListOption": {
+    "_enum": {
+      "Add": "ADD",
+      "Delete": "DEL"
+    }
+  },
+  "KYCStruct": {
+    "KYCprogram_hash": "[u8; 32]",
+    "KYCclass": "Vec<u8>"
+  },
+  "ADD": {
+    "kyc_verify_class": "Vec<u8>",
+    "class": "Vec<u8>",
+    "program_hash": "[u8; 32]]"
+  },
+  "DEL": {
+    "kyc_verify_class": "Vec<u8>"
   }
 }

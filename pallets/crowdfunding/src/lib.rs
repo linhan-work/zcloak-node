@@ -93,7 +93,7 @@ pub mod pallet {
     use frame_support::{dispatch::DispatchResult, pallet_prelude::*};
 	use frame_system::{ pallet_prelude::*};
     use sp_runtime::{SaturatedConversion};
-    use zcloak_support::traits::VerifyClass;
+    use pallet_starks_verifier::VerifyClass;
     use zcloak_support::traits::RegulatedCurrency;
 	use super::*;
     extern crate zcloak_support;
@@ -407,7 +407,7 @@ pub mod pallet {
                     Some(pallet_starks_verifier::CheckError::ICOVerifyFailedNotAllowed) => {Self::deposit_event(Event::ICOVerifyFailedNotAllowed);return Err(Error::<T>::ICOVerifyFailedNotAllowed.into())},
                     Some(pallet_starks_verifier::CheckError::ICOVerifyFailedTaskProgramWrong) => {Self::deposit_event(Event::ICOVerifyFailedTaskProgramWrong);return Err( Error::<T>::ICOVerifyFailedTaskProgramWrong.into())},
                     Some(pallet_starks_verifier::CheckError::ICOVerifyFailedNotOnChain) => {Self::deposit_event(Event::ICOVerifyFailedNotOnChain);return Err(Error::<T>::ICOVerifyFailedNotOnChain.into())},
-                    None => return {Self::deposit_event(Event::OtherErr);Err(Error::<T>::OtherErr.into())},
+                    _ => return {Self::deposit_event(Event::OtherErr);Err(Error::<T>::OtherErr.into())},
                 }
             }
 
@@ -478,11 +478,7 @@ pub mod pallet {
 impl<T: Config> Pallet<T> {
     fn initialize_pallet_admin() {
         use sp_runtime::SaturatedConversion;
-        log::debug!(target:"starks-verifier","im in init");
 
-        // let res1 =  TryInto::<u128>::try_into(0_u128).ok();
-        // let min = BalanceOf::<T>::saturated_from(res1.unwrap());
-       
           let balance2 = TryInto::<u128>::try_into(10_000_000_000_u128).ok();
         // This `100` is for debug ,will modify next version
         let banlance3 = BalanceOf::<T>::saturated_from(balance2.unwrap());

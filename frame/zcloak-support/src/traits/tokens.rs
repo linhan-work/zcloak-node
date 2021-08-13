@@ -1,3 +1,3 @@
 pub mod currency;
 pub mod arithmetic;
-pub use currency::{VerifyClass, VerifyKyc, Demostruct, RegulatedCurrency};
+pub use currency:: {Demostruct, RegulatedCurrency};

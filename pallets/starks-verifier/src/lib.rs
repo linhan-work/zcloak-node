@@ -27,6 +27,8 @@
 #![cfg_attr(not(feature = "std"), no_std)]
 use sp_application_crypto::RuntimeAppPublic;
 use codec::{Encode, Decode};
+use codec::{Codec, MaxEncodedLen};
+
 use sp_std::prelude::*;
 use sp_std::{
     borrow::ToOwned,
@@ -41,13 +43,14 @@ use sp_runtime::{
 };
 use sp_core::crypto::KeyTypeId;
 use frame_support::{
-    traits::OneSessionHandler
+    traits::OneSessionHandler, StorageHasher
 };
 // use frame_system::{ensure_signed, ensure_none};
 use frame_system::offchain::{
     SendTransactionTypes,
     SubmitTransaction,
 };
+
 use sp_runtime::offchain::storage::{StorageRetrievalError, MutateStorageError};
 pub use pallet::*;
 
@@ -62,7 +65,7 @@ mod tests;
 pub trait Check<AccountId> {
     fn checkkyc(who: &AccountId, kycclass:Class, ioc_program_hash: [u8; 32]) -> Result<bool, CheckError>;
     fn compare_hash(hash1: Vec<u8>, hash2: Vec<u8>) -> bool;
-
+    fn checkkyc_with_verifykyc(who: &AccountId, verifykyc: VerifyClass) -> Result<bool, CheckError>;
 }
 
 
@@ -86,6 +89,63 @@ pub mod crypto {
 
     /// A starks verifier identifier using sr25519 as its crypto.
     pub type AuthorityId = app_sr25519::Public;
+}
+
+#[derive(PartialEq, Clone, Debug, Encode, Decode)]
+// #[cfg_attr(feature = "std", derive(Serialize, Deserialize))]
+pub enum VerifyClass {
+	Age,
+    Country,
+}
+
+#[derive(PartialEq, Clone, Debug, Encode, Decode)]
+// #[cfg_attr(feature = "std", derive(Serialize, Deserialize))]
+pub enum KYCListOption {
+	Add(ADD),
+    Delete(DEL),
+}
+
+#[derive(PartialEq, Clone, Debug, Encode, Decode)]
+pub struct ADD{
+    pub kyc_verify_class: VerifyClass,
+    pub class: Vec<u8>,
+    pub program_hash: [u8; 32],
+}
+
+#[derive(PartialEq, Clone, Debug, Encode, Decode)]
+pub struct DEL{
+    pub kyc_verifify_class: VerifyClass,
+}
+
+
+
+
+
+#[derive(Debug)]
+pub enum Error {
+    WrongKYCToVerify,
+}
+
+pub trait VerifyKyc{
+    fn get_program_hash(&self) -> Result<[u8; 32], Error>;
+    fn get_kyc_class(&self) -> Result<Vec<u8>, Error>;
+}
+
+// Todo
+impl VerifyKyc for VerifyClass{
+    fn get_program_hash(&self) -> Result<[u8; 32], Error> {
+        match *self {
+            VerifyClass::Age => Ok([228,150,141,219,97,232,23,59,109,33,136,11,72,175,77,167,38,2,251,107,254,126,91,63,176,46,204,254,90,153,168,40]),
+            VerifyClass::Country => Ok([208, 194, 130, 197, 164, 24, 192, 43, 169, 199, 5, 5, 30, 49, 190, 137, 168, 29, 175, 111, 254, 108, 138, 242, 161, 201, 76, 10, 238, 140, 97, 14]),  
+        }
+    }
+    fn get_kyc_class(&self) -> Result<Vec<u8>, Error>{
+        match *self {
+            VerifyClass::Age => Ok([21].to_vec()),
+            VerifyClass::Country => Ok([22].to_vec()), 
+ 
+        }   
+     }
 }
 
 
@@ -124,6 +184,7 @@ pub enum TaskStatus {
     VerifiedFalse,
 }
 
+
 #[derive(Clone, Copy, Encode, Decode, PartialEq, Eq, Debug)]
 pub enum CheckError{
     //Not on chain
@@ -131,7 +192,8 @@ pub enum CheckError{
     //KYC onchain, but not allowed to do crowdfunding
     ICOVerifyFailedNotAllowed,  
     //KYC onchain, but the corresponding program is not ICOprogram
-    ICOVerifyFailedTaskProgramWrong,  
+    ICOVerifyFailedTaskProgramWrong, 
+    VerifyKYCNotCorrect, 
 
 }
 
@@ -163,7 +225,11 @@ pub struct TaskInfo <BlockNumber>{
     expiration: Option<BlockNumber>,
 }
 
-
+#[derive(Encode, Decode, Default, PartialEq, Eq, RuntimeDebug)]
+pub struct KYCStruct {
+    KYCprogram_hash: [u8; 32],
+    KYCclass: Vec<u8>,
+}
 
 /// Class of the privacy in raw
 type Class = Vec<u8>;
@@ -237,10 +303,21 @@ pub mod pallet {
     #[pallet::generate_store(pub(super) trait Store)]
     pub struct Pallet<T>(PhantomData<T>);
 
+
     #[pallet::storage]
     #[pallet::getter(fn keys)]
     /// Current set of keys that are allowed to execute verification tasks
     pub(super) type Keys<T: Config> = StorageValue<_, Vec<T::AuthorityId>, ValueQuery>;
+
+    #[pallet::storage]
+    #[pallet::getter(fn kyc_list)]
+	pub(super) type KYCList<T: Config> = StorageMap<
+    _,
+    Twox64Concat,
+    VerifyClass, 
+    KYCStruct, 
+    ValueQuery
+    >;
 
     #[pallet::storage]
     #[pallet::getter(fn task_params)]
@@ -275,6 +352,27 @@ pub mod pallet {
         Option<bool>,
         ValueQuery,
     >;
+
+
+	#[pallet::genesis_config]
+	pub struct GenesisConfig<T: Config> {
+		_phantom: sp_std::marker::PhantomData<T>,
+	}
+    
+    #[cfg(feature = "std")]
+	impl<T: Config> Default for GenesisConfig<T> {
+		fn default() -> Self {
+			GenesisConfig { _phantom: Default::default() }
+		}
+	}
+
+	#[pallet::genesis_build]
+	impl<T: Config> GenesisBuild<T> for GenesisConfig<T> {
+		fn build(&self) {
+           Pallet::<T>::initialize_KYCList()
+        }
+    }
+
     #[pallet::event]
     #[pallet::generate_deposit(pub(super) fn deposit_event)]
     #[pallet::metadata(T::AccountId = "AccountId")]
@@ -399,6 +497,27 @@ pub mod pallet {
                     }
                     Ok(())
                 })
+            }
+            #[pallet::weight(10000)]
+            pub fn modify_kyc_list(
+                origin: OriginFor<T>,
+                add_or_delete: KYCListOption,
+
+            ) -> DispatchResult {
+                ensure_root(origin)?;
+                match add_or_delete {
+                    KYCListOption::Add(add_information) => {
+                        let ADD{kyc_verify_class, class, program_hash} = add_information;
+                        let add_struct = KYCStruct{KYCprogram_hash: program_hash, KYCclass: class};
+                        <KYCList<T>>::insert(kyc_verify_class, add_struct);
+                    },
+                    KYCListOption::Delete(delete_information) => {
+                        let DEL{kyc_verifify_class} = delete_information;
+                        <KYCList<T>>::remove(kyc_verifify_class);
+                    },
+                };
+
+                Ok(())
             }
         }
 
@@ -729,6 +848,17 @@ impl<T: Config> Check<T::AccountId> for Pallet<T> {
             return false;
         }
     }
+
+    fn checkkyc_with_verifykyc(who: &T::AccountId, verifykyc: VerifyClass) -> Result<bool, CheckError>{
+        let kyc_program = verifykyc.get_program_hash();
+        let kyc_class = verifykyc.get_kyc_class();
+        if kyc_program.is_ok() && kyc_class.is_ok(){
+            return Self::checkkyc(who, kyc_class.unwrap(), kyc_program.unwrap());
+        }else{
+            return Err(CheckError::VerifyKYCNotCorrect);
+        }
+ 
+    }
 }
 
 
@@ -760,3 +890,15 @@ impl<T: Config> OneSessionHandler<T::AccountId> for Pallet<T> {
     }
 }
 
+
+impl<T: Config> Pallet<T> {
+    fn initialize_KYCList() {
+        let age_program_hash = [228,150,141,219,97,232,23,59,109,33,136,11,72,175,77,167,38,2,251,107,254,126,91,63,176,46,204,254,90,153,168,40];
+        let country_program_hash = [208, 194, 130, 197, 164, 24, 192, 43, 169, 199, 5, 5, 30, 49, 190, 137, 168, 29, 175, 111, 254, 108, 138, 242, 161, 201, 76, 10, 238, 140, 97, 14];
+        let age_class = [21].to_vec();;
+        let country_class = [22].to_vec();
+        <KYCList<T>>::insert(VerifyClass::Age, KYCStruct{KYCprogram_hash: age_program_hash, KYCclass: age_class});
+        <KYCList<T>>::insert(VerifyClass::Country, KYCStruct{KYCprogram_hash: country_program_hash, KYCclass: country_class});
+
+    }
+}

@@ -428,7 +428,6 @@ impl pallet_crowdfunding::Config for Runtime {
 	type CrowdFundingMetadataDepositBase = CrowdFundingMetadataDepositBase;
 	type MinBalance = MinBalance;
 	type PalletId = CrowdfundingPalletId;
-	type RegulatedCurrency = RegulatedCurrencyAdaptor;
 }
 
 impl pallet_starks_balances::Config for Runtime {

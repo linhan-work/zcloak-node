@@ -494,31 +494,23 @@ pub mod pallet {
                     KYCListOption::Add(add_information) => {
                         let ADD{kyc_verify_class, class, program_hash} = add_information;
                         let res_add = <KYCList<T>>::try_get(kyc_verify_class.clone());
-
                         ensure!(!KYCList::<T>::try_get(kyc_verify_class.clone()).is_ok(),
                         Error::<T>::KYCListAlreadyHaveThisOne
                         );
-
                         let add_struct = KYCStruct{KYCprogram_hash: program_hash.clone(), KYCclass: class.clone()};
-
                         ensure!(!program_hash.is_empty(),
                         Error::<T>::KYCProgramIsEmpty
                         );
-
                         ensure!(!class.is_empty(),
                         Error::<T>::KYCClassIsEmpty
                         );
-
-
                         <KYCList<T>>::insert(kyc_verify_class, add_struct);
                     },
                     KYCListOption::Delete(delete_information) => {
                         let DEL{kyc_verify_class} = delete_information;
-
                         ensure!(KYCList::<T>::try_get(kyc_verify_class.clone()).is_ok(),
                         Error::<T>::KYCListNotHaveThisOne
                         );
-
                         <KYCList<T>>::remove(kyc_verify_class);
                     }
                 }
@@ -858,7 +850,7 @@ impl<T: Config> Check<T::AccountId> for Pallet<T> {
     fn checkkyc_with_verifykyc(who: &T::AccountId, verifykyc: VerifyClass) -> Result<bool, CheckError>{
         let kyc_struct = KYCList::<T>::try_get(verifykyc);
         if kyc_struct.is_ok(){
-            let KYCStruct{KYCprogram_hash,KYCclass} = kyc_struct.unwrap();
+            let KYCStruct{KYCprogram_hash, KYCclass} = kyc_struct.unwrap();
             return Self::checkkyc(who, KYCclass, KYCprogram_hash);
         }else{
             return Err(CheckError::VerifyKYCNotCorrect);

@@ -115,7 +115,6 @@ pub mod pallet {
         #[pallet::constant]
         type StorePeriod: Get<Self::BlockNumber>;
     
-    	
         type Check: Check<Self::AccountId>;
 
         type Inspect: frame_support::traits::fungibles::Inspect<Self::AccountId>;
@@ -131,14 +130,10 @@ pub mod pallet {
         #[pallet::constant]
 		type PalletId: Get<PalletId>;
 
-        type RegulatedCurrency: zcloak_support::traits::tokens::currency::RegulatedCurrency<Self::AccountId>;
-
-
     }
 
     pub type BalanceOf<T> = <<T as pallet_assets::Config>::Currency as Currency<<T as frame_system::Config>::AccountId>>::Balance;
 
-    pub type RegulatedBalanceOf<T> = <<T as pallet::Config>::RegulatedCurrency as RegulatedCurrency<<T as frame_system::Config>::AccountId>>::Balance;
     // impl<T: Config> StaticLookup for IdentityLookup<T> {
     //     type Source = <<T as pallet::Config>::Lookup as StaticLookup>::Source;
     //     type Target = <<T as pallet::Config>::Lookup as StaticLookup>::Target;
@@ -304,9 +299,7 @@ pub mod pallet {
                 );
                 // After create asset, mint this asset to CrowdfundingAccount which is determined by PalletId
                 let crowdfunding_account = <<T as frame_system::Config>::Lookup as StaticLookup>::unlookup(Self::account_id().clone());
-
                 let mint_asset_result = <pallet_assets::Pallet<T>>::mint(origin, asset_id, crowdfunding_account.clone(), total_asset / T::CrowdFundingMetadataDepositBase::get());
-
                 ensure!(
                     mint_asset_result.is_ok() == true,
                     Error::<T>::MintAssetFail
@@ -318,7 +311,7 @@ pub mod pallet {
                     total_asset / T::CrowdFundingMetadataDepositBase::get() <= origin_own,
                     Error::<T>::AdminNotHaveEnoughAsset
                 );
-                <pallet_assets::Pallet<T> as Transfer<T::AccountId>>::transfer(asset_id,&who.clone(), &Self::account_id(),total_asset / T::CrowdFundingMetadataDepositBase::get(),true)?;
+                <pallet_assets::Pallet<T> as Transfer<T::AccountId>>::transfer(asset_id, &who.clone(), &Self::account_id(), total_asset / T::CrowdFundingMetadataDepositBase::get(), true)?;
 
             }
             log::debug!(target:"starks-verifier","palletid have {:?}",pallet_assets::Pallet::<T>::balance(asset_id, Self::account_id()));
@@ -339,8 +332,8 @@ pub mod pallet {
             let funding_expiration = now + funding_period;
 
             //Insert new CrowdfundingStatus on-chain.
-            <CrowdfundingProcess<T>>::insert(&asset_id,CrowfundingStatus{admin: Some(who.clone()), funding_account: Some(funding_account.clone()), funding_begin: funding_begin, funding_expiration: funding_expiration, total_funding: total_asset - T::MinBalance::get() * T::CrowdFundingMetadataDepositBase::get(), remain_funding: total_asset - T::MinBalance::get() * T::CrowdFundingMetadataDepositBase::get(), is_funding_proceed: Some(true), ratio: ratio});
-            <Settledcrowdfunding<T>>::insert(&funding_expiration,&(who.clone(), asset_id.clone()),Some(false) );
+            <CrowdfundingProcess<T>>::insert(&asset_id, CrowfundingStatus{admin: Some(who.clone()), funding_account: Some(funding_account.clone()), funding_begin: funding_begin, funding_expiration: funding_expiration, total_funding: total_asset - T::MinBalance::get() * T::CrowdFundingMetadataDepositBase::get(), remain_funding: total_asset - T::MinBalance::get() * T::CrowdFundingMetadataDepositBase::get(), is_funding_proceed: Some(true), ratio: ratio});
+            <Settledcrowdfunding<T>>::insert(&funding_expiration, &(who.clone(), asset_id.clone()), Some(false) );
             Self::deposit_event(Event::CrowdfundingCreated(asset_id, who, funding_account,total_asset));
             
             Ok(())
@@ -374,7 +367,7 @@ pub mod pallet {
             // The KYC-Verifying program, to check whether this KYCproof is stored and VerifiedPass on-chain
             let ico_program_string=[208, 194, 130, 197, 164, 24, 192, 43, 169, 199, 5, 5, 30, 49, 190, 137, 168, 29, 175, 111, 254, 108, 138, 242, 161, 201, 76, 10, 238, 140, 97, 14];
             let kyc_class:Class = [22].to_vec();
-            let check_result = T::Check::checkkyc(&who.clone(), kyc_class.clone(),ico_program_string); 
+            let check_result = T::Check::checkkyc(&who.clone(), kyc_class.clone(), ico_program_string); 
             // The origin has the access to buy ztokens due to SuccessProved-KYC 
             if check_result.is_ok() {
                 Self::deposit_event(Event::ICOVerifySuccuss(who.clone()));
@@ -389,14 +382,14 @@ pub mod pallet {
                     Error::<T>::NotHaveEnoughDotToBuy,
                 );
 
-                let result = <pallet_assets::Pallet<T> as frame_support::traits::fungibles::Inspect<T::AccountId>>::can_withdraw(asset_id, &Self::account_id(),ztoken_to_buy / T::CrowdFundingMetadataDepositBase::get() );
+                let result = <pallet_assets::Pallet<T> as frame_support::traits::fungibles::Inspect<T::AccountId>>::can_withdraw(asset_id, &Self::account_id(), ztoken_to_buy / T::CrowdFundingMetadataDepositBase::get() );
                 ensure!(
                     result == frame_support::traits::tokens::WithdrawConsequence::Success,
                     Error::<T>::CrowdfundingNotHaveEnoughZtoken
                 );
                 
-                T::Currency::transfer(&who,&funding_account.clone().unwrap(),dot_in_balance, AllowDeath)?;
-                <pallet_assets::Pallet<T> as Transfer<T::AccountId>>::transfer(asset_id,&Self::account_id(), &who,ztoken_to_buy / T::CrowdFundingMetadataDepositBase::get(),false)?;
+                T::Currency::transfer(&who, &funding_account.clone().unwrap(), dot_in_balance, AllowDeath)?;
+                <pallet_assets::Pallet<T> as Transfer<T::AccountId>>::transfer(asset_id, &Self::account_id(), &who, ztoken_to_buy / T::CrowdFundingMetadataDepositBase::get(), false)?;
                 
                 <FundingAccount<T>>::insert(&asset_id, &who,  &ztoken_to_buy);
                 <CrowdfundingProcess<T>>::insert(&asset_id, CrowfundingStatus{admin: admin.clone(), funding_account, funding_begin, funding_expiration, total_funding, remain_funding: remain_funding - ztoken_to_buy, is_funding_proceed: Some(true), ratio} );
@@ -441,29 +434,11 @@ pub mod pallet {
                 Self::deposit_event(Event::SwitchcrowdfundingStatusTo(asset_id, is_funding_proceed.unwrap()));         
             }else{
                 <CrowdfundingProcess<T>>::remove(asset_id);
-                <Settledcrowdfunding<T>>::insert(&funding_expiration,&(admin.clone().unwrap(), asset_id.clone()),Some(true));
+                <Settledcrowdfunding<T>>::insert(&funding_expiration, &(admin.clone().unwrap(), asset_id.clone()), Some(true));
                 Self::deposit_event(Event::AlreadyDeleteCrowdfunding(asset_id, <frame_system::Pallet<T>>::block_number()));         
             }
             Ok(())
 
-        }
-
-
-        #[pallet::weight(10000)]
-        pub fn transfer(
-            origin: OriginFor<T>,
-            dest: T::AccountId,
-            value: T::Balance,
-            kyc_verify: VerifyClass,
-        ) -> DispatchResult {
-            let who = ensure_signed(origin)?;
-            let option = ExistenceRequirement::KeepAlive;
-            
-            let v1 = TryInto::<u128>::try_into(value).ok();
-            let v2 = RegulatedBalanceOf::<T>::saturated_from(v1.unwrap());
-            
-            T::RegulatedCurrency::transfer(&who, &dest, v2, option, kyc_verify)?;
-            Ok(())
         }
     }
 
@@ -478,8 +453,7 @@ pub mod pallet {
 impl<T: Config> Pallet<T> {
     fn initialize_pallet_admin() {
         use sp_runtime::SaturatedConversion;
-
-          let balance2 = TryInto::<u128>::try_into(10_000_000_000_u128).ok();
+        let balance2 = TryInto::<u128>::try_into(10_000_000_000_u128).ok();
         // This `100` is for debug ,will modify next version
         let banlance3 = BalanceOf::<T>::saturated_from(balance2.unwrap());
         let res =T::Currency::deposit_creating(&Pallet::<T>::account_id(), banlance3);

@@ -44,7 +44,6 @@ pub enum CheckError{
 }
 
 
-
 #[frame_support::pallet]
 pub mod pallet {
     use frame_support::{dispatch::DispatchResult, pallet_prelude::*};
@@ -54,8 +53,6 @@ pub mod pallet {
     use zcloak_support::traits::RegulatedCurrency;
 	use super::*;
     extern crate zcloak_support;
-
-    // use zcloak_support::traits::{VerifyClass, RegulatedCurrency};
 
     #[pallet::pallet]
 	#[pallet::generate_store(pub(super) trait Store)]
@@ -83,7 +80,8 @@ pub mod pallet {
     #[pallet::generate_deposit(pub(super) fn deposit_event)]
     #[pallet::metadata(T::AccountId = "AccountId")]
     pub enum Event<T: Config> {
-
+        ///RegulatedTransferSuccess with source, dest, balance
+        RegulatedTransferSuccess(T::AccountId, T::AccountId, T::Balance)
     }
 
     #[pallet::error]
@@ -105,15 +103,13 @@ pub mod pallet {
         ) -> DispatchResult {
             let who = ensure_signed(origin)?;
             let option = ExistenceRequirement::KeepAlive;
-            
             let v1 = TryInto::<u128>::try_into(value).ok();
             let v2 = RegulatedBalanceOf::<T>::saturated_from(v1.unwrap());
             let transfer_result =T::RegulatedCurrency::transfer(&who, &dest, v2, option, kyc_verify);
-            
             ensure!(transfer_result !=  Err(DispatchError::Other("KYCNotPass".into())),
             Error::<T>::KYCNotPass
             );
-            
+            Self::deposit_event(Event::RegulatedTransferSuccess(who, dest, value));
             transfer_result
         }
     }

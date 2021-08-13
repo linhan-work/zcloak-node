@@ -46,11 +46,6 @@ mod mock;
 #[cfg(all(feature = "std", test))]
 mod tests;
 
-// pub trait SingleResponse<AccountId> {
-//     fn clint_single_reponse(origin: OriginFor<T>, who: T::AccountId, class: Class, result: bool) -> DispatchResult;
-
-// }
-
 /// The key type of which to sign the starks verification transactions
 pub const KEY_TYPE: KeyTypeId = KeyTypeId(*b"zkst");
 

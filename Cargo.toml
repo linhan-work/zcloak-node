@@ -9,4 +9,5 @@ members = [
     'pallets/*',
     'runtime',
     'primitives/*',
+    'frame/zcloak-support',
 ]

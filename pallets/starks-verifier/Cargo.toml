@@ -18,6 +18,7 @@ frame-support =  { default-features = false, git = "https://github.com/zCloak-Ne
 frame-system =  { default-features = false, git = "https://github.com/zCloak-Network/substrate" }
 sp-keystore = { git = "https://github.com/zCloak-Network/substrate", optional = true }
 log = { version = "0.4.14", default-features = false }
+frame-metadata = { default-features = false, git = "https://github.com/zCloak-Network/substrate" }
 # starks
 sp-starks = { path = "../../primitives/starks", default-features = false }
 

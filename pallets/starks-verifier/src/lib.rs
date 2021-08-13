@@ -94,8 +94,8 @@ pub mod crypto {
 #[derive(PartialEq, Clone, Debug, Encode, Decode)]
 // #[cfg_attr(feature = "std", derive(Serialize, Deserialize))]
 pub enum VerifyClass {
-	Age,
-    Country,
+	Age(u32),
+    Country(u32),
 }
 
 #[derive(PartialEq, Clone, Debug, Encode, Decode)]
@@ -114,7 +114,7 @@ pub struct ADD{
 
 #[derive(PartialEq, Clone, Debug, Encode, Decode)]
 pub struct DEL{
-    pub kyc_verifify_class: VerifyClass,
+    pub kyc_verify_class: VerifyClass,
 }
 
 
@@ -125,29 +125,6 @@ pub struct DEL{
 pub enum Error {
     WrongKYCToVerify,
 }
-
-pub trait VerifyKyc{
-    fn get_program_hash(&self) -> Result<[u8; 32], Error>;
-    fn get_kyc_class(&self) -> Result<Vec<u8>, Error>;
-}
-
-// Todo
-impl VerifyKyc for VerifyClass{
-    fn get_program_hash(&self) -> Result<[u8; 32], Error> {
-        match *self {
-            VerifyClass::Age => Ok([228,150,141,219,97,232,23,59,109,33,136,11,72,175,77,167,38,2,251,107,254,126,91,63,176,46,204,254,90,153,168,40]),
-            VerifyClass::Country => Ok([208, 194, 130, 197, 164, 24, 192, 43, 169, 199, 5, 5, 30, 49, 190, 137, 168, 29, 175, 111, 254, 108, 138, 242, 161, 201, 76, 10, 238, 140, 97, 14]),  
-        }
-    }
-    fn get_kyc_class(&self) -> Result<Vec<u8>, Error>{
-        match *self {
-            VerifyClass::Age => Ok([21].to_vec()),
-            VerifyClass::Country => Ok([22].to_vec()), 
- 
-        }   
-     }
-}
-
 
 /// The status of a given verification task
 #[derive(Encode, Decode, Default, PartialEq, Eq, RuntimeDebug)]
@@ -400,6 +377,14 @@ pub mod pallet {
         TaskNotExists,
         /// Duplicated Submission
         DuplicatedSubmission,
+        /// KYCListNotHaveThisOne
+        KYCListNotHaveThisOne,
+        /// KYCListAlreadyHaveThisOne
+        KYCListAlreadyHaveThisOne,
+        /// KYCClassIsEmpty
+        KYCClassIsEmpty,
+        /// KYCProgramIsEmpty
+        KYCProgramIsEmpty,
     }
 
     #[pallet::call]
@@ -508,14 +493,35 @@ pub mod pallet {
                 match add_or_delete {
                     KYCListOption::Add(add_information) => {
                         let ADD{kyc_verify_class, class, program_hash} = add_information;
-                        let add_struct = KYCStruct{KYCprogram_hash: program_hash, KYCclass: class};
+                        let res_add = <KYCList<T>>::try_get(kyc_verify_class.clone());
+
+                        ensure!(!KYCList::<T>::try_get(kyc_verify_class.clone()).is_ok(),
+                        Error::<T>::KYCListAlreadyHaveThisOne
+                        );
+
+                        let add_struct = KYCStruct{KYCprogram_hash: program_hash.clone(), KYCclass: class.clone()};
+
+                        ensure!(!program_hash.is_empty(),
+                        Error::<T>::KYCProgramIsEmpty
+                        );
+
+                        ensure!(!class.is_empty(),
+                        Error::<T>::KYCClassIsEmpty
+                        );
+
+
                         <KYCList<T>>::insert(kyc_verify_class, add_struct);
                     },
                     KYCListOption::Delete(delete_information) => {
-                        let DEL{kyc_verifify_class} = delete_information;
-                        <KYCList<T>>::remove(kyc_verifify_class);
-                    },
-                };
+                        let DEL{kyc_verify_class} = delete_information;
+
+                        ensure!(KYCList::<T>::try_get(kyc_verify_class.clone()).is_ok(),
+                        Error::<T>::KYCListNotHaveThisOne
+                        );
+
+                        <KYCList<T>>::remove(kyc_verify_class);
+                    }
+                }
 
                 Ok(())
             }
@@ -850,14 +856,14 @@ impl<T: Config> Check<T::AccountId> for Pallet<T> {
     }
 
     fn checkkyc_with_verifykyc(who: &T::AccountId, verifykyc: VerifyClass) -> Result<bool, CheckError>{
-        let kyc_program = verifykyc.get_program_hash();
-        let kyc_class = verifykyc.get_kyc_class();
-        if kyc_program.is_ok() && kyc_class.is_ok(){
-            return Self::checkkyc(who, kyc_class.unwrap(), kyc_program.unwrap());
+        let kyc_struct = KYCList::<T>::try_get(verifykyc);
+        if kyc_struct.is_ok(){
+            let KYCStruct{KYCprogram_hash,KYCclass} = kyc_struct.unwrap();
+            return Self::checkkyc(who, KYCclass, KYCprogram_hash);
         }else{
             return Err(CheckError::VerifyKYCNotCorrect);
         }
- 
+
     }
 }
 
@@ -897,8 +903,9 @@ impl<T: Config> Pallet<T> {
         let country_program_hash = [208, 194, 130, 197, 164, 24, 192, 43, 169, 199, 5, 5, 30, 49, 190, 137, 168, 29, 175, 111, 254, 108, 138, 242, 161, 201, 76, 10, 238, 140, 97, 14];
         let age_class = [21].to_vec();;
         let country_class = [22].to_vec();
-        <KYCList<T>>::insert(VerifyClass::Age, KYCStruct{KYCprogram_hash: age_program_hash, KYCclass: age_class});
-        <KYCList<T>>::insert(VerifyClass::Country, KYCStruct{KYCprogram_hash: country_program_hash, KYCclass: country_class});
+        <KYCList<T>>::insert(VerifyClass::Age(20), KYCStruct{KYCprogram_hash: age_program_hash, KYCclass: age_class});
+        <KYCList<T>>::insert(VerifyClass::Country(1), KYCStruct{KYCprogram_hash: country_program_hash, KYCclass: country_class});
 
     }
 }
+

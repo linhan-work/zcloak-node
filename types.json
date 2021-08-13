@@ -15,6 +15,12 @@
       "VerifiedFalse"
     ]
   },
+  "CrowdfundingOption": {
+    "_enum": [
+      "CreateAsset",
+      "TransferAsset"
+    ]
+  },
   "Status": {
     "verifiers": "Vec<u32>",
     "ayes": "u32",
@@ -56,10 +62,10 @@
     "come_first": "Option<bool>"
   },
   "VerifyClass": {
-    "_enum": [
-      "Age",
-      "Country"
-    ]
+    "_enum": {
+      "Age":"u32",
+      "Country":"u32"
+  }
   },
   "KYCListOption": {
     "_enum": {
@@ -72,11 +78,11 @@
     "KYCclass": "Vec<u8>"
   },
   "ADD": {
-    "kyc_verify_class": "Vec<u8>",
+    "kyc_verify_class": "VerifyClass",
     "class": "Vec<u8>",
     "program_hash": "[u8; 32]]"
   },
   "DEL": {
-    "kyc_verify_class": "Vec<u8>"
+    "kyc_verify_class": "VerifyClass"
   }
 }

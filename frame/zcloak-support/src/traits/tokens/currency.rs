@@ -1,5 +1,4 @@
 
-use super::arithmetic;
 use codec::{FullCodec};
 pub use frame_support::{
 	traits::{BalanceStatus, LockIdentifier, ExistenceRequirement},
@@ -21,7 +20,7 @@ use frame_support::traits::Currency;
 use sp_std::marker::PhantomData;
 use pallet_starks_verifier::Check;
 use codec::{Codec, Decode, Encode};
-use pallet_starks_verifier::{VerifyKyc, VerifyClass};
+use pallet_starks_verifier::{VerifyClass};
 
 pub trait RegulatedCurrency<AccountId> {
 	/// The balance of an account.
@@ -32,7 +31,6 @@ pub trait RegulatedCurrency<AccountId> {
     + Debug
     + Default;
 	
-    type VerifyKyc : VerifyKyc;
 
 	/// Transfer some amount from one account to another.
  	fn transfer(
@@ -67,8 +65,6 @@ where
 {
     type Balance = <C as Currency<AccountId>>::Balance;
 
-    type VerifyKyc = VerifyClass;
-
 
     fn transfer(
 		source: &AccountId,
@@ -77,7 +73,6 @@ where
 		existence_requirement: ExistenceRequirement,
         kyc_verify: VerifyClass,
 	) -> DispatchResult {
-        
             let kyc_check_result = F::checkkyc_with_verifykyc(source, kyc_verify);
             if kyc_check_result.is_ok() == true {
                 if kyc_check_result.unwrap() == true{

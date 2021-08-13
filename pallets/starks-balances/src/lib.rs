@@ -26,7 +26,11 @@ use sp_runtime::{traits::{StaticLookup}};
 
 use sp_runtime::RuntimeDebug;
 type Class = Vec<u8>;
+#[cfg(all(feature = "std", test))]
+mod mock;
 
+#[cfg(all(feature = "std", test))]
+mod tests;
 
 #[derive(Clone, Copy, Encode, Decode, PartialEq, Eq)]
 pub enum CheckError{
@@ -75,18 +79,6 @@ pub mod pallet {
 
     pub type RegulatedBalanceOf<T> = <<T as pallet::Config>::RegulatedCurrency as RegulatedCurrency<<T as frame_system::Config>::AccountId>>::Balance;
 
-    
-    // #[pallet::storage]
-    // #[pallet::getter(fn funding_account)]
-    // pub type FundingAccount<T: Config> = StorageDoubleMap<
-    //     _, 
-    //     Twox64Concat, T::AssetId,
-    //     Twox64Concat, T::AccountId,
-    //     T::Balance,
-    //     ValueQuery
-    // >;
-
-
     #[pallet::event]
     #[pallet::generate_deposit(pub(super) fn deposit_event)]
     #[pallet::metadata(T::AccountId = "AccountId")]
@@ -97,7 +89,7 @@ pub mod pallet {
     #[pallet::error]
     #[derive(Clone, PartialEq, Eq)]
     pub enum Error<T>{
-        TransferFail,
+        KYCNotPass,
     }
 
 
@@ -116,20 +108,21 @@ pub mod pallet {
             
             let v1 = TryInto::<u128>::try_into(value).ok();
             let v2 = RegulatedBalanceOf::<T>::saturated_from(v1.unwrap());
+            let transfer_result =T::RegulatedCurrency::transfer(&who, &dest, v2, option, kyc_verify);
             
-            let res = T::RegulatedCurrency::transfer(&who, &dest, v2, option, kyc_verify);
-            ensure!(res.is_ok() == true,
-            Error::<T>::TransferFail
+            ensure!(transfer_result !=  Err(DispatchError::Other("KYCNotPass".into())),
+            Error::<T>::KYCNotPass
             );
-            Ok(())
+            
+            transfer_result
         }
     }
 
     #[pallet::hooks]
     impl<T: Config> Hooks<BlockNumberFor<T>> for Pallet<T> {
         fn on_finalize(block: T::BlockNumber) {
+    
         }
-
     }
 }
 

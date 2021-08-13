@@ -1,6 +1,6 @@
 use zcloak_runtime::{
 	AccountId, AuraConfig, BalancesConfig, GenesisConfig, GrandpaConfig,
-	SudoConfig, SystemConfig, SessionConfig, ValidatorSetConfig, StarksCrowdfundngConfig, 
+	SudoConfig, SystemConfig, SessionConfig, ValidatorSetConfig, StarksCrowdfundngConfig, StarksVerifierConfig,
 	WASM_BINARY, Signature, SessionKeys, VerifierId
 };
 use sc_service::ChainType;
@@ -205,6 +205,7 @@ fn testnet_genesis(
 		validator_set: ValidatorSetConfig {
 			validators: initial_authorities.iter().map(|x| x.0.clone()).collect::<Vec<_>>(),
 		},
+		starks_verifier: StarksVerifierConfig::default(),
 		starks_crowdfundng: StarksCrowdfundngConfig::default(),
 		session: SessionConfig {
 			keys: initial_authorities.iter().map(|x| {

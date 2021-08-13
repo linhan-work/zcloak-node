@@ -24,42 +24,43 @@ pallet-starks-verifier = { path = '../pallets/starks-verifier', default-features
 pallet-validator-set = { path = '../pallets/validator-set', default-features = false }
 pallet-starks-verifier-user = { path = '../pallets/starks-verifier-user', default-features = false }
 pallet-starks-verifier-seperate = { path = '../pallets/starks-verifier-seperate', default-features = false }
-
+pallet-starks-balances = { path = '../pallets/starks-balances', default-features = false }
 pallet-crowdfunding = { path = '../pallets/crowdfunding', default-features = false }
 # runtime 
-frame-benchmarking = { default-features = false, git = "https://github.com/zCloak-Network/substrate", optional = true }
-frame-executive = { default-features = false, git = "https://github.com/zCloak-Network/substrate" }
-frame-support = { default-features = false, git = "https://github.com/zCloak-Network/substrate" }
-frame-system = { default-features = false, git = "https://github.com/zCloak-Network/substrate" }
-frame-system-benchmarking = { default-features = false, git = "https://github.com/zCloak-Network/substrate", optional = true }
-frame-system-rpc-runtime-api = { default-features = false, git = "https://github.com/zCloak-Network/substrate" }
+frame-benchmarking = { default-features = false, git = "https://github.com/zCloak-Network/substrate", branch = "polkadot-v0.9.2", optional = true }
+frame-executive = { default-features = false, git = "https://github.com/zCloak-Network/substrate", branch = "polkadot-v0.9.2" }
+frame-support = { default-features = false, git = "https://github.com/zCloak-Network/substrate", branch = "polkadot-v0.9.2" }
+frame-system = { default-features = false, git = "https://github.com/zCloak-Network/substrate", branch = "polkadot-v0.9.2" }
+frame-system-benchmarking = { default-features = false, git = "https://github.com/zCloak-Network/substrate", branch = "polkadot-v0.9.2", optional = true }
+frame-system-rpc-runtime-api = { default-features = false, git = "https://github.com/zCloak-Network/substrate", branch = "polkadot-v0.9.2" }
 
 # primitives 
-sp-api = { default-features = false, git = "https://github.com/zCloak-Network/substrate" }
-sp-block-builder = { default-features = false, git = "https://github.com/zCloak-Network/substrate" }
-sp-consensus-aura = { default-features = false, git = "https://github.com/zCloak-Network/substrate" }
-sp-core = { default-features = false, git = "https://github.com/zCloak-Network/substrate" }
-sp-inherents = { default-features = false, git = "https://github.com/zCloak-Network/substrate" }
-sp-offchain = { default-features = false, git = "https://github.com/zCloak-Network/substrate" }
-sp-runtime = { default-features = false, git = "https://github.com/zCloak-Network/substrate" }
-sp-session = { default-features = false, git = "https://github.com/zCloak-Network/substrate" }
-sp-std = { default-features = false, git = "https://github.com/zCloak-Network/substrate" }
-sp-transaction-pool = { default-features = false, git = "https://github.com/zCloak-Network/substrate" }
-sp-version = { default-features = false, git = "https://github.com/zCloak-Network/substrate" }
+sp-api = { default-features = false, git = "https://github.com/zCloak-Network/substrate", branch = "polkadot-v0.9.2" }
+sp-block-builder = { default-features = false, git = "https://github.com/zCloak-Network/substrate", branch = "polkadot-v0.9.2" }
+sp-consensus-aura = { default-features = false, git = "https://github.com/zCloak-Network/substrate", branch = "polkadot-v0.9.2" }
+sp-core = { default-features = false, git = "https://github.com/zCloak-Network/substrate", branch = "polkadot-v0.9.2" }
+sp-inherents = { default-features = false, git = "https://github.com/zCloak-Network/substrate", branch = "polkadot-v0.9.2" }
+sp-offchain = { default-features = false, git = "https://github.com/zCloak-Network/substrate", branch = "polkadot-v0.9.2" }
+sp-runtime = { default-features = false, git = "https://github.com/zCloak-Network/substrate", branch = "polkadot-v0.9.2" }
+sp-session = { default-features = false, git = "https://github.com/zCloak-Network/substrate", branch = "polkadot-v0.9.2" }
+sp-std = { default-features = false, git = "https://github.com/zCloak-Network/substrate", branch = "polkadot-v0.9.2" }
+sp-transaction-pool = { default-features = false, git = "https://github.com/zCloak-Network/substrate", branch = "polkadot-v0.9.2" }
+sp-version = { default-features = false, git = "https://github.com/zCloak-Network/substrate", branch = "polkadot-v0.9.2" }
 
 # pallets
-pallet-aura = { default-features = false, git = "https://github.com/zCloak-Network/substrate" }
-pallet-balances = { default-features = false, git = "https://github.com/zCloak-Network/substrate" }
-pallet-grandpa = { default-features = false, git = "https://github.com/zCloak-Network/substrate" }
-pallet-randomness-collective-flip = { default-features = false, git = "https://github.com/zCloak-Network/substrate" }
-pallet-sudo = { default-features = false, git = "https://github.com/zCloak-Network/substrate" }
-pallet-timestamp = { default-features = false, git = "https://github.com/zCloak-Network/substrate" }
-pallet-transaction-payment = { default-features = false, git = "https://github.com/zCloak-Network/substrate" }
-pallet-transaction-payment-rpc-runtime-api = { default-features = false, git = "https://github.com/zCloak-Network/substrate" }
-pallet-session = { default-features = false, git = "https://github.com/zCloak-Network/substrate" }
+pallet-aura = { default-features = false, git = "https://github.com/zCloak-Network/substrate", branch = "polkadot-v0.9.2" }
+pallet-balances = { default-features = false, git = "https://github.com/zCloak-Network/substrate", branch = "polkadot-v0.9.2" }
+pallet-grandpa = { default-features = false, git = "https://github.com/zCloak-Network/substrate", branch = "polkadot-v0.9.2" }
+pallet-randomness-collective-flip = { default-features = false, git = "https://github.com/zCloak-Network/substrate", branch = "polkadot-v0.9.2" }
+pallet-sudo = { default-features = false, git = "https://github.com/zCloak-Network/substrate", branch = "polkadot-v0.9.2" }
+pallet-timestamp = { default-features = false, git = "https://github.com/zCloak-Network/substrate", branch = "polkadot-v0.9.2" }
+pallet-transaction-payment = { default-features = false, git = "https://github.com/zCloak-Network/substrate", branch = "polkadot-v0.9.2" }
+pallet-transaction-payment-rpc-runtime-api = { default-features = false, git = "https://github.com/zCloak-Network/substrate", branch = "polkadot-v0.9.2" }
+pallet-session = { default-features = false, git = "https://github.com/zCloak-Network/substrate", branch = "polkadot-v0.9.2" }
 
-pallet-assets = { default-features = false, git = "https://github.com/zCloak-Network/substrate" }
+pallet-assets = { default-features = false, git = "https://github.com/zCloak-Network/substrate", branch = "polkadot-v0.9.2" }
 # node-primitives = { git = "https://github.com/paritytech/substrate", default-features = false, branch = "polkadot-v0.9.5" }
+zcloak-support = {path = "../frame/zcloak-support", default-features = false}
 
 
 [features]
@@ -95,13 +96,12 @@ std = [
     'pallet-starks-verifier-seperate/std',
     'pallet-validator-set/std',
     "pallet-crowdfunding/std",
+    "pallet-starks-balances/std",
     'pallet-timestamp/std',
     'pallet-transaction-payment/std',
     'pallet-transaction-payment-rpc-runtime-api/std',
 	"pallet-assets/std",
-    # "node-primitives/std",
 
-    # primitives
     'sp-api/std',
     'sp-block-builder/std',
     'sp-consensus-aura/std',
@@ -113,4 +113,5 @@ std = [
     'sp-std/std',
     'sp-transaction-pool/std',
     'sp-version/std',
+    "zcloak-support/std",
 ]

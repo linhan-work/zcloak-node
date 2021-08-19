@@ -1,2 +1,2 @@
 pub mod currency;
-pub use currency:: {Demostruct, RegulatedCurrency};
+pub use currency::{Demostruct, RegulatedCurrency};

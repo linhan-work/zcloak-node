@@ -4054,6 +4054,23 @@ dependencies = [
 ]
 
 [[package]]
+name = "pallet-starks-register"
+version = "0.1.0"
+dependencies = [
+ "frame-support",
+ "frame-system",
+ "log",
+ "pallet-starks-verifier",
+ "parity-scale-codec",
+ "serde",
+ "sp-application-crypto",
+ "sp-core",
+ "sp-io",
+ "sp-runtime",
+ "sp-std",
+]
+
+[[package]]
 name = "pallet-starks-verifier"
 version = "0.1.0"
 dependencies = [
@@ -8794,6 +8811,7 @@ dependencies = [
  "pallet-randomness-collective-flip",
  "pallet-session",
  "pallet-starks-balances",
+ "pallet-starks-register",
  "pallet-starks-verifier",
  "pallet-starks-verifier-seperate",
  "pallet-starks-verifier-user",

@@ -2,13 +2,15 @@ use crate::*;
 use std::cell::RefCell;
 
 use crate::Config;
-use sp_runtime::Perbill;
-use sp_staking::SessionIndex;
-use sp_runtime::testing::{Header, UintAuthorityId, TestXt};
-use sp_runtime::traits::{IdentityLookup, BlakeTwo256, ConvertInto};
-use sp_core::H256;
 use frame_support::parameter_types;
 pub use pallet_starks_verifier::crypto::AuthorityId as VerifierId;
+use sp_core::H256;
+use sp_runtime::{
+	testing::{Header, TestXt, UintAuthorityId},
+	traits::{BlakeTwo256, ConvertInto, IdentityLookup},
+	Perbill,
+};
+use sp_staking::SessionIndex;
 
 use crate as starkscrowdfunding;
 
@@ -24,11 +26,11 @@ frame_support::construct_runtime!(
 	{
 		System: frame_system::{Pallet, Call, Config, Storage, Event<T>},
 		Session: pallet_session::{Pallet, Call, Storage, Event, Config<T>},
-        Assets: pallet_assets::{Pallet, Call, Storage, Event<T>},
-        Balances: pallet_balances::{Pallet, Call, Storage, Config<T>, Event<T>},
+		Assets: pallet_assets::{Pallet, Call, Storage, Event<T>},
+		Balances: pallet_balances::{Pallet, Call, Storage, Config<T>, Event<T>},
 
 		StarksCrowdfunding: starkscrowdfunding::{Pallet, Call, Storage, Event<T>},
-        Verifier: pallet_starks_verifier::{Pallet, Call, Storage, Event<T>, ValidateUnsigned},
+		Verifier: pallet_starks_verifier::{Pallet, Call, Storage, Event<T>, ValidateUnsigned},
 
 
 	}
@@ -40,7 +42,8 @@ thread_local! {
 		2,
 		3,
 	]));
-}pub struct TestSessionManager;
+}
+pub struct TestSessionManager;
 impl pallet_session::SessionManager<u64> for TestSessionManager {
 	fn new_session(_new_index: SessionIndex) -> Option<Vec<u64>> {
 		VALIDATORS.with(|l| l.borrow_mut().take())
@@ -49,10 +52,8 @@ impl pallet_session::SessionManager<u64> for TestSessionManager {
 	fn start_session(_: SessionIndex) {}
 }
 
-
 /// An extrinsic type used for tests.
 pub type Extrinsic = TestXt<Call, ()>;
-
 
 parameter_types! {
 	pub const ExistentialDeposit: u128 = 500;
@@ -112,13 +113,13 @@ impl pallet_assets::Config for Test {
 	type Extra = ();
 	type WeightInfo = ();
 }
-impl<LocalCall> frame_system::offchain::SendTransactionTypes<LocalCall> for Test where
+impl<LocalCall> frame_system::offchain::SendTransactionTypes<LocalCall> for Test
+where
 	Call: From<LocalCall>,
 {
 	type OverarchingCall = Call;
 	type Extrinsic = Extrinsic;
 }
-
 
 impl pallet_starks_verifier::Config for Test {
 	type AuthorityId = VerifierId;
@@ -165,7 +166,7 @@ parameter_types! {
 impl pallet_session::Config for Test {
 	type ShouldEndSession = pallet_session::PeriodicSessions<Period, Offset>;
 	type SessionManager = TestSessionManager;
-	type SessionHandler = (Verifier, );
+	type SessionHandler = (Verifier,);
 	type ValidatorId = u64;
 	type ValidatorIdOf = ConvertInto;
 	type Keys = UintAuthorityId;
@@ -174,7 +175,6 @@ impl pallet_session::Config for Test {
 	type NextSessionRotation = pallet_session::PeriodicSessions<Period, Offset>;
 	type WeightInfo = ();
 }
-
 
 parameter_types! {
 	pub const UnsignedPriority: u64 = 1 << 20;
@@ -195,12 +195,8 @@ impl Config for Test {
 	type PalletId = CrowdfundingPalletId;
 }
 
-
-
 pub fn new_test_ext() -> sp_io::TestExternalities {
-	let t = frame_system::GenesisConfig::default()
-		.build_storage::<Test>()
-		.unwrap();
+	let t = frame_system::GenesisConfig::default().build_storage::<Test>().unwrap();
 	t.into()
 }
 
@@ -215,4 +211,3 @@ pub fn advance_session() {
 	let keys = built_in_verifiers();
 	assert_eq!(Session::current_index(), (now / Period::get()) as u32);
 }
-

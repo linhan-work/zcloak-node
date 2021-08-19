@@ -19,9 +19,4 @@
 //!
 //! NOTE: If you're looking for `parameter_types`, it has moved in to the top-level module.
 pub mod tokens;
-pub use tokens::{
-    currency::{RegulatedCurrency, Demostruct}
-};
-
-
-
+pub use tokens::currency::{Demostruct, RegulatedCurrency};

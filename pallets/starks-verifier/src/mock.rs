@@ -1,14 +1,16 @@
 use crate::*;
 use std::cell::RefCell;
 
-use crate::Config;
-use sp_runtime::Perbill;
-use sp_staking::SessionIndex;
-use sp_runtime::testing::{Header, UintAuthorityId, TestXt};
-use sp_runtime::traits::{IdentityLookup, BlakeTwo256, ConvertInto};
-use sp_core::H256;
-use frame_support::parameter_types;
 use crate as verifier;
+use crate::Config;
+use frame_support::parameter_types;
+use sp_core::H256;
+use sp_runtime::{
+	testing::{Header, TestXt, UintAuthorityId},
+	traits::{BlakeTwo256, ConvertInto, IdentityLookup},
+	Perbill,
+};
+use sp_staking::SessionIndex;
 
 type UncheckedExtrinsic = frame_system::mocking::MockUncheckedExtrinsic<Test>;
 type Block = frame_system::mocking::MockBlock<Test>;
@@ -44,7 +46,6 @@ impl pallet_session::SessionManager<u64> for TestSessionManager {
 
 /// An extrinsic type used for tests.
 pub type Extrinsic = TestXt<Call, ()>;
-
 
 parameter_types! {
 	pub const BlockHashCount: u64 = 250;
@@ -90,7 +91,7 @@ parameter_types! {
 impl pallet_session::Config for Test {
 	type ShouldEndSession = pallet_session::PeriodicSessions<Period, Offset>;
 	type SessionManager = TestSessionManager;
-	type SessionHandler = (Verifier, );
+	type SessionHandler = (Verifier,);
 	type ValidatorId = u64;
 	type ValidatorIdOf = ConvertInto;
 	type Keys = UintAuthorityId;
@@ -117,7 +118,8 @@ impl Config for Test {
 	type UnsignedPriority = UnsignedPriority;
 }
 
-impl<LocalCall> frame_system::offchain::SendTransactionTypes<LocalCall> for Test where
+impl<LocalCall> frame_system::offchain::SendTransactionTypes<LocalCall> for Test
+where
 	Call: From<LocalCall>,
 {
 	type OverarchingCall = Call;
@@ -125,9 +127,7 @@ impl<LocalCall> frame_system::offchain::SendTransactionTypes<LocalCall> for Test
 }
 
 pub fn new_test_ext() -> sp_io::TestExternalities {
-	let t = frame_system::GenesisConfig::default()
-		.build_storage::<Test>()
-		.unwrap();
+	let t = frame_system::GenesisConfig::default().build_storage::<Test>().unwrap();
 	t.into()
 }
 
@@ -142,7 +142,7 @@ pub fn advance_session() {
 	let keys = built_in_verifiers();
 	Verifier::set_keys(&keys);
 	assert_eq!(Session::current_index(), (now / Period::get()) as u32);
-	assert_eq!(Session::validators().len(), Verifier::keys().len()); 
+	assert_eq!(Session::validators().len(), Verifier::keys().len());
 }
 
 pub fn new_proof() -> std::io::Result<Vec<u8>> {

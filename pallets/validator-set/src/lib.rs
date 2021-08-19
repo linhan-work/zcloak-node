@@ -5,80 +5,76 @@
 // Ensure we're `no_std` when compiling for Wasm.
 #![cfg_attr(not(feature = "std"), no_std)]
 
-
-use sp_std::prelude::*;
 use frame_support::pallet;
 pub use pallet::*;
 use sp_runtime::traits::Convert;
+use sp_std::prelude::*;
 
 #[pallet]
 pub mod pallet {
-    use frame_support::{
-		dispatch::DispatchResult,
-		pallet_prelude::*,
-	};
-	use frame_system::pallet_prelude::*;
 	use super::*;
+	use frame_support::{dispatch::DispatchResult, pallet_prelude::*};
+	use frame_system::pallet_prelude::*;
 
-    #[pallet::pallet]
+	#[pallet::pallet]
 	#[pallet::generate_store(pub(super) trait Store)]
 	pub struct Pallet<T>(_);
 
-    #[pallet::config]
-    pub trait Config: frame_system::Config + pallet_session::Config {
-        type Event: From<Event<Self>> + IsType<<Self as frame_system::Config>::Event>;
-    }
+	#[pallet::config]
+	pub trait Config: frame_system::Config + pallet_session::Config {
+		type Event: From<Event<Self>> + IsType<<Self as frame_system::Config>::Event>;
+	}
 
-    #[pallet::hooks]
+	#[pallet::hooks]
 	impl<T: Config> Hooks<BlockNumberFor<T>> for Pallet<T> {}
 
-    #[pallet::storage]
-    #[pallet::getter(fn validators)]
-    pub type Validators<T: Config> = StorageValue<_, Vec<T::AccountId>, OptionQuery>;
+	#[pallet::storage]
+	#[pallet::getter(fn validators)]
+	pub type Validators<T: Config> = StorageValue<_, Vec<T::AccountId>, OptionQuery>;
 
-    #[pallet::storage]
-    #[pallet::getter(fn flag)]
-    pub type Flag<T: Config> = StorageValue<_, bool, ValueQuery>;
+	#[pallet::storage]
+	#[pallet::getter(fn flag)]
+	pub type Flag<T: Config> = StorageValue<_, bool, ValueQuery>;
 
-    #[pallet::genesis_config]
-    pub struct GenesisConfig<T: Config> {
-        pub validators: Vec<T::AccountId>,
-    }
+	#[pallet::genesis_config]
+	pub struct GenesisConfig<T: Config> {
+		pub validators: Vec<T::AccountId>,
+	}
 
-    #[cfg(feature = "std")]
+	#[cfg(feature = "std")]
 	impl<T: Config> Default for GenesisConfig<T> {
 		fn default() -> Self {
 			Self { validators: Vec::new() }
 		}
 	}
 
-    #[pallet::genesis_build]
-    impl<T: Config> GenesisBuild<T> for GenesisConfig<T> {
-        fn build(&self) {
-            Pallet::<T>::initialize_validators(&self.validators);
-        }
-    }
+	#[pallet::genesis_build]
+	impl<T: Config> GenesisBuild<T> for GenesisConfig<T> {
+		fn build(&self) {
+			Pallet::<T>::initialize_validators(&self.validators);
+		}
+	}
 
-    #[pallet::event]
-    #[pallet::generate_deposit(pub(super) fn deposit_event)]
-    #[pallet::metadata(T::AccountId = "AccountId")]
-    pub enum Event<T: Config> {
-        // New validator added.
+	#[pallet::event]
+	#[pallet::generate_deposit(pub(super) fn deposit_event)]
+	#[pallet::metadata(T::AccountId = "AccountId")]
+	pub enum Event<T: Config> {
+		// New validator added.
 		ValidatorAdded(T::AccountId),
 		// Validator removed.
 		ValidatorRemoved(T::AccountId),
-    }
+	}
 
-    #[pallet::error]
-    pub enum Error<T> {
-        NoValidators,
-    }
+	#[pallet::error]
+	pub enum Error<T> {
+		NoValidators,
+	}
 
-    #[pallet::call]
-    impl<T: Config> Pallet<T> {
-        #[pallet::weight(10000)]
-        pub fn add_validator(origin: OriginFor<T>, acc: T::AccountId) -> DispatchResult {
-            ensure_root(origin)?;
+	#[pallet::call]
+	impl<T: Config> Pallet<T> {
+		#[pallet::weight(10000)]
+		pub fn add_validator(origin: OriginFor<T>, acc: T::AccountId) -> DispatchResult {
+			ensure_root(origin)?;
 			let mut validators = Self::validators().ok_or(Error::<T>::NoValidators)?;
 			validators.push(acc.clone());
 			<Validators<T>>::put(validators);
@@ -89,13 +85,13 @@ pub mod pallet {
 			// Triggering rotate session again for the queued keys to take effect.
 			Flag::<T>::put(true);
 			Ok(())
-        }
+		}
 
-        #[pallet::weight(10000)]
-        pub fn remove_validators(origin: OriginFor<T>, acc: T::AccountId) -> DispatchResult {
-            ensure_root(origin)?;
+		#[pallet::weight(10000)]
+		pub fn remove_validators(origin: OriginFor<T>, acc: T::AccountId) -> DispatchResult {
+			ensure_root(origin)?;
 			let mut validators = Self::validators().ok_or(Error::<T>::NoValidators)?;
-			// Assuming that this will be a PoA network for enterprise use-cases, 
+			// Assuming that this will be a PoA network for enterprise use-cases,
 			// the validator count may not be too big; the for loop shouldn't be too heavy.
 			// In case the validator count is large, we need to find another way.
 			for (i, v) in validators.clone().into_iter().enumerate() {
@@ -111,14 +107,14 @@ pub mod pallet {
 			// Triggering rotate session again for the queued keys to take effect.
 			Flag::<T>::put(true);
 			Ok(())
-        }
-    }
+		}
+	}
 }
 
 impl<T: Config> Pallet<T> {
-    fn initialize_validators(validators: &[T::AccountId]) {
-        <Validators<T>>::put(validators)
-    }
+	fn initialize_validators(validators: &[T::AccountId]) {
+		<Validators<T>>::put(validators)
+	}
 }
 
 /// Indicates to the session module if the session should be rotated.

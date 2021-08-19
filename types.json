@@ -2,19 +2,35 @@
   "ClassType":  {
     "_enum": {
       "Null": null,
-      "X1":"Junction",
-      "X2":"(Junction, Junction)",
-      "X3":"(Junction, Junction, Junction)",
-      "X4":"(Junction, Junction, Junction, Junction)",
-      "X5":"(Junction, Junction, Junction, Junction, Junction)",
-      "X6":"(Junction, Junction, Junction, Junction, Junction, Junction)"
+      "X1":"ProgramType",
+      "X2":"(ProgramType, ProgramType)",
+      "X3":"(ProgramType, ProgramType, ProgramType)",
+      "X4":"(ProgramType, ProgramType, ProgramType, ProgramType)",
+      "X5":"(ProgramType, ProgramType, ProgramType, ProgramType, ProgramType)",
+      "X6":"(ProgramType, ProgramType, ProgramType, ProgramType, ProgramType, ProgramType)"
     }
   },
-  "Junction":  {
+  "Index": "u32",
+  "ProgramOption":  {
     "_enum": {
       "Null": null,
-      "Age":"u32",
-      "Country":"u32",
+      "Index":"Index",
+      "Range":"Range",
+      "Other": "Vec<u8>"
+    }
+  },
+  "Range":  {
+    "_enum": {
+      "LargeThan": "u32",
+      "SmallerThan":"u32",
+      "Between":"(u32, u32)"
+    }
+  },
+  "ProgramType":  {
+    "_enum": {
+      "Null": null,
+      "Age":"ProgramOption",
+      "Country":"ProgramOption",
       "Other": "Vec<u8>"
     }
   },

@@ -1,4 +1,3 @@
-
 // This file is part of Substrate.
 
 // Copyright (C) 2017-2021 Parity Technologies (UK) Ltd.
@@ -17,7 +16,7 @@
 // limitations under the License.
 
 //! Support code for the runtime.
-//! 
+//!
 #![cfg_attr(not(feature = "std"), no_std)]
 extern crate self as zcloak_support;
 
@@ -29,4 +28,3 @@ pub use serde;
 pub use serde::{Deserialize, Serialize};
 
 pub mod traits;
-

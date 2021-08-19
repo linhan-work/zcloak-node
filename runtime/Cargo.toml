@@ -26,6 +26,8 @@ pallet-starks-verifier-user = { path = '../pallets/starks-verifier-user', defaul
 pallet-starks-verifier-seperate = { path = '../pallets/starks-verifier-seperate', default-features = false }
 pallet-starks-balances = { path = '../pallets/starks-balances', default-features = false }
 pallet-crowdfunding = { path = '../pallets/crowdfunding', default-features = false }
+pallet-starks-register = { path = '../pallets/starks-register', default-features = false }
+
 # runtime 
 frame-benchmarking = { default-features = false, git = "https://github.com/zCloak-Network/substrate", optional = true }
 frame-executive = { default-features = false, git = "https://github.com/zCloak-Network/substrate" }
@@ -97,6 +99,7 @@ std = [
     'pallet-validator-set/std',
     "pallet-crowdfunding/std",
     "pallet-starks-balances/std",
+    "pallet-starks-register/std",
     'pallet-timestamp/std',
     'pallet-transaction-payment/std',
     'pallet-transaction-payment-rpc-runtime-api/std',

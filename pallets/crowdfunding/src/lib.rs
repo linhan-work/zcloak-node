@@ -24,9 +24,9 @@ use sp_std::{
     fmt::Debug,
 };
 use sp_runtime::{traits::{StaticLookup}};
-
+use pallet_starks_verifier::{ClassType, Junction, KycClassError};
 use sp_runtime::RuntimeDebug;
-type Class = Vec<u8>;
+
 
 #[cfg(all(feature = "std", test))]
 mod mock;
@@ -52,7 +52,8 @@ pub struct CrowfundingStatus<AccountId, BlockNumber, Balance> {
     pub remain_funding: Balance,
     // Whether the crowdfunding is still going or not 
     pub is_funding_proceed: Option<bool>,
-
+    // ClassType of KYC
+    pub kyc_class: ClassType,
     // For primitive version ratio stand for 1dot :xZtokens; e.g. ratio = 4, 1dot can buy 4Ztokens.
     pub ratio: Balance,
     
@@ -93,7 +94,7 @@ pub mod pallet {
     use frame_support::{dispatch::DispatchResult, pallet_prelude::*};
 	use frame_system::{ pallet_prelude::*};
     use sp_runtime::{SaturatedConversion};
-    use pallet_starks_verifier::VerifyClass;
+    use pallet_starks_verifier::{ClassType, Junction};
     use zcloak_support::traits::RegulatedCurrency;
 	use super::*;
     extern crate zcloak_support;
@@ -259,6 +260,7 @@ pub mod pallet {
         CreateAssetFail,
         // Can't mint asset
         MintAssetFail,
+        KycClassNotExistOrWrong,
         OtherErr,
     }
 
@@ -275,14 +277,17 @@ pub mod pallet {
             funding_period: T::BlockNumber,
             total_asset: T::Balance,
             ratio: T::Balance,
+            kyc_class: ClassType,
+            kyc_program: [u8; 32],
         ) -> DispatchResult{
             let who = ensure_signed(origin.clone())?;
 
+            let kyc_find_result = T::Check::if_kycclass_exist(kyc_class.clone(), kyc_program);
             ensure!(
-				total_asset != T::Balance::default() ,
-                Error::<T>::CrowdFundingAmountIsZero
-			);
-
+                kyc_find_result.is_ok() ,
+                Error::<T>::KycClassNotExistOrWrong
+            );
+            
             let CrowfundingStatus{is_funding_proceed, ..} = Self::crowdfunding_process(asset_id);
             ensure!(
                 is_funding_proceed == None,
@@ -332,7 +337,7 @@ pub mod pallet {
             let funding_expiration = now + funding_period;
 
             //Insert new CrowdfundingStatus on-chain.
-            <CrowdfundingProcess<T>>::insert(&asset_id, CrowfundingStatus{admin: Some(who.clone()), funding_account: Some(funding_account.clone()), funding_begin: funding_begin, funding_expiration: funding_expiration, total_funding: total_asset - T::MinBalance::get() * T::CrowdFundingMetadataDepositBase::get(), remain_funding: total_asset - T::MinBalance::get() * T::CrowdFundingMetadataDepositBase::get(), is_funding_proceed: Some(true), ratio: ratio});
+            <CrowdfundingProcess<T>>::insert(&asset_id, CrowfundingStatus{admin: Some(who.clone()), funding_account: Some(funding_account.clone()), funding_begin: funding_begin, funding_expiration: funding_expiration, total_funding: total_asset - T::MinBalance::get() * T::CrowdFundingMetadataDepositBase::get(), remain_funding: total_asset - T::MinBalance::get() * T::CrowdFundingMetadataDepositBase::get(), is_funding_proceed: Some(true), kyc_class: kyc_class, ratio: ratio});
             <Settledcrowdfunding<T>>::insert(&funding_expiration, &(who.clone(), asset_id.clone()), Some(false) );
             Self::deposit_event(Event::CrowdfundingCreated(asset_id, who, funding_account,total_asset));
             
@@ -350,7 +355,7 @@ pub mod pallet {
         ) -> DispatchResult{
             let who = ensure_signed(origin)?;
             ensure!(CrowdfundingProcess::<T>::try_get(&asset_id).is_ok(), Error::<T>::CrowdfundingNotOnchain);
-            let CrowfundingStatus{admin, funding_account, funding_begin, funding_expiration, total_funding, remain_funding, is_funding_proceed, ratio} = Self::crowdfunding_process(asset_id);
+            let CrowfundingStatus{admin, funding_account, funding_begin, funding_expiration, total_funding, remain_funding, is_funding_proceed, kyc_class, ratio} = Self::crowdfunding_process(asset_id);
             ensure!(
                 funding_expiration > <frame_system::Pallet<T>>::block_number(),
                 Error::<T>::CrowdfundingIsOver
@@ -366,7 +371,7 @@ pub mod pallet {
 
             // The KYC-Verifying program, to check whether this KYCproof is stored and VerifiedPass on-chain
             let ico_program_string=[208, 194, 130, 197, 164, 24, 192, 43, 169, 199, 5, 5, 30, 49, 190, 137, 168, 29, 175, 111, 254, 108, 138, 242, 161, 201, 76, 10, 238, 140, 97, 14];
-            let kyc_class:Class = [22].to_vec();
+            let kyc_class = ClassType::X1(Junction::Country(1));
             let check_result = T::Check::checkkyc(&who.clone(), kyc_class.clone(), ico_program_string); 
             // The origin has the access to buy ztokens due to SuccessProved-KYC 
             if check_result.is_ok() {
@@ -392,7 +397,7 @@ pub mod pallet {
                 <pallet_assets::Pallet<T> as Transfer<T::AccountId>>::transfer(asset_id, &Self::account_id(), &who, ztoken_to_buy / T::CrowdFundingMetadataDepositBase::get(), false)?;
                 
                 <FundingAccount<T>>::insert(&asset_id, &who,  &ztoken_to_buy);
-                <CrowdfundingProcess<T>>::insert(&asset_id, CrowfundingStatus{admin: admin.clone(), funding_account, funding_begin, funding_expiration, total_funding, remain_funding: remain_funding - ztoken_to_buy, is_funding_proceed: Some(true), ratio} );
+                <CrowdfundingProcess<T>>::insert(&asset_id, CrowfundingStatus{admin: admin.clone(), funding_account, funding_begin, funding_expiration, total_funding, remain_funding: remain_funding - ztoken_to_buy, is_funding_proceed: Some(true), kyc_class, ratio} );
 
             }else{
                 let crowdfunding_err = check_result.err();
@@ -415,7 +420,7 @@ pub mod pallet {
             delete_crowdfunding: bool,
         ) -> DispatchResult{
             let who = ensure_signed(origin)?;
-            let CrowfundingStatus{admin, funding_account, funding_begin, funding_expiration, total_funding, remain_funding, is_funding_proceed, ratio} = Self::crowdfunding_process(asset_id);
+            let CrowfundingStatus{admin, funding_account, funding_begin, funding_expiration, total_funding, remain_funding, is_funding_proceed, kyc_class, ratio} = Self::crowdfunding_process(asset_id);
             ensure!(
                 funding_expiration > <frame_system::Pallet<T>>::block_number(),
                 Error::<T>::CrowdfundingIsOver
@@ -430,7 +435,7 @@ pub mod pallet {
             );
 
             if !delete_crowdfunding{
-                <CrowdfundingProcess<T>>::insert(&asset_id, CrowfundingStatus{admin: admin.clone(), funding_account, funding_begin, funding_expiration, total_funding, remain_funding, is_funding_proceed: Some(switch_to), ratio} );
+                <CrowdfundingProcess<T>>::insert(&asset_id, CrowfundingStatus{admin: admin.clone(), funding_account, funding_begin, funding_expiration, total_funding, remain_funding, is_funding_proceed: Some(switch_to), kyc_class, ratio} );
                 Self::deposit_event(Event::SwitchcrowdfundingStatusTo(asset_id, is_funding_proceed.unwrap()));         
             }else{
                 <CrowdfundingProcess<T>>::remove(asset_id);

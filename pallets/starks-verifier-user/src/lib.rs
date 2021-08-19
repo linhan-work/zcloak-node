@@ -44,12 +44,7 @@ use frame_system::offchain::{
 };
 pub use pallet::*;
 
-#[cfg(all(feature = "std", test))]
-mod mock;
-
-#[cfg(all(feature = "std", test))]
-mod tests;
-
+use pallet_starks_verifier::{ClassType, Junction};
 /// The key type of which to sign the starks verification transactions
 pub const KEY_TYPE: KeyTypeId = KeyTypeId(*b"zkst");
 
@@ -76,7 +71,7 @@ pub mod crypto {
 /// Receipt about any verification occured
 #[derive(Encode, Decode, Clone, PartialEq, Eq, RuntimeDebug)]
 pub struct VerificationReceipt<AccountId, BlockNumber>{
-    task_tuple_id: (AccountId, Class),
+    task_tuple_id: (AccountId, ClassType),
     // The Hash of a certain task to be verified
     program_hash: [u8; 32],
     // Whether a task is passed or not
@@ -122,10 +117,6 @@ pub struct UserTaskInfo {
     is_task_finish : Option<UserTaskStatus>,
 }
 
-
-
-/// Class of the privacy in raw
-type Class = Vec<u8>;
 
 /// Error which may occur while executing the off-chain code.
 #[cfg_attr(test, derive(PartialEq))]
@@ -176,7 +167,7 @@ pub mod pallet {
     pub(super) type TaskParams<T: Config> = StorageDoubleMap<
         _,
         Twox64Concat, T::AccountId,
-        Twox64Concat, Class,
+        Twox64Concat, ClassType,
         UserTaskInfo,
         ValueQuery,
     >;
@@ -188,7 +179,7 @@ pub mod pallet {
     pub(super) type SettledTasks<T: Config> = StorageDoubleMap<
         _,
         Twox64Concat, T::BlockNumber,
-        Twox64Concat, (T::AccountId, Class),
+        Twox64Concat, (T::AccountId, ClassType),
         Option<bool>,
         ValueQuery,
     >;
@@ -198,9 +189,9 @@ pub mod pallet {
     #[pallet::metadata(T::AccountId = "AccountId")]
     pub enum Event<T: Config> {
         /// A new task is created.
-        UserTaskCreated(T::AccountId, Class, Vec<u8>),
+        UserTaskCreated(T::AccountId, ClassType, Vec<u8>),
         /// Whether user's task pass or not
-        UserTaskVerification(T::AccountId, Class, bool),
+        UserTaskVerification(T::AccountId, ClassType, bool),
     }
 
     #[pallet::error]
@@ -225,7 +216,7 @@ pub mod pallet {
         #[pallet::weight(10000)]
         pub fn user_verify(
             origin: OriginFor<T>,
-            class: Class,
+            class: ClassType,
             program_hash: [u8; 32],
             inputs: Vec<u128>,
             outputs: Vec<u128>,

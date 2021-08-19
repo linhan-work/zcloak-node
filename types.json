@@ -1,5 +1,23 @@
 {
-  "Class": "Vec<u8>",
+  "ClassType":  {
+    "_enum": {
+      "Null": null,
+      "X1":"Junction",
+      "X2":"(Junction, Junction)",
+      "X3":"(Junction, Junction, Junction)",
+      "X4":"(Junction, Junction, Junction, Junction)",
+      "X5":"(Junction, Junction, Junction, Junction, Junction)",
+      "X6":"(Junction, Junction, Junction, Junction, Junction, Junction)"
+    }
+  },
+  "Junction":  {
+    "_enum": {
+      "Null": null,
+      "Age":"u32",
+      "Country":"u32",
+      "Other": "Vec<u8>"
+    }
+  },
   "TaskStatus": {
     "_enum": [
       "JustCreated",
@@ -73,16 +91,11 @@
       "Delete": "DEL"
     }
   },
-  "KYCStruct": {
-    "KYCprogram_hash": "[u8; 32]",
-    "KYCclass": "Vec<u8>"
-  },
   "ADD": {
-    "kyc_verify_class": "VerifyClass",
-    "class": "Vec<u8>",
+    "kyc_verify_class": "ClassType",
     "program_hash": "[u8; 32]]"
   },
   "DEL": {
-    "kyc_verify_class": "VerifyClass"
+    "kyc_verify_class": "ClassType"
   }
 }

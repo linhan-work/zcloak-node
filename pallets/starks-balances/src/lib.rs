@@ -25,7 +25,6 @@ use sp_std::{
 use sp_runtime::{traits::{StaticLookup}};
 
 use sp_runtime::RuntimeDebug;
-type Class = Vec<u8>;
 #[cfg(all(feature = "std", test))]
 mod mock;
 
@@ -49,7 +48,7 @@ pub mod pallet {
     use frame_support::{dispatch::DispatchResult, pallet_prelude::*};
 	use frame_system::{ pallet_prelude::*};
     use sp_runtime::{SaturatedConversion};
-    use pallet_starks_verifier::VerifyClass;
+    use pallet_starks_verifier::{ClassType, Junction};
     use zcloak_support::traits::RegulatedCurrency;
 	use super::*;
     extern crate zcloak_support;
@@ -99,7 +98,7 @@ pub mod pallet {
             origin: OriginFor<T>,
             dest: T::AccountId,
             value: T::Balance,
-            kyc_verify: VerifyClass,
+            kyc_verify: ClassType,
         ) -> DispatchResult {
             let who = ensure_signed(origin)?;
             let option = ExistenceRequirement::KeepAlive;

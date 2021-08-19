@@ -36,15 +36,10 @@ use sp_core::crypto::KeyTypeId;
 use frame_support::{
     traits::OneSessionHandler
 };
+use pallet_starks_verifier::{ClassType, Junction};
 // use frame_system::{ensure_signed, ensure_none};
 
 pub use pallet::*;
-
-#[cfg(all(feature = "std", test))]
-mod mock;
-
-#[cfg(all(feature = "std", test))]
-mod tests;
 
 /// The key type of which to sign the starks verification transactions
 pub const KEY_TYPE: KeyTypeId = KeyTypeId(*b"zkst");
@@ -121,8 +116,6 @@ pub struct SeperateStatus {
     pub come_first: Option<bool>
 }
 
-/// Class of the privacy in raw
-type Class = Vec<u8>;
 
 /// Error which may occur while executing the off-chain code.
 #[cfg_attr(test, derive(PartialEq))]
@@ -176,7 +169,7 @@ pub mod pallet {
     pub(super) type TaskParams<T: Config> = StorageDoubleMap<
         _,
         Twox64Concat, T::AccountId,
-        Twox64Concat, Class,
+        Twox64Concat, ClassType,
         TaskInfo<T::BlockNumber>,
         ValueQuery,
     >;
@@ -188,7 +181,7 @@ pub mod pallet {
     pub(super) type SettledTasks<T: Config> = StorageDoubleMap<
         _,
         Twox64Concat, T::BlockNumber,
-        Twox64Concat, (T::AccountId, Class),
+        Twox64Concat, (T::AccountId, ClassType),
         Option<bool>,
         ValueQuery,
     >;
@@ -199,7 +192,7 @@ pub mod pallet {
     pub(super) type OngoingTasks<T: Config> = StorageDoubleMap<
         _,
         Twox64Concat, T::AccountId,
-        Twox64Concat, Class,
+        Twox64Concat, ClassType,
         SeperateStatus,
         OptionQuery,
     >;
@@ -231,17 +224,17 @@ pub mod pallet {
     #[pallet::metadata(T::AccountId = "AccountId")]
     pub enum Event<T: Config> {
         /// A new task is created. who, class, programhash, proofID, inputs, outputs
-        UserTaskCreated(T::AccountId, Class, [u8; 32], Vec<u8>, Vec<u128>, Vec<u128>),
+        UserTaskCreated(T::AccountId, ClassType, [u8; 32], Vec<u8>, Vec<u128>, Vec<u128>),
         // Accept this response. Origin, who, class
-        SingleResponseAccept(T::AccountId, T::AccountId, Class),
+        SingleResponseAccept(T::AccountId, T::AccountId, ClassType),
         // Add new account to WhiteList
         WhiteListAdded(T::AccountId, T::BlockNumber),
         // After force_check, the task is still not finish verificaion
-        StillNotFinishVerificaion(T::AccountId, Class),
+        StillNotFinishVerificaion(T::AccountId, ClassType),
         // The result of Force Verification
-        ForceVerification(T::AccountId, Class, bool),
+        ForceVerification(T::AccountId, ClassType, bool),
         // Task verification finished
-        TaskVerificationResult(T::AccountId, Class, bool)
+        TaskVerificationResult(T::AccountId, ClassType, bool)
     }
 
     #[pallet::error]
@@ -273,7 +266,7 @@ pub mod pallet {
         #[pallet::weight(10000)]
         pub fn create_task(
             origin: OriginFor<T>,
-            class: Class,
+            class: ClassType,
             program_hash: [u8; 32],
             inputs: Vec<u128>,
             outputs: Vec<u128>,
@@ -318,7 +311,7 @@ pub mod pallet {
         pub fn client_single_reponse(
             origin: OriginFor<T>,
             who: T::AccountId, 
-            class: Class,
+            class: ClassType,
             result: bool,
         ) -> DispatchResult {
 
@@ -404,7 +397,7 @@ pub mod pallet {
         pub fn force_check_task_status(
             origin: OriginFor<T>,
             who: T::AccountId, 
-            class: Class,
+            class: ClassType,
         ) -> DispatchResult {
             let _res = ensure_signed(origin)?;
             ensure!(

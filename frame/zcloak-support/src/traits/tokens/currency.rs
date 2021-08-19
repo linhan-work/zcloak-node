@@ -20,7 +20,7 @@ use frame_support::traits::Currency;
 use sp_std::marker::PhantomData;
 use pallet_starks_verifier::Check;
 use codec::{Codec, Decode, Encode};
-use pallet_starks_verifier::{VerifyClass};
+use pallet_starks_verifier::{ClassType, Junction};
 
 pub trait RegulatedCurrency<AccountId> {
 	/// The balance of an account.
@@ -38,7 +38,7 @@ pub trait RegulatedCurrency<AccountId> {
 		dest: &AccountId,
 		value: Self::Balance,
 		existence_requirement: ExistenceRequirement,
-        kyc_verify: VerifyClass,
+        kyc_verify: ClassType,
 
 	) -> DispatchResult;
 }
@@ -71,7 +71,7 @@ where
 		dest: &AccountId,
 		value: Self::Balance,
 		existence_requirement: ExistenceRequirement,
-        kyc_verify: VerifyClass,
+        kyc_verify: ClassType,
 	) -> DispatchResult {
             let kyc_check_result = F::checkkyc_with_verifykyc(source, kyc_verify);
             if kyc_check_result.is_ok() == true {

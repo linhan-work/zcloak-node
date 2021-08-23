@@ -1,6 +1,6 @@
 #![cfg_attr(not(feature = "std"), no_std)]
 // `construct_runtime!` does a lot of recursion and requires us to increase the limit to 256.
-#![recursion_limit="256"]
+#![recursion_limit = "256"]
 
 // Make the WASM binary available.
 #[cfg(feature = "std")]
@@ -8,45 +8,48 @@ include!(concat!(env!("OUT_DIR"), "/wasm_binary.rs"));
 pub mod constants;
 
 use codec::Encode;
-use frame_system::{EnsureRoot};
+use frame_system::EnsureRoot;
 // use pallet_xcm::{EnsureXcm, IsMajorityOfBody, XcmPassthrough};
-use sp_std::prelude::*;
-use sp_core::{crypto::KeyTypeId, OpaqueMetadata};
-use sp_runtime::{SaturatedConversion,
-	ApplyExtrinsicResult, generic, create_runtime_str, impl_opaque_keys, MultiSignature,
-	transaction_validity::{TransactionValidity, TransactionSource, TransactionPriority},
-};
-use sp_runtime::traits::{self, BlakeTwo256, Block as BlockT, 
-	AccountIdLookup, Verify, IdentifyAccount, NumberFor, OpaqueKeys,
+use pallet_grandpa::{
+	fg_primitives, AuthorityId as GrandpaId, AuthorityList as GrandpaAuthorityList,
 };
 use sp_api::impl_runtime_apis;
 use sp_consensus_aura::sr25519::AuthorityId as AuraId;
-use pallet_grandpa::{AuthorityId as GrandpaId, AuthorityList as GrandpaAuthorityList};
-use pallet_grandpa::fg_primitives;
-use sp_version::RuntimeVersion;
+use sp_core::{crypto::KeyTypeId, OpaqueMetadata};
+use sp_runtime::{
+	create_runtime_str, generic, impl_opaque_keys,
+	traits::{
+		self, AccountIdLookup, BlakeTwo256, Block as BlockT, IdentifyAccount, NumberFor,
+		OpaqueKeys, Verify,
+	},
+	transaction_validity::{TransactionPriority, TransactionSource, TransactionValidity},
+	ApplyExtrinsicResult, MultiSignature, SaturatedConversion,
+};
+use sp_std::prelude::*;
 #[cfg(feature = "std")]
 use sp_version::NativeVersion;
+use sp_version::RuntimeVersion;
 
 // A few exports that help ease life for downstream crates.
-#[cfg(any(feature = "std", test))]
-pub use sp_runtime::BuildStorage;
-#[cfg(any(feature = "std", test))]
-pub use pallet_balances::Call as BalancesCall;
+pub use frame_support::{
+	construct_runtime, parameter_types,
+	traits::{KeyOwnerProofSystem, LockIdentifier, Randomness},
+	weights::{
+		constants::{BlockExecutionWeight, ExtrinsicBaseWeight, RocksDbWeight, WEIGHT_PER_SECOND},
+		IdentityFee, Weight,
+	},
+	PalletId, StorageValue,
+};
 #[cfg(any(feature = "std", test))]
 pub use frame_system::Call as SystemCall;
-pub use sp_runtime::{Permill, Perbill};
-use sp_runtime::generic::Era;
-pub use frame_support::{
-	construct_runtime, parameter_types, StorageValue,
-	traits::{KeyOwnerProofSystem, Randomness, LockIdentifier},
-	weights::{
-		Weight, IdentityFee,
-		constants::{BlockExecutionWeight, ExtrinsicBaseWeight, RocksDbWeight, WEIGHT_PER_SECOND},
-	},
-	PalletId,
-};
-use pallet_transaction_payment::CurrencyAdapter;
+#[cfg(any(feature = "std", test))]
+pub use pallet_balances::Call as BalancesCall;
 pub use pallet_starks_verifier::crypto::AuthorityId as VerifierId;
+use pallet_transaction_payment::CurrencyAdapter;
+use sp_runtime::generic::Era;
+#[cfg(any(feature = "std", test))]
+pub use sp_runtime::BuildStorage;
+pub use sp_runtime::{Perbill, Permill};
 
 /// An index to a block.
 pub type BlockNumber = u32;
@@ -138,10 +141,7 @@ pub const DAYS: BlockNumber = HOURS * 24;
 /// The version information used to identify this runtime when compiled natively.
 #[cfg(feature = "std")]
 pub fn native_version() -> NativeVersion {
-	NativeVersion {
-		runtime_version: VERSION,
-		can_author_with: Default::default(),
-	}
+	NativeVersion { runtime_version: VERSION, can_author_with: Default::default() }
 }
 
 const NORMAL_DISPATCH_RATIO: Perbill = Perbill::from_percent(75);
@@ -295,7 +295,6 @@ impl_opaque_keys! {
 	}
 }
 
-
 impl pallet_session::Config for Runtime {
 	type Event = Event;
 	type ValidatorId = <Self as frame_system::Config>::AccountId;
@@ -314,8 +313,8 @@ impl pallet_validator_set::Config for Runtime {
 }
 
 impl<LocalCall> frame_system::offchain::CreateSignedTransaction<LocalCall> for Runtime
-	where
-		Call: From<LocalCall>,
+where
+	Call: From<LocalCall>,
 {
 	fn create_transaction<C: frame_system::offchain::AppCrypto<Self::Public, Self::Signature>>(
 		call: Call,
@@ -325,10 +324,8 @@ impl<LocalCall> frame_system::offchain::CreateSignedTransaction<LocalCall> for R
 	) -> Option<(Call, <UncheckedExtrinsic as traits::Extrinsic>::SignaturePayload)> {
 		let tip = 0;
 		// take the biggest period possible.
-		let period = BlockHashCount::get()
-			.checked_next_power_of_two()
-			.map(|c| c / 2)
-			.unwrap_or(2) as u64;
+		let period =
+			BlockHashCount::get().checked_next_power_of_two().map(|c| c / 2).unwrap_or(2) as u64;
 		let current_block = System::block_number()
 			.saturated_into::<u64>()
 			// The `System::block_number` is initialized with `n+1`,
@@ -349,10 +346,7 @@ impl<LocalCall> frame_system::offchain::CreateSignedTransaction<LocalCall> for R
 				log::warn!("Unable to create signed payload: {:?}", e);
 			})
 			.ok()?;
-		let signature = raw_payload
-			.using_encoded(|payload| {
-				C::sign(payload, public)
-			})?;
+		let signature = raw_payload.using_encoded(|payload| C::sign(payload, public))?;
 		let address = Address::from(account);
 		let (call, extra, _) = raw_payload.deconstruct();
 		Some((call, (address, signature.into(), extra)))
@@ -364,7 +358,8 @@ impl frame_system::offchain::SigningTypes for Runtime {
 	type Signature = Signature;
 }
 
-impl<C> frame_system::offchain::SendTransactionTypes<C> for Runtime where
+impl<C> frame_system::offchain::SendTransactionTypes<C> for Runtime
+where
 	Call: From<C>,
 {
 	type Extrinsic = UncheckedExtrinsic;
@@ -392,7 +387,6 @@ parameter_types! {
 }
 impl pallet_randomness_collective_flip::Config for Runtime {}
 
-
 impl pallet_starks_verifier::Config for Runtime {
 	type AuthorityId = VerifierId;
 	type Event = Event;
@@ -407,7 +401,6 @@ impl pallet_starks_verifier_user::Config for Runtime {
 	type UnsignedPriority = VerifierPriority;
 }
 
-
 impl pallet_starks_verifier_seperate::Config for Runtime {
 	type AuthorityId = VerifierId;
 	type Event = Event;
@@ -416,7 +409,8 @@ impl pallet_starks_verifier_seperate::Config for Runtime {
 	type UnsignedPriority = VerifierPriority;
 }
 
-pub type RegulatedCurrencyAdaptor = zcloak_support::traits::Demostruct<Runtime, Balances, StarksVerifier, AccountId>;
+pub type RegulatedCurrencyAdaptor =
+	zcloak_support::traits::Demostruct<Runtime, Balances, StarksVerifier, AccountId>;
 
 impl pallet_crowdfunding::Config for Runtime {
 	type Event = Event;
@@ -434,6 +428,10 @@ impl pallet_starks_balances::Config for Runtime {
 	type Event = Event;
 	type StorePeriod = StorePeriod;
 	type RegulatedCurrency = RegulatedCurrencyAdaptor;
+}
+impl pallet_starks_register::Config for Runtime {
+	type Event = Event;
+	type KYCRegister = StarksVerifier;
 }
 
 impl pallet_assets::Config for Runtime {
@@ -468,7 +466,7 @@ construct_runtime!(
 		StarksVerifier: pallet_starks_verifier::{Pallet, Call, Storage, Event<T>, ValidateUnsigned, Config<T>},
 		StarksCrowdfundng: pallet_crowdfunding::{Pallet, Call, Storage, Event<T>, Config<T>},
 		StarksBalances: pallet_starks_balances::{Pallet, Call, Storage, Event<T>},
-
+		StarksRegister: pallet_starks_register::{Pallet, Call, Storage, Event<T>},
 		Aura: pallet_aura::{Pallet, Config<T>},
 		Grandpa: pallet_grandpa::{Pallet, Call, Storage, Config, Event},
 		TransactionPayment: pallet_transaction_payment::{Pallet, Storage},
@@ -498,7 +496,7 @@ pub type SignedExtra = (
 	frame_system::CheckEra<Runtime>,
 	frame_system::CheckNonce<Runtime>,
 	frame_system::CheckWeight<Runtime>,
-	pallet_transaction_payment::ChargeTransactionPayment<Runtime>
+	pallet_transaction_payment::ChargeTransactionPayment<Runtime>,
 );
 /// Unchecked extrinsic type as expected by this runtime.
 pub type UncheckedExtrinsic = generic::UncheckedExtrinsic<Address, Call, Signature, SignedExtra>;

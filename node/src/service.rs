@@ -1,7 +1,5 @@
 //! Service and ServiceFactory implementation. Specialized wrapper over substrate service.
 
-
-use zcloak_runtime::{self, opaque::Block, RuntimeApi};
 use sc_client_api::{ExecutorProvider, RemoteBackend};
 use sc_consensus_aura::{ImportQueueParams, SlotProportion, StartAuraParams};
 use sc_executor::native_executor_instance;
@@ -13,6 +11,7 @@ use sc_telemetry::{Telemetry, TelemetryWorker};
 use sp_consensus::SlotData;
 use sp_consensus_aura::sr25519::AuthorityPair as AuraPair;
 use std::{sync::Arc, time::Duration};
+use zcloak_runtime::{self, opaque::Block, RuntimeApi};
 
 // Our native executor instance.
 native_executor_instance!(
@@ -21,7 +20,6 @@ native_executor_instance!(
 	zcloak_runtime::native_version,
 	(frame_benchmarking::benchmarking::HostFunctions, sp_starks::starks::HostFunctions),
 );
-
 
 type FullClient = sc_service::TFullClient<Block, RuntimeApi, Executor>;
 type FullBackend = sc_service::TFullBackend<Block>;

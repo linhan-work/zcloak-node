@@ -1,5 +1,39 @@
 {
-  "Class": "Vec<u8>",
+  "ClassType":  {
+    "_enum": {
+      "Null": null,
+      "X1":"ProgramType",
+      "X2":"(ProgramType, ProgramType)",
+      "X3":"(ProgramType, ProgramType, ProgramType)",
+      "X4":"(ProgramType, ProgramType, ProgramType, ProgramType)",
+      "X5":"(ProgramType, ProgramType, ProgramType, ProgramType, ProgramType)",
+      "X6":"(ProgramType, ProgramType, ProgramType, ProgramType, ProgramType, ProgramType)"
+    }
+  },
+  "Index": "u32",
+  "ProgramOption":  {
+    "_enum": {
+      "Null": null,
+      "Index":"Index",
+      "Range":"Range",
+      "Other": "Vec<u8>"
+    }
+  },
+  "Range":  {
+    "_enum": {
+      "LargeThan": "u32",
+      "SmallerThan":"u32",
+      "Between":"(u32, u32)"
+    }
+  },
+  "ProgramType":  {
+    "_enum": {
+      "Null": null,
+      "Age":"ProgramOption",
+      "Country":"ProgramOption",
+      "Other": "Vec<u8>"
+    }
+  },
   "TaskStatus": {
     "_enum": [
       "JustCreated",
@@ -73,16 +107,11 @@
       "Delete": "DEL"
     }
   },
-  "KYCStruct": {
-    "KYCprogram_hash": "[u8; 32]",
-    "KYCclass": "Vec<u8>"
-  },
   "ADD": {
-    "kyc_verify_class": "VerifyClass",
-    "class": "Vec<u8>",
+    "kyc_verify_class": "ClassType",
     "program_hash": "[u8; 32]]"
   },
   "DEL": {
-    "kyc_verify_class": "VerifyClass"
+    "kyc_verify_class": "ClassType"
   }
 }

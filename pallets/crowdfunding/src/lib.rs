@@ -7,7 +7,7 @@
 #![cfg_attr(not(feature = "std"), no_std)]
 
 pub use pallet::*;
-use pallet_starks_verifier::Check;
+// use pallet_starks_verifier::Check;
 use sp_std::prelude::*;
 extern crate alloc;
 use frame_support::{
@@ -23,7 +23,10 @@ use sp_runtime::traits::{AccountIdConversion};
 
 #[cfg(feature = "std")]
 use codec::{Decode, Encode};
-use pallet_starks_verifier::{ClassType, ProgramOption};
+// use pallet_starks_verifier::{ClassType, ProgramOption};
+use primitives_catalog::types::{ClassType, ProgramOption, PublicInputs};
+use primitives_catalog::inspect::CheckError;
+use primitives_catalog::regist::ClassTypeRegister;
 use sp_runtime::{traits::StaticLookup, RuntimeDebug};
 use sp_std::{
 	cmp::{Eq, PartialEq},
@@ -56,7 +59,9 @@ pub struct CrowfundingStatus<AccountId, BlockNumber, Balance> {
 	// Whether the crowdfunding is still going or not
 	pub is_funding_proceed: Option<bool>,
 	// ClassType of KYC
-	pub kyc_class: ClassType,
+	pub class_type: ClassType,
+	// ClassType with public inputs
+	pub public_inputs: PublicInputs,
 	// For primitive version ratio stand for 1dot :xZtokens; e.g. ratio = 4, 1dot can buy 4Ztokens.
 	pub ratio: Balance,
 }
@@ -70,15 +75,15 @@ pub struct CrowfundingStatus<AccountId, BlockNumber, Balance> {
 //     fn unlookup(x: Self::Target) -> Self::Source { x }
 // }
 
-#[derive(Clone, Copy, Encode, Decode, PartialEq, Eq)]
-pub enum CheckError {
-	//Not on chain
-	ICOVerifyFailedNotOnChain,
-	//KYC onchain, but not allowed to do crowdfunding
-	ICOVerifyFailedNotAllowed,
-	//KYC onchain, but the corresponding program is not ICOprogram
-	ICOVerifyFailedTaskProgramWrong,
-}
+// #[derive(Clone, Copy, Encode, Decode, PartialEq, Eq)]
+// pub enum CheckError {
+// 	//Not on chain
+// 	VerifyFailedNotOnChain,
+// 	//KYC onchain, but not allowed to do crowdfunding
+// 	VerifyFailedNotAllowed,
+// 	//KYC onchain, but the corresponding program is not ICOprogram
+// 	VerifyFailedTaskProgramWrong,
+// }
 
 #[derive(Clone, Copy, Encode, Decode, PartialEq, Eq, Debug)]
 pub enum CrowdfundingOption {
@@ -93,9 +98,11 @@ pub mod pallet {
 	use super::*;
 	use frame_support::{dispatch::DispatchResult};
 	use frame_system::pallet_prelude::*;
-	use pallet_starks_verifier::{ClassType, ProgramType};
+	// use pallet_starks_verifier::{ClassType, ProgramType};
+	use primitives_catalog::types::{ClassType, ProgramType};
+	use primitives_catalog::inspect::Inspect;
 	use sp_runtime::SaturatedConversion;
-	extern crate zcloak_support;
+	// extern crate zcloak_support;
 
 	// use zcloak_support::traits::{VerifyClass, RegulatedCurrency};
 
@@ -113,7 +120,9 @@ pub mod pallet {
 		#[pallet::constant]
 		type StorePeriod: Get<Self::BlockNumber>;
 
-		type Check: Check<Self::AccountId>;
+		type Check: primitives_catalog::inspect::Inspect<Self::AccountId>;
+
+		type ClassTypeRegister: primitives_catalog::regist::ClassTypeRegister;
 
 		type Inspect: frame_support::traits::fungibles::Inspect<Self::AccountId>;
 
@@ -207,13 +216,13 @@ pub mod pallet {
 	#[pallet::metadata(T::AccountId = "AccountId")]
 	pub enum Event<T: Config> {
 		//Check KYC onchain, and verified pass
-		ICOVerifySuccuss(T::AccountId),
+		VerifySuccuss(T::AccountId),
 
-		ICOVerifyFailedNotOnChain,
+		VerifyFailedNotOnChain,
 		// KYC onchain, but not allowed to do crowdfunding
-		ICOVerifyFailedNotAllowed,
+		VerifyFailedNotAllowed,
 		// KYC onchain, but the corresponding program is not ICOprogram
-		ICOVerifyFailedTaskProgramWrong,
+		VerifyFailedTaskProgramWrong,
 		OtherErr,
 		// A crowdfunding just created,with AssetId,Admin,FundingAccount and total_amount of this crowdfunding
 		CrowdfundingCreated(T::AssetId, T::AccountId, T::AccountId, T::Balance),
@@ -229,11 +238,11 @@ pub mod pallet {
 	#[derive(Clone, PartialEq, Eq)]
 	pub enum Error<T> {
 		//Not on chain
-		ICOVerifyFailedNotOnChain,
+		VerifyFailedNotOnChain,
 		// KYC onchain, but not allowed to do crowdfunding
-		ICOVerifyFailedNotAllowed,
+		VerifyFailedNotAllowed,
 		// KYC onchain, but the corresponding program is not ICOprogram
-		ICOVerifyFailedTaskProgramWrong,
+		VerifyFailedTaskProgramWrong,
 		// In creating crowdfunding, admin doesn't have enough asset to dispense
 		AdminNotHaveEnoughAsset,
 		// Admin Account doesn't have enough ztoken
@@ -264,7 +273,7 @@ pub mod pallet {
 		CreateAssetFail,
 		// Can't mint asset
 		MintAssetFail,
-		KycClassNotExistOrWrong,
+		ClassNotRegistOrWrong,
 		OtherErr,
 	}
 
@@ -279,13 +288,14 @@ pub mod pallet {
 			funding_period: T::BlockNumber,
 			total_asset: T::Balance,
 			ratio: T::Balance,
-			kyc_class: ClassType,
-			kyc_program: [u8; 32],
+			class_type: ClassType,
+			public_inputs: PublicInputs,
 		) -> DispatchResult {
 			let who = ensure_signed(origin.clone())?;
-
-			let kyc_find_result = T::Check::if_kycclass_exist(kyc_class.clone(), kyc_program);
-			ensure!(kyc_find_result.is_ok(), Error::<T>::KycClassNotExistOrWrong);
+			let program_hash_result = T::ClassTypeRegister::get(&class_type);
+			ensure!(program_hash_result.is_ok(), Error::<T>::ClassNotRegistOrWrong);
+			let find_result = T::Check::check(&who, program_hash_result.clone().unwrap(), public_inputs.clone());
+			ensure!(find_result.is_ok(), Error::<T>::ClassNotRegistOrWrong);
 
 			let CrowfundingStatus { is_funding_proceed, .. } = Self::crowdfunding_process(asset_id);
 			ensure!(is_funding_proceed == None, Error::<T>::CrowdFundingAlreadyGoingOn);
@@ -357,7 +367,8 @@ pub mod pallet {
 					remain_funding: total_asset -
 						T::MinBalance::get() * T::CrowdFundingMetadataDepositBase::get(),
 					is_funding_proceed: Some(true),
-					kyc_class,
+					class_type,
+					public_inputs,
 					ratio,
 				},
 			);
@@ -395,7 +406,8 @@ pub mod pallet {
 				total_funding,
 				remain_funding,
 				is_funding_proceed,
-				kyc_class: _,
+				class_type,
+				public_inputs,
 				ratio,
 			} = Self::crowdfunding_process(asset_id);
 			ensure!(
@@ -404,18 +416,15 @@ pub mod pallet {
 			);
 			ensure!(is_funding_proceed == Some(true), Error::<T>::CrowdFundingStopped);
 			ensure!(remain_funding >= ztoken_to_buy, Error::<T>::NotEnoughZtokensAvailable);
+			
+			let program_hash_result = T::ClassTypeRegister::get(&class_type);
+			ensure!(program_hash_result.is_ok(), Error::<T>::ClassNotRegistOrWrong);
 
-			// The KYC-Verifying program, to check whether this KYCproof is stored and VerifiedPass on-chain
-			let ico_program_string = [
-				208, 194, 130, 197, 164, 24, 192, 43, 169, 199, 5, 5, 30, 49, 190, 137, 168, 29,
-				175, 111, 254, 108, 138, 242, 161, 201, 76, 10, 238, 140, 97, 14,
-			];
-			let kyc_class = ClassType::X1(ProgramType::Country(ProgramOption::Index(1)));
 			let check_result =
-				T::Check::checkkyc(&who.clone(), kyc_class.clone(), ico_program_string);
+				T::Check::check(&who.clone(), program_hash_result.clone().unwrap(), public_inputs.clone());
 			// The origin has the access to buy ztokens due to SuccessProved-KYC
 			if check_result.is_ok() {
-				Self::deposit_event(Event::ICOVerifySuccuss(who.clone()));
+				Self::deposit_event(Event::VerifySuccuss(who.clone()));
 
 				let dot_to_buy =
 					(ztoken_to_buy / ratio) * T::CrowdFundingMetadataDepositBase::get();
@@ -463,24 +472,25 @@ pub mod pallet {
 						total_funding,
 						remain_funding: remain_funding - ztoken_to_buy,
 						is_funding_proceed: Some(true),
-						kyc_class,
+						class_type,
+						public_inputs,
 						ratio,
 					},
 				);
 			} else {
 				let crowdfunding_err = check_result.err();
 				match crowdfunding_err {
-					Some(pallet_starks_verifier::CheckError::ICOVerifyFailedNotAllowed) => {
-						Self::deposit_event(Event::ICOVerifyFailedNotAllowed);
-						return Err(Error::<T>::ICOVerifyFailedNotAllowed.into())
+					Some(CheckError::VerifyFailedNotAllowed) => {
+						Self::deposit_event(Event::VerifyFailedNotAllowed);
+						return Err(Error::<T>::VerifyFailedNotAllowed.into())
 					},
-					Some(pallet_starks_verifier::CheckError::ICOVerifyFailedTaskProgramWrong) => {
-						Self::deposit_event(Event::ICOVerifyFailedTaskProgramWrong);
-						return Err(Error::<T>::ICOVerifyFailedTaskProgramWrong.into())
+					Some(CheckError::VerifyFailedTaskProgramWrong) => {
+						Self::deposit_event(Event::VerifyFailedTaskProgramWrong);
+						return Err(Error::<T>::VerifyFailedTaskProgramWrong.into())
 					},
-					Some(pallet_starks_verifier::CheckError::ICOVerifyFailedNotOnChain) => {
-						Self::deposit_event(Event::ICOVerifyFailedNotOnChain);
-						return Err(Error::<T>::ICOVerifyFailedNotOnChain.into())
+					Some(CheckError::VerifyFailedNotOnChain) => {
+						Self::deposit_event(Event::VerifyFailedNotOnChain);
+						return Err(Error::<T>::VerifyFailedNotOnChain.into())
 					},
 					_ =>
 						return {
@@ -509,7 +519,8 @@ pub mod pallet {
 				total_funding,
 				remain_funding,
 				is_funding_proceed,
-				kyc_class,
+				class_type,
+				public_inputs,
 				ratio,
 			} = Self::crowdfunding_process(asset_id);
 			ensure!(
@@ -530,7 +541,8 @@ pub mod pallet {
 						total_funding,
 						remain_funding,
 						is_funding_proceed: Some(switch_to),
-						kyc_class,
+						class_type,
+						public_inputs,
 						ratio,
 					},
 				);

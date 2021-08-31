@@ -23,6 +23,8 @@ pallet-sudo = { default-features = false, git = "https://github.com/zCloak-Netwo
 # starks
 sp-starks = { path = "../../primitives/starks", default-features = false }
 pallet-starks-verifier = { path = '../starks-verifier', default-features = false }
+primitives-catalog = { path = '../../primitives/catalog', default-features = false }
+
 
 [dev-dependencies]
 pallet-session = { git = "https://github.com/zCloak-Network/substrate" }
@@ -45,4 +47,5 @@ std = [
     "log/std",
     "pallet-sudo/std",
     "pallet-starks-verifier/std",
+    "primitives-catalog/std",
 ]

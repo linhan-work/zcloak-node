@@ -18,6 +18,7 @@ sp-runtime =  { default-features = false, git = "https://github.com/zCloak-Netwo
 sp-application-crypto = { default-features = false, git = "https://github.com/zCloak-Network/substrate" }
 log = {version = "0.4.0"}
 pallet-starks-verifier = { path = '../starks-verifier', default-features = false }
+primitives-catalog = { path = "../../primitives/catalog", default-features = false }
 
 [features]
 default = ["std"]
@@ -34,4 +35,5 @@ std = [
     "log/std",
     "pallet-starks-verifier/std",
     "log/std",
+    "primitives-catalog/std",
 ]

@@ -35,14 +35,17 @@ use sp_runtime::{
 	RuntimeDebug, SaturatedConversion,
 };
 use sp_std::{
-	borrow::ToOwned, collections::btree_set::BTreeSet, convert::From, iter::FromIterator,
+	borrow::ToOwned, collections::btree_set::BTreeSet, iter::FromIterator,
 	prelude::*,
 };
 // use frame_system::{ensure_signed, ensure_none};
 use frame_system::offchain::{SendTransactionTypes, SubmitTransaction};
 
-pub use pallet::*;
 use sp_runtime::offchain::storage::{MutateStorageError, StorageRetrievalError};
+
+use primitives_catalog::types::{ProgramHash, PublicInputs};
+use primitives_catalog::inspect::{CheckError, Inspect};
+use primitives_catalog::regist::ClassTypeRegister;
 
 extern crate alloc;
 
@@ -52,20 +55,7 @@ mod mock;
 #[cfg(all(feature = "std", test))]
 mod tests;
 
-pub trait Check<AccountId> {
-	fn checkkyc(
-		who: &AccountId,
-		kycclass: ClassType,
-		ioc_program_hash: [u8; 32],
-	) -> Result<bool, CheckError>;
-	fn compare_hash(hash1: Vec<u8>, hash2: Vec<u8>) -> bool;
-	fn checkkyc_with_verifykyc(who: &AccountId, verifykyc: ClassType) -> Result<bool, CheckError>;
-	fn if_kycclass_exist(class: ClassType, program_hash: [u8; 32]) -> Result<bool, KycClassError>;
-}
-
-pub trait KYCRegister {
-	fn register_kyc(kycclass: &ClassType, program_hash: &[u8; 32]) -> Result<bool, KycClassError>;
-}
+pub use pallet::*;
 
 /// The key type of which to sign the starks verification transactions
 pub const KEY_TYPE: KeyTypeId = KeyTypeId(*b"zkst");
@@ -89,69 +79,9 @@ pub mod crypto {
 	pub type AuthorityId = app_sr25519::Public;
 }
 
-#[derive(PartialEq, Clone, Debug, Encode, Decode, PartialOrd, Eq, Ord)]
-// #[cfg_attr(feature = "std", derive(Serialize, Deserialize))]
-pub enum ClassType {
-	Null,
-	X1(ProgramType),
-	X2(ProgramType, ProgramType),
-	X3(ProgramType, ProgramType, ProgramType),
-	X4(ProgramType, ProgramType, ProgramType, ProgramType),
-	X5(ProgramType, ProgramType, ProgramType, ProgramType, ProgramType),
-	X6(ProgramType, ProgramType, ProgramType, ProgramType, ProgramType, ProgramType),
-}
-
-impl Default for ClassType {
-	fn default() -> Self {
-		Self::Null
-	}
-}
-#[derive(Clone, Eq, PartialEq, Ord, PartialOrd, Encode, Decode, Debug)]
-pub enum ProgramType {
-	Null,
-	Age(ProgramOption),
-	Country(ProgramOption),
-	Other(Vec<u8>),
-}
-
-type Index = u32;
-
-#[derive(Clone, Eq, PartialEq, Ord, PartialOrd, Encode, Decode, Debug)]
-pub enum ProgramOption {
-	Null,
-	Index(Index),
-	Range(Range),
-	Other(Vec<u8>),
-}
-
-#[derive(Clone, Eq, PartialEq, Ord, PartialOrd, Encode, Decode, Debug)]
-pub enum Range {
-	LargeThan(u32),
-	SmallerThan(u32),
-	Between(u32, u32),
-}
-
-#[derive(PartialEq, Clone, Debug, Encode, Decode)]
-// #[cfg_attr(feature = "std", derive(Serialize, Deserialize))]
-pub enum KYCListOption {
-	Add(ADD),
-	Delete(DEL),
-}
-
-#[derive(PartialEq, Clone, Debug, Encode, Decode)]
-pub struct ADD {
-	pub kyc_verify_class: ClassType,
-	pub program_hash: [u8; 32],
-}
-
-#[derive(PartialEq, Clone, Debug, Encode, Decode)]
-pub struct DEL {
-	pub kyc_verify_class: ClassType,
-}
-
 #[derive(Debug)]
 pub enum Error {
-	WrongKYCToVerify,
+	WrongClassTypeToVerify,
 }
 
 /// The status of a given verification task
@@ -168,9 +98,11 @@ pub struct Status {
 /// Receipt about any verification occured
 #[derive(Encode, Decode, Clone, PartialEq, Eq, RuntimeDebug)]
 pub struct VerificationReceipt<AccountId, BlockNumber> {
-	task_tuple_id: (AccountId, ClassType),
+	task_tuple_id: (AccountId, (ProgramHash, PublicInputs)),
 	// The Hash of a certain task to be verified
-	program_hash: [u8; 32],
+	program_hash: ProgramHash,
+	// The vec<128> of program public input
+	public_inputs: PublicInputs,
 	// Whether a task is passed or not
 	passed: bool,
 	// Block number at the time submission is created.
@@ -189,26 +121,6 @@ pub enum TaskStatus {
 	VerifiedFalse,
 }
 
-#[derive(Clone, Copy, Encode, Decode, PartialEq, Eq, Debug)]
-pub enum CheckError {
-	//Not on chain
-	ICOVerifyFailedNotOnChain,
-	//KYC onchain, but not allowed to do crowdfunding
-	ICOVerifyFailedNotAllowed,
-	//KYC onchain, but the corresponding program is not ICOprogram
-	ICOVerifyFailedTaskProgramWrong,
-	VerifyKYCNotCorrect,
-}
-
-#[derive(Clone, Copy, Encode, Decode, PartialEq, Eq, Debug)]
-pub enum KycClassError {
-	// Not on chain
-	KycClassNotExist,
-	// Kyc Class Not Fit Program On Chain
-	KycClassNotFitProgramOnChain,
-	// Kyc Class already exist
-	KycClassAlreadyExist,
-}
 impl sp_std::fmt::Debug for TaskStatus {
 	fn fmt(&self, fmt: &mut sp_std::fmt::Formatter) -> sp_std::fmt::Result {
 		match *self {
@@ -226,11 +138,11 @@ pub struct TaskInfo<BlockNumber> {
 	// The id of the proof,combined with a url to fetch the complete proof later
 	proof_id: Vec<u8>,
 	// Inputs of the task
-	inputs: Vec<u128>,
+	public_inputs: PublicInputs,
 	// Outputs of the task
 	outputs: Vec<u128>,
 	// The hash of the program
-	program_hash: [u8; 32],
+	program_hash: ProgramHash,
 	// If false,expiration is the time task created;
 	// If true ,expiration is the time task expired.
 	is_task_finish: Option<TaskStatus>,
@@ -275,6 +187,8 @@ pub mod pallet {
 	use super::*;
 	use frame_support::{dispatch::DispatchResult, pallet_prelude::*};
 	use frame_system::pallet_prelude::*;
+	use primitives_catalog::types::{ProgramHash, PublicInputs};
+
 	#[pallet::config]
 	#[pallet::disable_frame_system_supertrait_check]
 	pub trait Config: frame_system::Config + SendTransactionTypes<Call<Self>> {
@@ -300,6 +214,8 @@ pub mod pallet {
 		/// multiple pallets send unsigned transactions.
 		#[pallet::constant]
 		type UnsignedPriority: Get<TransactionPriority>;
+
+		type Register: ClassTypeRegister;
 	}
 
 	#[pallet::pallet]
@@ -312,11 +228,6 @@ pub mod pallet {
 	pub(super) type Keys<T: Config> = StorageValue<_, Vec<T::AuthorityId>, ValueQuery>;
 
 	#[pallet::storage]
-	#[pallet::getter(fn kyc_list)]
-	pub(super) type KYCList<T: Config> =
-		StorageMap<_, Twox64Concat, ClassType, [u8; 32], ValueQuery>;
-
-	#[pallet::storage]
 	#[pallet::getter(fn task_params)]
 	/// Map from the task_params to the TaskInfo(proof_id,inputs,outputs)
 	pub(super) type TaskParams<T: Config> = StorageDoubleMap<
@@ -324,7 +235,7 @@ pub mod pallet {
 		Twox64Concat,
 		T::AccountId,
 		Twox64Concat,
-		ClassType,
+		(ProgramHash, PublicInputs),
 		TaskInfo<T::BlockNumber>,
 		ValueQuery,
 	>;
@@ -338,7 +249,7 @@ pub mod pallet {
 		Twox64Concat,
 		T::AccountId,
 		Twox64Concat,
-		ClassType,
+		(ProgramHash, PublicInputs),
 		Status,
 		OptionQuery,
 	>;
@@ -351,7 +262,7 @@ pub mod pallet {
 		Twox64Concat,
 		T::BlockNumber,
 		Twox64Concat,
-		(T::AccountId, ClassType),
+		(T::AccountId, ProgramHash, PublicInputs),
 		Option<bool>,
 		ValueQuery,
 	>;
@@ -371,7 +282,7 @@ pub mod pallet {
 	#[pallet::genesis_build]
 	impl<T: Config> GenesisBuild<T> for GenesisConfig<T> {
 		fn build(&self) {
-			Pallet::<T>::initialize_kyclist()
+			// Pallet::<T>::initialize_kyclist()
 		}
 	}
 
@@ -384,11 +295,11 @@ pub mod pallet {
 		/// A verifier is removed with `AccountId`.
 		RemoveVerifier(T::AccountId),
 		/// A new task is created.
-		TaskCreated(T::AccountId, ClassType, Vec<u8>),
+		TaskCreated(T::AccountId, ProgramHash, PublicInputs, Vec<u8>),
 		/// A verification submitted on chain
-		VerificationSubmitted(T::AccountId, ClassType, bool, u32, u32, u32),
+		VerificationSubmitted(T::AccountId, ProgramHash, PublicInputs, bool, u32, u32, u32),
 		/// A verification submitted by a single verifier
-		SingleVerification(T::AccountId, ClassType, bool, u32, u32),
+		SingleVerification(T::AccountId, ProgramHash, PublicInputs, bool, u32, u32),
 	}
 
 	#[pallet::error]
@@ -402,15 +313,15 @@ pub mod pallet {
 		/// Duplicated Submission
 		DuplicatedSubmission,
 		/// KYCListNotHaveThisOne
-		KYCListNotHaveThisOne,
+		ClassTypeListNotHaveThisOne,
 		/// KYCListAlreadyHaveThisOne
-		KYCListAlreadyHaveThisOne,
+		ClassTypeListAlreadyHaveThisOne,
 		/// KYCClassIsEmpty
-		KYCClassIsEmpty,
+		ClassTypeIsEmpty,
 		/// KYCProgramIsEmpty
-		KYCProgramIsEmpty,
-		/// KYC class not store on chain
-		KYCClassNotExsit,
+		ProgramIsEmpty,
+		/// class type not store on chain
+		ClassTypeNotExsit,
 	}
 
 	#[pallet::call]
@@ -429,30 +340,28 @@ pub mod pallet {
 		#[pallet::weight(10000)]
 		pub fn create_task(
 			origin: OriginFor<T>,
-			class: ClassType,
-			inputs: Vec<u128>,
+			program_hash: ProgramHash,
+			public_inputs: PublicInputs,
 			outputs: Vec<u128>,
 			proof_id: Vec<u8>,
 		) -> DispatchResult {
 			let who = ensure_signed(origin)?;
 			// Ensure task has not been created
-			ensure!(!TaskParams::<T>::try_get(&who, &class).is_ok(), Error::<T>::TaskAlreadyExists);
-			ensure!(KYCList::<T>::try_get(&class).is_ok(), Error::<T>::KYCClassNotExsit);
-			let program_hash = KYCList::<T>::get(&class);
+			ensure!(!TaskParams::<T>::try_get(&who, (&program_hash, &public_inputs)).is_ok(), Error::<T>::TaskAlreadyExists);
 			<TaskParams<T>>::insert(
 				&who,
-				&class,
+				(&program_hash, &public_inputs),
 				TaskInfo {
 					proof_id: proof_id.clone(),
-					inputs,
+					public_inputs: public_inputs.clone(),
 					outputs,
 					program_hash,
 					is_task_finish: Some(TaskStatus::JustCreated),
 					expiration: Some(<frame_system::Pallet<T>>::block_number()),
 				},
 			);
-			<OngoingTasks<T>>::insert(&who, &class, Status::default());
-			Self::deposit_event(Event::TaskCreated(who, class, proof_id));
+			<OngoingTasks<T>>::insert(&who, (&program_hash, &public_inputs), Status::default());
+			Self::deposit_event(Event::TaskCreated(who, program_hash, public_inputs, proof_id));
 			Ok(())
 		}
 
@@ -472,10 +381,11 @@ pub mod pallet {
 		) -> DispatchResult {
 			ensure_none(origin)?;
 			let account = receipt.clone().task_tuple_id.0;
-			let class = receipt.clone().task_tuple_id.1;
+			let program_hash = receipt.clone().task_tuple_id.1.0;
+			let public_inputs = receipt.clone().task_tuple_id.1.1;
 			<OngoingTasks<T>>::try_mutate_exists(
 				&account.clone(),
-				&class.clone(),
+				(&program_hash.clone(), &public_inputs.clone()),
 				|last_status| -> DispatchResult {
 					// Last status must exist.Fetch last status,if not exists return error
 					let mut status = last_status.take().ok_or(Error::<T>::TaskNotExists)?;
@@ -495,21 +405,22 @@ pub mod pallet {
 						status.nays += 1;
 					}
 					// Change expiration.
-					let TaskInfo { proof_id, inputs, outputs, program_hash, expiration, .. } =
-						Self::task_params(&account, &class);
+					let TaskInfo { proof_id, public_inputs, outputs, program_hash, expiration, .. } =
+						Self::task_params(&account, (&program_hash, &public_inputs));
 					Self::deposit_event(Event::SingleVerification(
 						account.clone(),
-						class.clone(),
+						program_hash.clone(),
+						public_inputs.clone(),
 						receipt.passed,
 						status.ayes.clone(),
 						Self::authority_len(),
 					));
 					<TaskParams<T>>::insert(
 						&account,
-						&class,
+						(&program_hash, &public_inputs),
 						TaskInfo {
 							proof_id: proof_id.clone(),
-							inputs: inputs.clone(),
+							public_inputs: public_inputs.clone(),
 							outputs: outputs.clone(),
 							program_hash,
 							is_task_finish: Some(TaskStatus::Verifying),
@@ -523,15 +434,15 @@ pub mod pallet {
 						// Pass the verification
 						SettledTasks::<T>::insert(
 							expiration,
-							&(account.clone(), class.clone()),
+							&(account.clone(), program_hash.clone(), public_inputs.clone()),
 							Some(true),
 						);
 						<TaskParams<T>>::insert(
 							&account,
-							&class,
+							(&program_hash, &public_inputs),
 							TaskInfo {
 								proof_id,
-								inputs,
+								public_inputs: public_inputs.clone(),
 								outputs,
 								program_hash,
 								is_task_finish: Some(TaskStatus::VerifiedTrue),
@@ -541,7 +452,8 @@ pub mod pallet {
 						*last_status = None;
 						Self::deposit_event(Event::VerificationSubmitted(
 							account.clone(),
-							class.clone(),
+							program_hash.clone(),
+							public_inputs.clone(),
 							true,
 							status.ayes,
 							status.nays,
@@ -552,15 +464,15 @@ pub mod pallet {
 						// fail the verification
 						SettledTasks::<T>::insert(
 							expiration,
-							&(account.clone(), class.clone()),
+							(account.clone(), program_hash.clone(), public_inputs.clone()),
 							Some(false),
 						);
 						<TaskParams<T>>::insert(
 							&account,
-							&class,
+							(&program_hash, &public_inputs),
 							TaskInfo {
 								proof_id,
-								inputs,
+								public_inputs: public_inputs.clone(),
 								outputs,
 								program_hash,
 								is_task_finish: Some(TaskStatus::VerifiedFalse),
@@ -570,7 +482,8 @@ pub mod pallet {
 						*last_status = None;
 						Self::deposit_event(Event::VerificationSubmitted(
 							account,
-							class,
+							program_hash,
+							public_inputs,
 							false,
 							status.ayes,
 							status.nays,
@@ -584,35 +497,7 @@ pub mod pallet {
 				},
 			)
 		}
-		#[pallet::weight(10000)]
-		pub fn modify_kyc_list(
-			origin: OriginFor<T>,
-			add_or_delete: KYCListOption,
-		) -> DispatchResult {
-			ensure_root(origin)?;
-			match add_or_delete {
-				KYCListOption::Add(add_information) => {
-					let ADD { kyc_verify_class, program_hash } = add_information;
-					let _res_add = <KYCList<T>>::try_get(kyc_verify_class.clone());
-					ensure!(
-						!KYCList::<T>::try_get(kyc_verify_class.clone()).is_ok(),
-						Error::<T>::KYCListAlreadyHaveThisOne
-					);
-					ensure!(!program_hash.is_empty(), Error::<T>::KYCProgramIsEmpty);
-					<KYCList<T>>::insert(kyc_verify_class, program_hash);
-				},
-				KYCListOption::Delete(delete_information) => {
-					let DEL { kyc_verify_class } = delete_information;
-					ensure!(
-						KYCList::<T>::try_get(kyc_verify_class.clone()).is_ok(),
-						Error::<T>::KYCListNotHaveThisOne
-					);
-					<KYCList<T>>::remove(kyc_verify_class);
-				},
-			}
-
-			Ok(())
-		}
+		
 	}
 
 	// Runs after every block.
@@ -714,12 +599,12 @@ impl<T: Config> Pallet<T> {
 			};
 			let storage = StorageValueRef::persistent(&storage_key);
 
-			let mut task_id_tuple: (T::AccountId, ClassType) = Default::default();
+			let mut task_id_tuple: (T::AccountId, (ProgramHash, PublicInputs)) = Default::default();
 			let mut initial_local_tasks = BTreeSet::new();
 
 			let res = storage.mutate(
 				|tasks: Result<
-					Option<Option<BTreeSet<(T::AccountId, ClassType)>>>,
+					Option<Option<BTreeSet<(T::AccountId, (ProgramHash, PublicInputs))>>>,
 					StorageRetrievalError,
 				>| {
 					// Check if there is already a lock for that particular task.(hash)
@@ -775,19 +660,20 @@ impl<T: Config> Pallet<T> {
 		auth_index: u32,
 		key: T::AuthorityId,
 		block_number: T::BlockNumber,
-		task_tuple_id: (T::AccountId, ClassType),
+		task_tuple_id: (T::AccountId, (ProgramHash, PublicInputs)),
 	) -> OffchainResult<T, ()> {
-		let TaskInfo { proof_id, inputs, outputs, program_hash, .. } =
-			Self::task_params(&task_tuple_id.0, &task_tuple_id.1);
+		let TaskInfo { proof_id, public_inputs, outputs, program_hash, .. } =
+			Self::task_params(&task_tuple_id.0, (&task_tuple_id.1.0, &task_tuple_id.1.1));
 		// To fetch proof and verify it.
 		let proof = Self::fetch_proof(&proof_id).map_err(|_| OffchainErr::FailedToFetchProof)?;
-		let is_success = Self::stark_verify(&program_hash, inputs, outputs, &proof);
+		let is_success = Self::stark_verify(&program_hash, public_inputs.clone(), outputs, &proof);
 		let res = if let Ok(r) = is_success { r } else { false };
 		let validators_len = Keys::<T>::decode_len().unwrap_or_default() as u32;
 		//Create and initialize a verification receipt
 		let receipt = VerificationReceipt {
 			task_tuple_id,
 			program_hash,
+			public_inputs,
 			passed: res,
 			submit_at: block_number,
 			auth_index,
@@ -839,11 +725,11 @@ impl<T: Config> Pallet<T> {
 	/// Use Stark_verify to verify every program_hash with proof
 	fn stark_verify(
 		program_hash: &[u8; 32],
-		inputs: Vec<u128>,
+		public_inputs: Vec<u128>,
 		outputs: Vec<u128>,
 		proof: &[u8],
 	) -> OffchainResult<T, bool> {
-		sp_starks::starks::verify(program_hash, &inputs, &outputs, proof)
+		sp_starks::starks::verify(program_hash, &public_inputs, &outputs, proof)
 			.map_err(|_| OffchainErr::VerificationFailed)
 	}
 
@@ -864,11 +750,11 @@ impl<T: Config> Pallet<T> {
 
 	/// Pick an on-chain tasks to execute which is not included in `local_tasks`
 	fn task_to_execute(
-		local_tasks: &BTreeSet<(T::AccountId, ClassType)>,
-	) -> OffchainResult<T, (T::AccountId, ClassType)> {
+		local_tasks: &BTreeSet<(T::AccountId, (ProgramHash, PublicInputs))>,
+	) -> OffchainResult<T, (T::AccountId, (ProgramHash, PublicInputs))> {
 		//On-chain ready-to-verify tasks,put all task_hash of OngoingTasks into a vec.
 		let ongoing_tasks_list = BTreeSet::from_iter(
-			OngoingTasks::<T>::iter().map(|(account_id, class, _)| (account_id, class)),
+			OngoingTasks::<T>::iter().map(|(account_id, (program_hash, public_inputs), _)| (account_id, (program_hash, public_inputs))),
 		);
 
 		// Find any one task that is not executed
@@ -896,83 +782,23 @@ impl<T: Config> Pallet<T> {
 		Keys::<T>::put(&keys)
 	}
 }
-impl<T: Config> KYCRegister for Pallet<T> {
-	fn register_kyc(kycclass: &ClassType, program_hash: &[u8; 32]) -> Result<bool, KycClassError> {
-		if KYCList::<T>::try_get(&kycclass).is_ok() {
-			return Err(KycClassError::KycClassAlreadyExist)
-		} else {
-			KYCList::<T>::insert(kycclass, program_hash);
-			return Ok(true)
-		}
-	}
-}
 
-impl<T: Config> Check<T::AccountId> for Pallet<T> {
-	fn checkkyc(
+impl<T: Config> Inspect<T::AccountId> for Pallet<T> {
+
+	fn check(
 		who: &T::AccountId,
-		kycclass: ClassType,
-		ioc_program_hash: [u8; 32],
+		program_hash: ProgramHash,
+		public_inputs: PublicInputs,
 	) -> Result<bool, CheckError> {
-		let kyc_is_exist = TaskParams::<T>::try_get(who, &kycclass).is_ok();
-		if kyc_is_exist {
-			let TaskInfo { outputs, program_hash, .. } = Self::task_params(who, &kycclass);
-			let ioc_program_vec = ioc_program_hash.encode();
-			let program_hash_vec = program_hash.encode();
-			let compare_result = Self::compare_hash(ioc_program_vec, program_hash_vec);
-			if compare_result == true && outputs == vec![1] {
-				return Ok(true)
-			} else {
-				if compare_result == true {
-					return Err(CheckError::ICOVerifyFailedNotAllowed)
-				} else {
-					return Err(CheckError::ICOVerifyFailedTaskProgramWrong)
-				}
+		let is_exist = TaskParams::<T>::try_get(who, (&program_hash, &public_inputs)).is_ok();
+		if is_exist {
+			let TaskInfo { is_task_finish, .. } = Self::task_params(who, (&program_hash, &public_inputs));
+			match is_task_finish.unwrap() {
+				TaskStatus::VerifiedTrue => {return Ok(true)}
+				_ => {return Err(CheckError::VerifyFailedNotAllowed)}
 			}
 		} else {
-			return Err(CheckError::ICOVerifyFailedNotOnChain)
-		}
-	}
-
-	fn compare_hash(mut hash1: Vec<u8>, mut hash2: Vec<u8>) -> bool {
-		let len1 = hash1.len();
-		let len2 = hash2.len();
-		if len1 == len2 {
-			for _i in 0..len1 {
-				if hash1.pop() == hash2.pop() {
-				} else {
-					return false
-				}
-			}
-			return true
-		} else {
-			return false
-		}
-	}
-
-	fn checkkyc_with_verifykyc(
-		who: &T::AccountId,
-		verifykyc: ClassType,
-	) -> Result<bool, CheckError> {
-		let maybe_kyc_program = KYCList::<T>::try_get(verifykyc.clone());
-		if maybe_kyc_program.is_ok() {
-			let kycprogram_hash = maybe_kyc_program.unwrap();
-			return Self::checkkyc(who, verifykyc, kycprogram_hash)
-		} else {
-			return Err(CheckError::VerifyKYCNotCorrect)
-		}
-	}
-
-	fn if_kycclass_exist(class: ClassType, program_hash: [u8; 32]) -> Result<bool, KycClassError> {
-		let maybe_kyc_program = KYCList::<T>::try_get(class.clone());
-		if maybe_kyc_program.is_ok() {
-			let kyc_program_hash = maybe_kyc_program.unwrap();
-			if kyc_program_hash != program_hash {
-				return Err(KycClassError::KycClassNotFitProgramOnChain)
-			} else {
-				return Ok(true)
-			}
-		} else {
-			return Err(KycClassError::KycClassNotExist)
+			return Err(CheckError::VerifyFailedNotOnChain)
 		}
 	}
 }
@@ -1002,26 +828,5 @@ impl<T: Config> OneSessionHandler<T::AccountId> for Pallet<T> {
 
 	fn on_disabled(_i: usize) {
 		// Ignore
-	}
-}
-
-impl<T: Config> Pallet<T> {
-	fn initialize_kyclist() {
-		let age_program_hash = [
-			228, 150, 141, 219, 97, 232, 23, 59, 109, 33, 136, 11, 72, 175, 77, 167, 38, 2, 251,
-			107, 254, 126, 91, 63, 176, 46, 204, 254, 90, 153, 168, 40,
-		];
-		let country_program_hash = [
-			208, 194, 130, 197, 164, 24, 192, 43, 169, 199, 5, 5, 30, 49, 190, 137, 168, 29, 175,
-			111, 254, 108, 138, 242, 161, 201, 76, 10, 238, 140, 97, 14,
-		];
-		<KYCList<T>>::insert(
-			ClassType::X1(ProgramType::Age(ProgramOption::Range(Range::LargeThan(20_u32)))),
-			age_program_hash,
-		);
-		<KYCList<T>>::insert(
-			ClassType::X1(ProgramType::Country(ProgramOption::Index(1_u32))),
-			country_program_hash,
-		);
 	}
 }

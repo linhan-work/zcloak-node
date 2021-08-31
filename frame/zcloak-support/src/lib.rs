@@ -27,4 +27,4 @@ pub use serde;
 #[doc(hidden)]
 pub use serde::{Deserialize, Serialize};
 
-pub mod traits;
+pub mod currency;

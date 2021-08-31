@@ -18,10 +18,11 @@ num-traits = { version = "0.2.14", default-features = false }
 frame-support = { default-features = false, git = "https://github.com/zCloak-Network/substrate" }
 frame-system =  { default-features = false, git = "https://github.com/zCloak-Network/substrate" }
 sp-inherents = { default-features = false, git = "https://github.com/zCloak-Network/substrate" }
-pallet-starks-verifier = { path = '../../pallets/starks-verifier', default-features = false }
+# pallet-starks-verifier = { path = '../../pallets/starks-verifier', default-features = false }
 pallet-assets = { default-features = false, git = "https://github.com/zCloak-Network/substrate" }
 pallet-balances = { default-features = false, git = "https://github.com/zCloak-Network/substrate" }
 log = { version = "0.4.0"}
+primitives-catalog = {path = "../../primitives/catalog", default-features = false}
 
 [features]
 default = ["std"]
@@ -36,7 +37,7 @@ std = [
 	"frame-support/std",
     "frame-system/std",
 	"sp-inherents/std",
-	"pallet-starks-verifier/std",
     "pallet-assets/std",
     "pallet-balances/std",
+	"primitives-catalog/std",
 ]

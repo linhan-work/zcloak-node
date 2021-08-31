@@ -27,7 +27,8 @@
 #![cfg_attr(not(feature = "std"), no_std)]
 use codec::{Decode, Encode};
 use frame_support::traits::OneSessionHandler;
-use pallet_starks_verifier::{ClassType};
+// use pallet_starks_verifier::{ClassType};
+use primitives_catalog::types::ClassType;
 use sp_application_crypto::RuntimeAppPublic;
 use sp_core::crypto::KeyTypeId;
 use sp_runtime::RuntimeDebug;

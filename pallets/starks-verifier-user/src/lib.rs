@@ -35,7 +35,8 @@ use sp_std::{convert::From, prelude::*};
 use frame_system::offchain::SendTransactionTypes;
 pub use pallet::*;
 
-use pallet_starks_verifier::{ClassType};
+// use pallet_starks_verifier::{ClassType};
+use primitives_catalog::types::ClassType;
 /// The key type of which to sign the starks verification transactions
 pub const KEY_TYPE: KeyTypeId = KeyTypeId(*b"zkst");
 

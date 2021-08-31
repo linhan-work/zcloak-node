@@ -25,7 +25,8 @@ log = {version = "0.4.0"}
 pallet-starks-verifier = { path = '../starks-verifier', default-features = false }
 pallet-assets = { default-features = false, git = "https://github.com/zCloak-Network/substrate" }
 pallet-balances = { default-features = false, git = "https://github.com/zCloak-Network/substrate" }
-zcloak-support = {path = "../../frame/zcloak-support", default-features = false}
+zcloak-support = { path = "../../frame/zcloak-support", default-features = false }
+primitives-catalog = { path = "../../primitives/catalog", default-features = false }
 
 [features]
 default = ["std"]
@@ -48,5 +49,6 @@ std = [
     "pallet-balances/std",
     "log/std",
     "zcloak-support/std",
+    "primitives-catalog/std",
 
 ]

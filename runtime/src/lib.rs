@@ -392,6 +392,8 @@ impl pallet_starks_verifier::Config for Runtime {
 	type Event = Event;
 	type StorePeriod = StorePeriod;
 	type UnsignedPriority = VerifierPriority;
+	type Register = StarksRegister;
+
 }
 
 impl pallet_starks_verifier_user::Config for Runtime {
@@ -410,7 +412,8 @@ impl pallet_starks_verifier_seperate::Config for Runtime {
 }
 
 pub type RegulatedCurrencyAdaptor =
-	zcloak_support::traits::Demostruct<Runtime, Balances, StarksVerifier, AccountId>;
+	zcloak_support::currency::RegulatedCurrencyAdaptor<Balances, StarksVerifier, StarksRegister, AccountId>;
+
 
 impl pallet_crowdfunding::Config for Runtime {
 	type Event = Event;
@@ -422,6 +425,7 @@ impl pallet_crowdfunding::Config for Runtime {
 	type CrowdFundingMetadataDepositBase = CrowdFundingMetadataDepositBase;
 	type MinBalance = MinBalance;
 	type PalletId = CrowdfundingPalletId;
+	type ClassTypeRegister = StarksRegister;
 }
 
 impl pallet_starks_balances::Config for Runtime {
@@ -431,7 +435,7 @@ impl pallet_starks_balances::Config for Runtime {
 }
 impl pallet_starks_register::Config for Runtime {
 	type Event = Event;
-	type KYCRegister = StarksVerifier;
+	type Register = StarksRegister;
 }
 
 impl pallet_assets::Config for Runtime {

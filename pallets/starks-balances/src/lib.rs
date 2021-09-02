@@ -48,7 +48,7 @@ pub mod pallet {
 	use frame_support::{dispatch::DispatchResult};
 	use frame_system::pallet_prelude::*;
 	// use pallet_starks_verifier::{ClassType};
-	use primitives_catalog::types::ClassType;
+	use primitives_catalog::types::{ClassType, ProgramType, ProgramOption, Range};
 	use sp_runtime::SaturatedConversion;
 	use zcloak_support::currency::RegulatedCurrency;
 	extern crate zcloak_support;
@@ -103,6 +103,30 @@ pub mod pallet {
 			origin: OriginFor<T>,
 			dest: T::AccountId,
 			value: T::Balance,
+			// class_type: ClassType,
+			// public_inputs: PublicInputs,
+		) -> DispatchResult {
+			let who = ensure_signed(origin)?;
+			let class_type = ClassType::X1(ProgramType::Age(ProgramOption::Range(Range::LargeThan)));
+			let public_inputs = vec![20];
+			let option = ExistenceRequirement::KeepAlive;
+			let v1 = TryInto::<u128>::try_into(value).ok();
+			let v2 = RegulatedBalanceOf::<T>::saturated_from(v1.unwrap());
+			let transfer_result =
+				T::RegulatedCurrency::transfer(&who, &dest, v2, option, class_type, public_inputs);
+			ensure!(
+				transfer_result != Err(DispatchError::Other("NotPass".into())),
+				Error::<T>::KYCNotPass
+			);
+			Self::deposit_event(Event::RegulatedTransferSuccess(who, dest, value));
+			transfer_result
+		}
+
+		#[pallet::weight(10000)]
+		pub fn transfer_class(
+			origin: OriginFor<T>,
+			dest: T::AccountId,
+			value: T::Balance,
 			class_type: ClassType,
 			public_inputs: PublicInputs,
 		) -> DispatchResult {
@@ -119,6 +143,7 @@ pub mod pallet {
 			Self::deposit_event(Event::RegulatedTransferSuccess(who, dest, value));
 			transfer_result
 		}
+
 	}
 
 	#[pallet::hooks]

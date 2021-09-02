@@ -5,7 +5,7 @@ use sp_finality_grandpa::AuthorityId as GrandpaId;
 use sp_runtime::traits::{IdentifyAccount, Verify};
 use zcloak_runtime::{
 	AccountId, AuraConfig, BalancesConfig, GenesisConfig, GrandpaConfig, SessionConfig,
-	SessionKeys, Signature, StarksCrowdfundngConfig, StarksVerifierConfig, SudoConfig,
+	SessionKeys, Signature, StarksCrowdfundngConfig, StarksVerifierConfig, StarksRegisterConfig, SudoConfig,
 	SystemConfig, ValidatorSetConfig, VerifierId, WASM_BINARY,
 };
 
@@ -202,6 +202,7 @@ fn testnet_genesis(
 		},
 		starks_verifier: StarksVerifierConfig::default(),
 		starks_crowdfundng: StarksCrowdfundngConfig::default(),
+		starks_register: StarksRegisterConfig::default(),
 		session: SessionConfig {
 			keys: initial_authorities
 				.iter()

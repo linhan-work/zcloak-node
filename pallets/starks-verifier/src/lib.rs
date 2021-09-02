@@ -43,7 +43,6 @@ use frame_system::offchain::{SendTransactionTypes, SubmitTransaction};
 
 use sp_runtime::offchain::storage::{MutateStorageError, StorageRetrievalError};
 
-use primitives_catalog::types::{ProgramHash, PublicInputs};
 use primitives_catalog::inspect::{CheckError, Inspect};
 use primitives_catalog::regist::ClassTypeRegister;
 
@@ -98,11 +97,11 @@ pub struct Status {
 /// Receipt about any verification occured
 #[derive(Encode, Decode, Clone, PartialEq, Eq, RuntimeDebug)]
 pub struct VerificationReceipt<AccountId, BlockNumber> {
-	task_tuple_id: (AccountId, (ProgramHash, PublicInputs)),
+	task_tuple_id: (AccountId, ([u8; 32], Vec<u128>)),
 	// The Hash of a certain task to be verified
-	program_hash: ProgramHash,
+	program_hash: [u8; 32],
 	// The vec<128> of program public input
-	public_inputs: PublicInputs,
+	public_inputs: Vec<u128>,
 	// Whether a task is passed or not
 	passed: bool,
 	// Block number at the time submission is created.
@@ -138,11 +137,11 @@ pub struct TaskInfo<BlockNumber> {
 	// The id of the proof,combined with a url to fetch the complete proof later
 	proof_id: Vec<u8>,
 	// Inputs of the task
-	public_inputs: PublicInputs,
+	public_inputs: Vec<u128>,
 	// Outputs of the task
 	outputs: Vec<u128>,
 	// The hash of the program
-	program_hash: ProgramHash,
+	program_hash: [u8; 32],
 	// If false,expiration is the time task created;
 	// If true ,expiration is the time task expired.
 	is_task_finish: Option<TaskStatus>,
@@ -187,7 +186,6 @@ pub mod pallet {
 	use super::*;
 	use frame_support::{dispatch::DispatchResult, pallet_prelude::*};
 	use frame_system::pallet_prelude::*;
-	use primitives_catalog::types::{ProgramHash, PublicInputs};
 
 	#[pallet::config]
 	#[pallet::disable_frame_system_supertrait_check]
@@ -235,7 +233,7 @@ pub mod pallet {
 		Twox64Concat,
 		T::AccountId,
 		Twox64Concat,
-		(ProgramHash, PublicInputs),
+		([u8; 32], Vec<u128>),
 		TaskInfo<T::BlockNumber>,
 		ValueQuery,
 	>;
@@ -249,7 +247,7 @@ pub mod pallet {
 		Twox64Concat,
 		T::AccountId,
 		Twox64Concat,
-		(ProgramHash, PublicInputs),
+		([u8; 32], Vec<u128>),
 		Status,
 		OptionQuery,
 	>;
@@ -262,7 +260,7 @@ pub mod pallet {
 		Twox64Concat,
 		T::BlockNumber,
 		Twox64Concat,
-		(T::AccountId, ProgramHash, PublicInputs),
+		(T::AccountId, [u8; 32], Vec<u128>),
 		Option<bool>,
 		ValueQuery,
 	>;
@@ -295,11 +293,11 @@ pub mod pallet {
 		/// A verifier is removed with `AccountId`.
 		RemoveVerifier(T::AccountId),
 		/// A new task is created.
-		TaskCreated(T::AccountId, ProgramHash, PublicInputs, Vec<u8>),
+		TaskCreated(T::AccountId, [u8; 32], Vec<u128>, Vec<u8>),
 		/// A verification submitted on chain
-		VerificationSubmitted(T::AccountId, ProgramHash, PublicInputs, bool, u32, u32, u32),
+		VerificationSubmitted(T::AccountId, [u8; 32], Vec<u128>, bool, u32, u32, u32),
 		/// A verification submitted by a single verifier
-		SingleVerification(T::AccountId, ProgramHash, PublicInputs, bool, u32, u32),
+		SingleVerification(T::AccountId, [u8; 32], Vec<u128>, bool, u32, u32),
 	}
 
 	#[pallet::error]
@@ -340,8 +338,8 @@ pub mod pallet {
 		#[pallet::weight(10000)]
 		pub fn create_task(
 			origin: OriginFor<T>,
-			program_hash: ProgramHash,
-			public_inputs: PublicInputs,
+			program_hash: [u8; 32],
+			public_inputs: Vec<u128>,
 			outputs: Vec<u128>,
 			proof_id: Vec<u8>,
 		) -> DispatchResult {
@@ -599,12 +597,12 @@ impl<T: Config> Pallet<T> {
 			};
 			let storage = StorageValueRef::persistent(&storage_key);
 
-			let mut task_id_tuple: (T::AccountId, (ProgramHash, PublicInputs)) = Default::default();
+			let mut task_id_tuple: (T::AccountId, ([u8; 32], Vec<u128>)) = Default::default();
 			let mut initial_local_tasks = BTreeSet::new();
 
 			let res = storage.mutate(
 				|tasks: Result<
-					Option<Option<BTreeSet<(T::AccountId, (ProgramHash, PublicInputs))>>>,
+					Option<Option<BTreeSet<(T::AccountId, ([u8; 32], Vec<u128>))>>>,
 					StorageRetrievalError,
 				>| {
 					// Check if there is already a lock for that particular task.(hash)
@@ -660,7 +658,7 @@ impl<T: Config> Pallet<T> {
 		auth_index: u32,
 		key: T::AuthorityId,
 		block_number: T::BlockNumber,
-		task_tuple_id: (T::AccountId, (ProgramHash, PublicInputs)),
+		task_tuple_id: (T::AccountId, ([u8; 32], Vec<u128>)),
 	) -> OffchainResult<T, ()> {
 		let TaskInfo { proof_id, public_inputs, outputs, program_hash, .. } =
 			Self::task_params(&task_tuple_id.0, (&task_tuple_id.1.0, &task_tuple_id.1.1));
@@ -750,8 +748,8 @@ impl<T: Config> Pallet<T> {
 
 	/// Pick an on-chain tasks to execute which is not included in `local_tasks`
 	fn task_to_execute(
-		local_tasks: &BTreeSet<(T::AccountId, (ProgramHash, PublicInputs))>,
-	) -> OffchainResult<T, (T::AccountId, (ProgramHash, PublicInputs))> {
+		local_tasks: &BTreeSet<(T::AccountId, ([u8; 32], Vec<u128>))>,
+	) -> OffchainResult<T, (T::AccountId, ([u8; 32], Vec<u128>))> {
 		//On-chain ready-to-verify tasks,put all task_hash of OngoingTasks into a vec.
 		let ongoing_tasks_list = BTreeSet::from_iter(
 			OngoingTasks::<T>::iter().map(|(account_id, (program_hash, public_inputs), _)| (account_id, (program_hash, public_inputs))),
@@ -787,8 +785,8 @@ impl<T: Config> Inspect<T::AccountId> for Pallet<T> {
 
 	fn check(
 		who: &T::AccountId,
-		program_hash: ProgramHash,
-		public_inputs: PublicInputs,
+		program_hash: [u8; 32],
+		public_inputs: Vec<u128>,
 	) -> Result<bool, CheckError> {
 		let is_exist = TaskParams::<T>::try_get(who, (&program_hash, &public_inputs)).is_ok();
 		if is_exist {

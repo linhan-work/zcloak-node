@@ -470,7 +470,7 @@ construct_runtime!(
 		StarksVerifier: pallet_starks_verifier::{Pallet, Call, Storage, Event<T>, ValidateUnsigned, Config<T>},
 		StarksCrowdfundng: pallet_crowdfunding::{Pallet, Call, Storage, Event<T>, Config<T>},
 		StarksBalances: pallet_starks_balances::{Pallet, Call, Storage, Event<T>},
-		StarksRegister: pallet_starks_register::{Pallet, Call, Storage, Event<T>},
+		StarksRegister: pallet_starks_register::{Pallet, Call, Storage, Event<T>, Config<T>},
 		Aura: pallet_aura::{Pallet, Config<T>},
 		Grandpa: pallet_grandpa::{Pallet, Call, Storage, Config, Event},
 		TransactionPayment: pallet_transaction_payment::{Pallet, Storage},

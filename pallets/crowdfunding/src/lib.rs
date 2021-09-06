@@ -13,20 +13,14 @@ extern crate alloc;
 use frame_support::{
 	log,
 	pallet_prelude::*,
-	traits::{
-		tokens::fungibles::Transfer, Currency,
-		ExistenceRequirement::AllowDeath,
-	},
-	 PalletId,
+	traits::{tokens::fungibles::Transfer, Currency, ExistenceRequirement::AllowDeath},
+	PalletId,
 };
-use sp_runtime::traits::{AccountIdConversion};
+use sp_runtime::traits::AccountIdConversion;
 
 #[cfg(feature = "std")]
 use codec::{Decode, Encode};
-// use pallet_starks_verifier::{ClassType, ProgramOption};
-use primitives_catalog::types::{ClassType, ProgramOption, PublicInputs};
-use primitives_catalog::inspect::CheckError;
-use primitives_catalog::regist::ClassTypeRegister;
+use primitives_catalog::{inspect::CheckError, regist::ClassTypeRegister, types::ClassType};
 use sp_runtime::{traits::StaticLookup, RuntimeDebug};
 use sp_std::{
 	cmp::{Eq, PartialEq},
@@ -61,7 +55,7 @@ pub struct CrowfundingStatus<AccountId, BlockNumber, Balance> {
 	// ClassType of KYC
 	pub class_type: ClassType,
 	// ClassType with public inputs
-	pub public_inputs: PublicInputs,
+	pub public_inputs: Vec<u128>,
 	// For primitive version ratio stand for 1dot :xZtokens; e.g. ratio = 4, 1dot can buy 4Ztokens.
 	pub ratio: Balance,
 }
@@ -96,11 +90,9 @@ pub enum CrowdfundingOption {
 #[frame_support::pallet]
 pub mod pallet {
 	use super::*;
-	use frame_support::{dispatch::DispatchResult};
+	use frame_support::dispatch::DispatchResult;
 	use frame_system::pallet_prelude::*;
-	// use pallet_starks_verifier::{ClassType, ProgramType};
-	use primitives_catalog::types::{ClassType, ProgramType};
-	use primitives_catalog::inspect::Inspect;
+	use primitives_catalog::{inspect::Inspect, types::ClassType};
 	use sp_runtime::SaturatedConversion;
 	// extern crate zcloak_support;
 
@@ -289,12 +281,13 @@ pub mod pallet {
 			total_asset: T::Balance,
 			ratio: T::Balance,
 			class_type: ClassType,
-			public_inputs: PublicInputs,
+			public_inputs: Vec<u128>,
 		) -> DispatchResult {
 			let who = ensure_signed(origin.clone())?;
 			let program_hash_result = T::ClassTypeRegister::get(&class_type);
 			ensure!(program_hash_result.is_ok(), Error::<T>::ClassNotRegistOrWrong);
-			let find_result = T::Check::check(&who, program_hash_result.clone().unwrap(), public_inputs.clone());
+			let find_result =
+				T::Check::check(&who, program_hash_result.clone().unwrap(), public_inputs.clone());
 			ensure!(find_result.is_ok(), Error::<T>::ClassNotRegistOrWrong);
 
 			let CrowfundingStatus { is_funding_proceed, .. } = Self::crowdfunding_process(asset_id);
@@ -416,12 +409,15 @@ pub mod pallet {
 			);
 			ensure!(is_funding_proceed == Some(true), Error::<T>::CrowdFundingStopped);
 			ensure!(remain_funding >= ztoken_to_buy, Error::<T>::NotEnoughZtokensAvailable);
-			
+
 			let program_hash_result = T::ClassTypeRegister::get(&class_type);
 			ensure!(program_hash_result.is_ok(), Error::<T>::ClassNotRegistOrWrong);
 
-			let check_result =
-				T::Check::check(&who.clone(), program_hash_result.clone().unwrap(), public_inputs.clone());
+			let check_result = T::Check::check(
+				&who.clone(),
+				program_hash_result.clone().unwrap(),
+				public_inputs.clone(),
+			);
 			// The origin has the access to buy ztokens due to SuccessProved-KYC
 			if check_result.is_ok() {
 				Self::deposit_event(Event::VerifySuccuss(who.clone()));

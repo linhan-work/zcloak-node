@@ -9,25 +9,20 @@
 pub use pallet::*;
 use sp_std::prelude::*;
 extern crate alloc;
-use frame_support::{
-	pallet_prelude::*,
-
-};
+use frame_support::pallet_prelude::*;
 // use pallet_starks_verifier::KYCRegister;
-use primitives_catalog::regist::{ClassTypeRegister, ClassError};
-use primitives_catalog::types::{ClassType, ProgramType, ProgramOption, Range};
+use primitives_catalog::{
+	regist::{ClassError, ClassTypeRegister},
+	types::{ClassType, ProgramOption, ProgramType, Range},
+};
 
 #[cfg(feature = "std")]
-use sp_std::{
-	cmp::{Eq, PartialEq},
-
-};
-
+use sp_std::cmp::{Eq, PartialEq};
 
 #[frame_support::pallet]
 pub mod pallet {
 	use super::*;
-	use frame_support::{dispatch::DispatchResult};
+	use frame_support::dispatch::DispatchResult;
 	use frame_system::pallet_prelude::*;
 	// use pallet_starks_verifier::{ClassType};
 	use primitives_catalog::types::ClassType;
@@ -44,12 +39,10 @@ pub mod pallet {
 		type Register: ClassTypeRegister;
 	}
 
-
 	#[pallet::storage]
 	#[pallet::getter(fn class_type_list)]
 	pub(super) type ClassTypeList<T: Config> =
 		StorageMap<_, Twox64Concat, ClassType, [u8; 32], ValueQuery>;
-
 
 	#[pallet::event]
 	#[pallet::generate_deposit(pub(super) fn deposit_event)]
@@ -94,7 +87,6 @@ pub mod pallet {
 
 	#[pallet::call]
 	impl<T: Config> Pallet<T> {
-
 		#[pallet::weight(10000)]
 		pub fn register_class_type(
 			origin: OriginFor<T>,
@@ -109,15 +101,11 @@ pub mod pallet {
 		}
 
 		#[pallet::weight(10000)]
-		pub fn delete_class_type(
-			origin: OriginFor<T>,
-			class_type: ClassType
-		) -> DispatchResult {
+		pub fn delete_class_type(origin: OriginFor<T>, class_type: ClassType) -> DispatchResult {
 			ensure_root(origin)?;
 			ensure!(T::Register::remove(&class_type).is_ok(), Error::<T>::DeleteClassTypeFail);
 			Self::deposit_event(Event::ClassTypeDelete(class_type));
 			Ok(())
-
 		}
 
 		#[pallet::weight(10000)]
@@ -130,9 +118,15 @@ pub mod pallet {
 
 			if T::Register::get(&class_type).is_ok() {
 				ensure!(T::Register::remove(&class_type).is_ok(), Error::<T>::ModifyClassTypeFail);
-				ensure!(T::Register::register(&class_type, &program_hash).is_ok(), Error::<T>::ModifyClassTypeFail);
-			}else {
-				ensure!(T::Register::register(&class_type, &program_hash).is_ok(), Error::<T>::ModifyClassTypeFail);
+				ensure!(
+					T::Register::register(&class_type, &program_hash).is_ok(),
+					Error::<T>::ModifyClassTypeFail
+				);
+			} else {
+				ensure!(
+					T::Register::register(&class_type, &program_hash).is_ok(),
+					Error::<T>::ModifyClassTypeFail
+				);
 			}
 			Self::deposit_event(Event::ClassTypeModify(class_type, program_hash));
 			Ok(())
@@ -145,9 +139,7 @@ pub mod pallet {
 	}
 }
 
-
 impl<T: Config> ClassTypeRegister for Pallet<T> {
-
 	fn register(class_type: &ClassType, program_hash: &[u8; 32]) -> Result<bool, ClassError> {
 		if ClassTypeList::<T>::try_get(&class_type).is_ok() {
 			return Err(ClassError::ClassAlreadyExist)
@@ -160,30 +152,28 @@ impl<T: Config> ClassTypeRegister for Pallet<T> {
 	fn get(class_type: &ClassType) -> Result<[u8; 32], ClassError> {
 		let program_hash = ClassTypeList::<T>::try_get(class_type.clone());
 		if program_hash.is_ok() {
-			return Ok(program_hash.unwrap());
+			return Ok(program_hash.unwrap())
 		} else {
-			return Err(ClassError::ClassNotExist);
+			return Err(ClassError::ClassNotExist)
 		}
 	}
 
 	fn remove(class_type: &ClassType) -> Result<bool, ClassError> {
-
-		if ClassTypeList::<T>::try_get(class_type.clone()).is_ok(){
+		if ClassTypeList::<T>::try_get(class_type.clone()).is_ok() {
 			<ClassTypeList<T>>::remove(class_type);
-			return Ok(true);
-		}else {
-			return Err(ClassError::ClassNotExist);
+			return Ok(true)
+		} else {
+			return Err(ClassError::ClassNotExist)
 		}
 	}
-
 }
 
 impl<T: Config> Pallet<T> {
 	fn initialize_class_type_list() {
 		let age_program_hash = [
-			89,115,133,225,108,141,149,171,95,56,227,119,216,249,208,2,222,113,212,58,200,37,30,
-			53,50,161,222,237,90,3,236,253
-			];
+			89, 115, 133, 225, 108, 141, 149, 171, 95, 56, 227, 119, 216, 249, 208, 2, 222, 113,
+			212, 58, 200, 37, 30, 53, 50, 161, 222, 237, 90, 3, 236, 253,
+		];
 		let country_program_hash = [
 			208, 194, 130, 197, 164, 24, 192, 43, 169, 199, 5, 5, 30, 49, 190, 137, 168, 29, 175,
 			111, 254, 108, 138, 242, 161, 201, 76, 10, 238, 140, 97, 14,

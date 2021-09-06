@@ -1,9 +1,7 @@
 use crate::types::{ClassType, ProgramHash};
 use codec::{Decode, Encode};
 
-
 pub trait ClassTypeRegister {
-
 	fn register(class_type: &ClassType, program_hash: &ProgramHash) -> Result<bool, ClassError>;
 
 	fn get(class_type: &ClassType) -> Result<[u8; 32], ClassError>;

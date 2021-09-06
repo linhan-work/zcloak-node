@@ -1,36 +1,36 @@
 {
-  "ClassType":  {
+  "ClassType": {
     "_enum": {
       "Null": null,
-      "X1":"ProgramType",
-      "X2":"(ProgramType, ProgramType)",
-      "X3":"(ProgramType, ProgramType, ProgramType)",
-      "X4":"(ProgramType, ProgramType, ProgramType, ProgramType)",
-      "X5":"(ProgramType, ProgramType, ProgramType, ProgramType, ProgramType)",
-      "X6":"(ProgramType, ProgramType, ProgramType, ProgramType, ProgramType, ProgramType)"
+      "X1": "ProgramType",
+      "X2": "(ProgramType, ProgramType)",
+      "X3": "(ProgramType, ProgramType, ProgramType)",
+      "X4": "(ProgramType, ProgramType, ProgramType, ProgramType)",
+      "X5": "(ProgramType, ProgramType, ProgramType, ProgramType, ProgramType)",
+      "X6": "(ProgramType, ProgramType, ProgramType, ProgramType, ProgramType, ProgramType)"
     }
   },
   "Index": "u32",
-  "ProgramOption":  {
+  "ProgramOption": {
     "_enum": {
       "Null": null,
-      "Index":"Index",
-      "Range":"Range",
+      "Index": "Index",
+      "Range": "Range",
       "Other": "Vec<u8>"
     }
   },
-  "Range":  {
-    "_enum": {
-      "LargeThan": "u32",
-      "SmallerThan":"u32",
-      "Between":"(u32, u32)"
-    }
+  "Range": {
+    "_enum": [
+      "LargeThan",
+      "SmallerThan",
+      "Between"
+    ]
   },
-  "ProgramType":  {
+  "ProgramType": {
     "_enum": {
       "Null": null,
-      "Age":"ProgramOption",
-      "Country":"ProgramOption",
+      "Age": "ProgramOption",
+      "Country": "ProgramOption",
       "Other": "Vec<u8>"
     }
   },
@@ -75,7 +75,6 @@
     "is_task_finish": "Option<TaskStatus>",
     "expiration": "Option<BlockNumber>"
   },
-
   "AssetId": "u32",
   "LookupSource": "MultiAddress",
   "TAssetBalance": "u128",
@@ -87,6 +86,8 @@
     "total_funding": "Balance",
     "remain_funding": "Balance",
     "is_funding_proceed": "Option<bool>",
+    "class_type": "ClassType",
+    "public_inputs": "PublicInputs",
     "ratio": "Balance"
   },
   "SeperateStatus": {
@@ -97,9 +98,9 @@
   },
   "VerifyClass": {
     "_enum": {
-      "Age":"u32",
-      "Country":"u32"
-  }
+      "Age": "u32",
+      "Country": "u32"
+    }
   },
   "KYCListOption": {
     "_enum": {

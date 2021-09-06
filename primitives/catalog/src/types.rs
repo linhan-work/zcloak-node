@@ -3,9 +3,6 @@
 use codec::{Decode, Encode};
 use sp_std::vec::Vec;
 
-
-
-
 #[derive(PartialEq, Clone, Debug, Encode, Decode, PartialOrd, Eq, Ord)]
 pub enum ClassType {
 	Null,
@@ -17,13 +14,11 @@ pub enum ClassType {
 	X6(ProgramType, ProgramType, ProgramType, ProgramType, ProgramType, ProgramType),
 }
 
-
 impl Default for ClassType {
 	fn default() -> Self {
 		Self::Null
 	}
 }
-
 
 #[derive(Clone, Eq, PartialEq, Ord, PartialOrd, Encode, Decode, Debug)]
 pub enum ProgramType {
@@ -32,7 +27,6 @@ pub enum ProgramType {
 	Country(ProgramOption),
 	Other(Vec<u8>),
 }
-
 
 type Index = u32;
 

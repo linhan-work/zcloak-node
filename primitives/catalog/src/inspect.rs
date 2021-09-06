@@ -2,12 +2,11 @@ use crate::types::{ProgramHash, PublicInputs};
 use codec::{Decode, Encode};
 
 pub trait Inspect<T> {
-    fn check(
+	fn check(
 		who: &T,
 		program_hash: ProgramHash,
 		public_inputs: PublicInputs,
 	) -> Result<bool, CheckError>;
-
 }
 
 #[derive(Clone, Encode, Decode, PartialEq, Eq, Debug)]
@@ -20,4 +19,3 @@ pub enum CheckError {
 	VerifyFailedTaskProgramWrong,
 	VerifyNotCorrect,
 }
-

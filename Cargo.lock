@@ -3955,6 +3955,24 @@ dependencies = [
 ]
 
 [[package]]
+name = "pallet-class-register"
+version = "0.1.0"
+dependencies = [
+ "frame-support",
+ "frame-system",
+ "log",
+ "pallet-starks-verifier",
+ "parity-scale-codec",
+ "primitives-catalog",
+ "serde",
+ "sp-application-crypto",
+ "sp-core",
+ "sp-io",
+ "sp-runtime",
+ "sp-std",
+]
+
+[[package]]
 name = "pallet-crowdfunding"
 version = "0.1.0"
 dependencies = [
@@ -4013,27 +4031,7 @@ dependencies = [
 ]
 
 [[package]]
-name = "pallet-session"
-version = "4.0.0-dev"
-source = "git+https://github.com/zCloak-Network/substrate#e0e048bf045735d6d45a8c3fcf55851ebffa0c80"
-dependencies = [
- "frame-support",
- "frame-system",
- "impl-trait-for-tuples",
- "log",
- "pallet-timestamp",
- "parity-scale-codec",
- "sp-core",
- "sp-io",
- "sp-runtime",
- "sp-session",
- "sp-staking",
- "sp-std",
- "sp-trie",
-]
-
-[[package]]
-name = "pallet-starks-balances"
+name = "pallet-regulated-balances"
 version = "0.1.0"
 dependencies = [
  "frame-support",
@@ -4056,21 +4054,23 @@ dependencies = [
 ]
 
 [[package]]
-name = "pallet-starks-register"
-version = "0.1.0"
+name = "pallet-session"
+version = "4.0.0-dev"
+source = "git+https://github.com/zCloak-Network/substrate#e0e048bf045735d6d45a8c3fcf55851ebffa0c80"
 dependencies = [
  "frame-support",
  "frame-system",
+ "impl-trait-for-tuples",
  "log",
- "pallet-starks-verifier",
+ "pallet-timestamp",
  "parity-scale-codec",
- "primitives-catalog",
- "serde",
- "sp-application-crypto",
  "sp-core",
  "sp-io",
  "sp-runtime",
+ "sp-session",
+ "sp-staking",
  "sp-std",
+ "sp-trie",
 ]
 
 [[package]]
@@ -8821,12 +8821,12 @@ dependencies = [
  "pallet-assets",
  "pallet-aura",
  "pallet-balances",
+ "pallet-class-register",
  "pallet-crowdfunding",
  "pallet-grandpa",
  "pallet-randomness-collective-flip",
+ "pallet-regulated-balances",
  "pallet-session",
- "pallet-starks-balances",
- "pallet-starks-register",
  "pallet-starks-verifier",
  "pallet-starks-verifier-seperate",
  "pallet-starks-verifier-user",

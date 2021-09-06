@@ -392,7 +392,7 @@ impl pallet_starks_verifier::Config for Runtime {
 	type Event = Event;
 	type StorePeriod = StorePeriod;
 	type UnsignedPriority = VerifierPriority;
-	type Register = StarksRegister;
+	type Register = ClassRegister;
 }
 
 impl pallet_starks_verifier_user::Config for Runtime {
@@ -413,7 +413,7 @@ impl pallet_starks_verifier_seperate::Config for Runtime {
 pub type RegulatedCurrencyAdaptor = zcloak_support::currency::RegulatedCurrencyAdaptor<
 	Balances,
 	StarksVerifier,
-	StarksRegister,
+	ClassRegister,
 	AccountId,
 >;
 
@@ -427,17 +427,17 @@ impl pallet_crowdfunding::Config for Runtime {
 	type CrowdFundingMetadataDepositBase = CrowdFundingMetadataDepositBase;
 	type MinBalance = MinBalance;
 	type PalletId = CrowdfundingPalletId;
-	type ClassTypeRegister = StarksRegister;
+	type ClassTypeRegister = ClassRegister;
 }
 
-impl pallet_starks_balances::Config for Runtime {
+impl pallet_regulated_balances::Config for Runtime {
 	type Event = Event;
 	type StorePeriod = StorePeriod;
 	type RegulatedCurrency = RegulatedCurrencyAdaptor;
 }
-impl pallet_starks_register::Config for Runtime {
+impl pallet_class_register::Config for Runtime {
 	type Event = Event;
-	type Register = StarksRegister;
+	type Register = ClassRegister;
 }
 
 impl pallet_assets::Config for Runtime {
@@ -470,9 +470,9 @@ construct_runtime!(
 		Session: pallet_session::{Pallet, Call, Storage, Event, Config<T>},
 		ValidatorSet: pallet_validator_set::{Pallet, Call, Storage, Event<T>, Config<T>},
 		StarksVerifier: pallet_starks_verifier::{Pallet, Call, Storage, Event<T>, ValidateUnsigned, Config<T>},
-		StarksCrowdfundng: pallet_crowdfunding::{Pallet, Call, Storage, Event<T>, Config<T>},
-		StarksBalances: pallet_starks_balances::{Pallet, Call, Storage, Event<T>},
-		StarksRegister: pallet_starks_register::{Pallet, Call, Storage, Event<T>, Config<T>},
+		Crowdfundng: pallet_crowdfunding::{Pallet, Call, Storage, Event<T>, Config<T>},
+		RegulatedBalances: pallet_regulated_balances::{Pallet, Call, Storage, Event<T>},
+		ClassRegister: pallet_class_register::{Pallet, Call, Storage, Event<T>, Config<T>},
 		Aura: pallet_aura::{Pallet, Config<T>},
 		Grandpa: pallet_grandpa::{Pallet, Call, Storage, Config, Event},
 		TransactionPayment: pallet_transaction_payment::{Pallet, Storage},

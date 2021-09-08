@@ -5,8 +5,8 @@ use sp_finality_grandpa::AuthorityId as GrandpaId;
 use sp_runtime::traits::{IdentifyAccount, Verify};
 use zcloak_runtime::{
 	AccountId, AuraConfig, BalancesConfig, GenesisConfig, GrandpaConfig, SessionConfig,
-	SessionKeys, Signature, StarksCrowdfundngConfig, StarksVerifierConfig, SudoConfig,
-	SystemConfig, ValidatorSetConfig, VerifierId, WASM_BINARY,
+	SessionKeys, Signature, CrowdfundngConfig, ClassRegisterConfig, StarksVerifierConfig,
+	SudoConfig, SystemConfig, ValidatorSetConfig, VerifierId, WASM_BINARY,
 };
 
 // The URL for the telemetry server.
@@ -201,7 +201,8 @@ fn testnet_genesis(
 			validators: initial_authorities.iter().map(|x| x.0.clone()).collect::<Vec<_>>(),
 		},
 		starks_verifier: StarksVerifierConfig::default(),
-		starks_crowdfundng: StarksCrowdfundngConfig::default(),
+		crowdfundng: CrowdfundngConfig::default(),
+		class_register: ClassRegisterConfig::default(),
 		session: SessionConfig {
 			keys: initial_authorities
 				.iter()

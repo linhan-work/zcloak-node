@@ -11,13 +11,9 @@ use sp_std::prelude::*;
 extern crate alloc;
 use frame_support::{
 	pallet_prelude::*,
-	traits::{
-		Currency, ExistenceRequirement,
-	},
+	traits::{Currency, ExistenceRequirement},
 };
-use primitives_catalog::inspect::CheckError;
-use primitives_catalog::types::PublicInputs;
-
+use primitives_catalog::{inspect::CheckError, types::PublicInputs};
 
 #[cfg(feature = "std")]
 use codec::{Decode, Encode};
@@ -45,10 +41,10 @@ mod tests;
 #[frame_support::pallet]
 pub mod pallet {
 	use super::*;
-	use frame_support::{dispatch::DispatchResult};
+	use frame_support::dispatch::DispatchResult;
 	use frame_system::pallet_prelude::*;
 	// use pallet_starks_verifier::{ClassType};
-	use primitives_catalog::types::ClassType;
+	use primitives_catalog::types::{ClassType, ProgramOption, ProgramType, Range};
 	use sp_runtime::SaturatedConversion;
 	use zcloak_support::currency::RegulatedCurrency;
 	extern crate zcloak_support;
@@ -67,10 +63,7 @@ pub mod pallet {
 		#[pallet::constant]
 		type StorePeriod: Get<Self::BlockNumber>;
 
-		type RegulatedCurrency: zcloak_support::currency::RegulatedCurrency<
-			Self::AccountId,
-		>;
-		
+		type RegulatedCurrency: zcloak_support::currency::RegulatedCurrency<Self::AccountId>;
 	}
 
 	pub type BalanceOf<T> = <<T as pallet_assets::Config>::Currency as Currency<
@@ -80,7 +73,7 @@ pub mod pallet {
 	pub type RegulatedBalanceOf<T> =
 		<<<T as pallet::Config>::RegulatedCurrency as RegulatedCurrency<
 			<T as frame_system::Config>::AccountId,
-		>>::RCurrency as Currency<<T as frame_system::Config>::AccountId,>>::Balance;
+		>>::RCurrency as Currency<<T as frame_system::Config>::AccountId>>::Balance;
 
 	#[pallet::event]
 	#[pallet::generate_deposit(pub(super) fn deposit_event)]
@@ -100,6 +93,31 @@ pub mod pallet {
 	impl<T: Config> Pallet<T> {
 		#[pallet::weight(10000)]
 		pub fn transfer(
+			origin: OriginFor<T>,
+			dest: T::AccountId,
+			value: T::Balance,
+			// class_type: ClassType,
+			// public_inputs: PublicInputs,
+		) -> DispatchResult {
+			let who = ensure_signed(origin)?;
+			let class_type =
+				ClassType::X1(ProgramType::Age(ProgramOption::Range(Range::LargeThan)));
+			let public_inputs = vec![20];
+			let option = ExistenceRequirement::KeepAlive;
+			let v1 = TryInto::<u128>::try_into(value).ok();
+			let v2 = RegulatedBalanceOf::<T>::saturated_from(v1.unwrap());
+			let transfer_result =
+				T::RegulatedCurrency::transfer(&who, &dest, v2, option, class_type, public_inputs);
+			ensure!(
+				transfer_result != Err(DispatchError::Other("NotPass".into())),
+				Error::<T>::KYCNotPass
+			);
+			Self::deposit_event(Event::RegulatedTransferSuccess(who, dest, value));
+			transfer_result
+		}
+
+		#[pallet::weight(10000)]
+		pub fn transfer_class(
 			origin: OriginFor<T>,
 			dest: T::AccountId,
 			value: T::Balance,

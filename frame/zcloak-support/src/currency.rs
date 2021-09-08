@@ -9,18 +9,16 @@ use sp_runtime::{
 };
 // use sp_inherents::Error;
 use frame_support::traits::Currency;
-use sp_std::{
-	cmp::{PartialEq},
-	fmt::Debug,
-};
+use sp_std::{cmp::PartialEq, fmt::Debug};
 
 // use pallet_starks_verifier::{Check, ClassType};
-use primitives_catalog::inspect::Inspect;
-use primitives_catalog::regist::ClassTypeRegister;
-use primitives_catalog::types::{ClassType, ProgramHash, PublicInputs};
+use primitives_catalog::{
+	inspect::Inspect,
+	regist::ClassTypeRegister,
+	types::{ClassType, ProgramHash, PublicInputs},
+};
 
 pub trait RegulatedCurrency<AccountId> {
-
 	type RCurrency: Currency<AccountId>;
 
 	fn transfer(
@@ -30,8 +28,7 @@ pub trait RegulatedCurrency<AccountId> {
 		existence_requirement: ExistenceRequirement,
 		class_type: ClassType,
 		public_inputs: PublicInputs,
-	)-> DispatchResult;
-	
+	) -> DispatchResult;
 }
 
 #[derive(Debug, Clone, PartialEq)]
@@ -40,17 +37,15 @@ pub struct RegulatedCurrencyAdaptor<
 	I: Inspect<AccountId>,
 	R: ClassTypeRegister,
 	AccountId,
-	>{
+> {
 	pub _phantom: sp_std::marker::PhantomData<(C, I, R, AccountId)>,
-
 }
 
-impl<C: Currency<AccountId>, I: Inspect<AccountId>, R: ClassTypeRegister, AccountId: Debug> RegulatedCurrency<AccountId> for RegulatedCurrencyAdaptor<C, I, R, AccountId>
+impl<C: Currency<AccountId>, I: Inspect<AccountId>, R: ClassTypeRegister, AccountId: Debug>
+	RegulatedCurrency<AccountId> for RegulatedCurrencyAdaptor<C, I, R, AccountId>
 {
-	
 	type RCurrency = C;
 
-	
 	fn transfer(
 		source: &AccountId,
 		dest: &AccountId,
@@ -60,7 +55,7 @@ impl<C: Currency<AccountId>, I: Inspect<AccountId>, R: ClassTypeRegister, Accoun
 		public_inputs: PublicInputs,
 	) -> DispatchResult {
 		let program_hash_result = R::get(&class_type);
-		
+
 		if program_hash_result.is_ok() {
 			let check_result = I::check(source, program_hash_result.unwrap(), public_inputs);
 			if check_result.is_ok() == true {
@@ -72,15 +67,12 @@ impl<C: Currency<AccountId>, I: Inspect<AccountId>, R: ClassTypeRegister, Accoun
 			} else {
 				return Err(DispatchError::Other("NotPass".into()))
 			}
-		}else {
+		} else {
 			return Err(DispatchError::Other("NotPass".into()))
 		}
 		Ok(())
 	}
 }
-
-
-
 
 // pub trait RegulatedCurrency<AccountId> {
 // 	/// The balance of an account.

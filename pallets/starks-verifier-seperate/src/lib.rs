@@ -84,7 +84,7 @@ pub struct TaskInfo<BlockNumber> {
 	// The id of the proof,combined with a url to fetch the complete proof later
 	proof_id: Vec<u8>,
 	// Inputs of the task
-	inputs: Vec<u128>,
+	public_inputs: Vec<u128>,
 	// Outputs of the task
 	outputs: Vec<u128>,
 	// The hash of the program
@@ -162,7 +162,7 @@ pub mod pallet {
 		Twox64Concat,
 		T::AccountId,
 		Twox64Concat,
-		ClassType,
+		([u8; 32], Vec<u128>),
 		TaskInfo<T::BlockNumber>,
 		ValueQuery,
 	>;
@@ -175,7 +175,7 @@ pub mod pallet {
 		Twox64Concat,
 		T::BlockNumber,
 		Twox64Concat,
-		(T::AccountId, ClassType),
+		(T::AccountId, [u8; 32], Vec<u128>),
 		Option<bool>,
 		ValueQuery,
 	>;
@@ -188,7 +188,7 @@ pub mod pallet {
 		Twox64Concat,
 		T::AccountId,
 		Twox64Concat,
-		ClassType,
+		([u8; 32], Vec<u128>),
 		SeperateStatus,
 		OptionQuery,
 	>;
@@ -209,18 +209,18 @@ pub mod pallet {
 	#[pallet::generate_deposit(pub(super) fn deposit_event)]
 	#[pallet::metadata(T::AccountId = "AccountId")]
 	pub enum Event<T: Config> {
-		/// A new task is created. who, class, programhash, proofID, inputs, outputs
-		UserTaskCreated(T::AccountId, ClassType, [u8; 32], Vec<u8>, Vec<u128>, Vec<u128>),
-		// Accept this response. Origin, who, class
-		SingleResponseAccept(T::AccountId, T::AccountId, ClassType),
+		/// A new task is created. who, programhash, proofID, public_inputs, outputs
+		UserTaskCreated(T::AccountId, [u8; 32], Vec<u8>, Vec<u128>, Vec<u128>),
+		// Accept this response. Origin, who, programhash,public_inputs
+		SingleResponseAccept(T::AccountId, T::AccountId, [u8; 32], Vec<u128>),
 		// Add new account to WhiteList
 		WhiteListAdded(T::AccountId, T::BlockNumber),
 		// After force_check, the task is still not finish verificaion
-		StillNotFinishVerificaion(T::AccountId, ClassType),
+		StillNotFinishVerificaion(T::AccountId, [u8; 32], Vec<u128>),
 		// The result of Force Verification
-		ForceVerification(T::AccountId, ClassType, bool),
+		ForceVerification(T::AccountId, [u8; 32], Vec<u128>, bool),
 		// Task verification finished
-		TaskVerificationResult(T::AccountId, ClassType, bool),
+		TaskVerificationResult(T::AccountId, [u8; 32], Vec<u128>, bool),
 	}
 
 	#[pallet::error]
@@ -252,34 +252,32 @@ pub mod pallet {
 		#[pallet::weight(10000)]
 		pub fn create_task(
 			origin: OriginFor<T>,
-			class: ClassType,
 			program_hash: [u8; 32],
-			inputs: Vec<u128>,
+			public_inputs: Vec<u128>,
 			outputs: Vec<u128>,
 			proof_id: Vec<u8>,
 		) -> DispatchResult {
 			let who = ensure_signed(origin)?;
 			// Ensure task has not been created
-			ensure!(!TaskParams::<T>::try_get(&who, &class).is_ok(), Error::<T>::TaskAlreadyExists);
+			ensure!(!TaskParams::<T>::try_get(&who, (&program_hash, &public_inputs)).is_ok(), Error::<T>::TaskAlreadyExists);
 			<TaskParams<T>>::insert(
 				&who,
-				&class,
+				(&program_hash, &public_inputs),
 				TaskInfo {
 					proof_id: proof_id.clone(),
-					inputs: inputs.clone(),
+					public_inputs: public_inputs.clone(),
 					outputs: outputs.clone(),
 					program_hash: program_hash.clone(),
 					is_task_finish: Some(TaskStatus::JustCreated),
 					expiration: Some(<frame_system::Pallet<T>>::block_number()),
 				},
 			);
-			<OngoingTasks<T>>::insert(&who, &class, SeperateStatus::default());
+			<OngoingTasks<T>>::insert(&who, (&program_hash, &public_inputs), SeperateStatus::default());
 			Self::deposit_event(Event::UserTaskCreated(
 				who,
-				class,
 				program_hash,
 				proof_id,
-				inputs,
+				public_inputs,
 				outputs,
 			));
 			Ok(())
@@ -318,14 +316,15 @@ pub mod pallet {
 		pub fn client_single_reponse(
 			origin: OriginFor<T>,
 			who: T::AccountId,
-			class: ClassType,
+			program_hash: [u8; 32],
+			public_inputs: Vec<u128>,
 			result: bool,
 		) -> DispatchResult {
 			let res = ensure_signed(origin)?;
 			ensure!(WhiteListId::<T>::try_get(res.clone()).is_ok(), Error::<T>::NotInWhitelist);
 
 			ensure!(
-				OngoingTasks::<T>::try_get(who.clone(), class.clone()).is_ok(),
+				OngoingTasks::<T>::try_get(who.clone(), (program_hash.clone(), public_inputs.clone())).is_ok(),
 				Error::<T>::TaskNotGoingOn
 			);
 			// Update the late online time , In storage-time delete old one, add new one
@@ -353,44 +352,45 @@ pub mod pallet {
 			}
 
 			let SeperateStatus { verifiers, ayes, nays, .. } =
-				Self::ongoing_tasks(who.clone(), class.clone()).unwrap();
+				Self::ongoing_tasks(who.clone(), (program_hash.clone(), public_inputs.clone())).unwrap();
 			let threshold = (Self::whitelist_len() + 1) / 2;
-			Self::deposit_event(Event::SingleResponseAccept(res, who.clone(), class.clone()));
+			Self::deposit_event(Event::SingleResponseAccept(res, who.clone(), program_hash.clone(), public_inputs.clone()));
 
 			if result {
 				if ayes + 1 >= threshold {
-					let TaskInfo { proof_id, inputs, outputs, program_hash, .. } =
-						Self::task_params(&who, &class);
+					let TaskInfo { proof_id, public_inputs, outputs, program_hash, .. } =
+						Self::task_params(&who, (&program_hash, &public_inputs));
 					let expiration =
 						<frame_system::Pallet<T>>::block_number() + T::StorePeriod::get();
 					SettledTasks::<T>::insert(
 						expiration,
-						&(who.clone(), class.clone()),
+						&(who.clone(), program_hash.clone(), public_inputs.clone()),
 						Some(true),
 					);
 					<TaskParams<T>>::insert(
 						&who.clone(),
-						&class.clone(),
+						(&program_hash.clone(), &public_inputs.clone()),
 						TaskInfo {
 							proof_id,
-							inputs,
+							public_inputs: public_inputs.clone(),
 							outputs,
 							program_hash,
 							is_task_finish: Some(TaskStatus::VerifiedTrue),
 							expiration: Some(expiration),
 						},
 					);
-					OngoingTasks::<T>::remove(who.clone(), class.clone());
+					OngoingTasks::<T>::remove(who.clone(), (program_hash.clone(), public_inputs.clone()));
 					Self::deposit_event(Event::TaskVerificationResult(
 						who.clone(),
-						class.clone(),
+						program_hash.clone(),
+						public_inputs.clone(),
 						true,
 					));
 				} else {
 					if ayes + 1 <= nays {
 						OngoingTasks::<T>::insert(
 							who.clone(),
-							class.clone(),
+							(program_hash.clone(), public_inputs.clone()),
 							SeperateStatus {
 								verifiers,
 								ayes: ayes + 1,
@@ -401,7 +401,7 @@ pub mod pallet {
 					} else {
 						OngoingTasks::<T>::insert(
 							who.clone(),
-							class.clone(),
+							(program_hash.clone(), public_inputs.clone()),
 							SeperateStatus {
 								verifiers,
 								ayes: ayes + 1,
@@ -410,14 +410,14 @@ pub mod pallet {
 							},
 						);
 					}
-					let TaskInfo { proof_id, inputs, outputs, program_hash, expiration, .. } =
-						Self::task_params(&who, &class);
+					let TaskInfo { proof_id, public_inputs, outputs, program_hash, expiration, .. } =
+						Self::task_params(&who, (&program_hash, &public_inputs));
 					<TaskParams<T>>::insert(
 						&who.clone(),
-						&class.clone(),
+						(&program_hash.clone(), &public_inputs.clone()),
 						TaskInfo {
 							proof_id,
-							inputs,
+							public_inputs,
 							outputs,
 							program_hash,
 							is_task_finish: Some(TaskStatus::Verifying),
@@ -427,38 +427,39 @@ pub mod pallet {
 				}
 			} else {
 				if nays + 1 >= threshold {
-					let TaskInfo { proof_id, inputs, outputs, program_hash, .. } =
-						Self::task_params(&who, &class);
+					let TaskInfo { proof_id, public_inputs, outputs, program_hash, .. } =
+						Self::task_params(&who, (&program_hash, &public_inputs));
 					let expiration =
 						<frame_system::Pallet<T>>::block_number() + T::StorePeriod::get();
 					SettledTasks::<T>::insert(
 						expiration,
-						&(who.clone(), class.clone()),
+						&(who.clone(), program_hash.clone(), public_inputs.clone()),
 						Some(false),
 					);
 					<TaskParams<T>>::insert(
 						&who.clone(),
-						&class.clone(),
+						(&program_hash.clone(), &public_inputs.clone()),
 						TaskInfo {
 							proof_id,
-							inputs,
+							public_inputs: public_inputs.clone(),
 							outputs,
 							program_hash,
 							is_task_finish: Some(TaskStatus::VerifiedFalse),
 							expiration: Some(expiration),
 						},
 					);
-					OngoingTasks::<T>::remove(who.clone(), class.clone());
+					OngoingTasks::<T>::remove(who.clone(), (program_hash.clone(), public_inputs.clone()));
 					Self::deposit_event(Event::TaskVerificationResult(
 						who.clone(),
-						class.clone(),
+						program_hash.clone(),
+						public_inputs.clone(),
 						false,
 					));
 				} else {
 					if nays + 1 <= ayes {
 						OngoingTasks::<T>::insert(
 							who.clone(),
-							class.clone(),
+							(program_hash.clone(), public_inputs.clone()),
 							SeperateStatus {
 								verifiers,
 								ayes,
@@ -469,7 +470,7 @@ pub mod pallet {
 					} else {
 						OngoingTasks::<T>::insert(
 							who.clone(),
-							class.clone(),
+							(program_hash.clone(), public_inputs.clone()),
 							SeperateStatus {
 								verifiers,
 								ayes,
@@ -478,14 +479,14 @@ pub mod pallet {
 							},
 						);
 					}
-					let TaskInfo { proof_id, inputs, outputs, program_hash, expiration, .. } =
-						Self::task_params(&who, &class);
+					let TaskInfo { proof_id, public_inputs, outputs, program_hash, expiration, .. } =
+						Self::task_params(&who, (&program_hash, &public_inputs));
 					<TaskParams<T>>::insert(
 						&who.clone(),
-						&class.clone(),
+						(&program_hash.clone(), &public_inputs.clone()),
 						TaskInfo {
 							proof_id,
-							inputs,
+							public_inputs,
 							outputs,
 							program_hash,
 							is_task_finish: Some(TaskStatus::Verifying),
@@ -502,106 +503,107 @@ pub mod pallet {
 		pub fn force_check_task_status(
 			origin: OriginFor<T>,
 			who: T::AccountId,
-			class: ClassType,
+			program_hash: [u8; 32],
+			public_inputs: Vec<u128>,
 		) -> DispatchResult {
 			let _res = ensure_signed(origin)?;
 			ensure!(
-				OngoingTasks::<T>::try_get(who.clone(), class.clone()).is_ok(),
+				OngoingTasks::<T>::try_get(who.clone(), (program_hash.clone(), public_inputs.clone())).is_ok(),
 				Error::<T>::TaskNotGoingOn
 			);
 			let SeperateStatus { verifiers: _, ayes, nays, come_first } =
-				Self::ongoing_tasks(who.clone(), class.clone()).unwrap();
+				Self::ongoing_tasks(who.clone(), (program_hash.clone(), public_inputs.clone())).unwrap();
 			let threshold = (Self::whitelist_len() + 1) / 2;
 			if ayes >= threshold && nays >= threshold {
 				if ayes > nays || (ayes == nays && come_first.unwrap()) {
-					let TaskInfo { proof_id, inputs, outputs, program_hash, .. } =
-						Self::task_params(&who, &class);
+					let TaskInfo { proof_id, public_inputs, outputs, program_hash, .. } =
+						Self::task_params(&who, (&program_hash, &public_inputs));
 					let expiration =
 						<frame_system::Pallet<T>>::block_number() + T::StorePeriod::get();
 					SettledTasks::<T>::insert(
 						expiration,
-						&(who.clone(), class.clone()),
+						&(who.clone(), program_hash.clone(), public_inputs.clone()),
 						Some(true),
 					);
 					<TaskParams<T>>::insert(
 						&who.clone(),
-						&class.clone(),
+						(&program_hash.clone(), &public_inputs.clone()),
 						TaskInfo {
 							proof_id,
-							inputs,
+							public_inputs: public_inputs.clone(),
 							outputs,
 							program_hash,
 							is_task_finish: Some(TaskStatus::VerifiedTrue),
 							expiration: Some(expiration),
 						},
 					);
-					OngoingTasks::<T>::remove(who.clone(), class.clone());
-					Self::deposit_event(Event::ForceVerification(who, class, true));
+					OngoingTasks::<T>::remove(who.clone(), (program_hash.clone(), public_inputs.clone()));
+					Self::deposit_event(Event::ForceVerification(who, program_hash, public_inputs, true));
 				} else if nays > ayes || (ayes == nays && !come_first.unwrap()) {
-					let TaskInfo { proof_id, inputs, outputs, program_hash, .. } =
-						Self::task_params(&who, &class);
+					let TaskInfo { proof_id, public_inputs, outputs, program_hash, .. } =
+						Self::task_params(&who, (&program_hash, &public_inputs));
 					let expiration =
 						<frame_system::Pallet<T>>::block_number() + T::StorePeriod::get();
 					SettledTasks::<T>::insert(
 						expiration,
-						&(who.clone(), class.clone()),
+						&(who.clone(), program_hash.clone(), public_inputs.clone()),
 						Some(false),
 					);
 					<TaskParams<T>>::insert(
 						&who.clone(),
-						&class.clone(),
+						(&program_hash.clone(), &public_inputs.clone()),
 						TaskInfo {
 							proof_id,
-							inputs,
+							public_inputs: public_inputs.clone(),
 							outputs,
 							program_hash,
 							is_task_finish: Some(TaskStatus::VerifiedFalse),
 							expiration: Some(expiration),
 						},
 					);
-					OngoingTasks::<T>::remove(who.clone(), class.clone());
-					Self::deposit_event(Event::ForceVerification(who, class, false));
+					OngoingTasks::<T>::remove(who.clone(), (program_hash.clone(), public_inputs.clone()));
+					Self::deposit_event(Event::ForceVerification(who, program_hash, public_inputs, false));
 				}
 			} else if ayes >= threshold {
-				let TaskInfo { proof_id, inputs, outputs, program_hash, .. } =
-					Self::task_params(&who, &class);
+				let TaskInfo { proof_id, public_inputs, outputs, program_hash, .. } =
+					Self::task_params(&who, (&program_hash, &public_inputs));
 				let expiration = <frame_system::Pallet<T>>::block_number() + T::StorePeriod::get();
-				SettledTasks::<T>::insert(expiration, &(who.clone(), class.clone()), Some(true));
+				SettledTasks::<T>::insert(expiration, &(who.clone(), program_hash.clone(), public_inputs.clone()), Some(true));
 				<TaskParams<T>>::insert(
 					&who.clone(),
-					&class.clone(),
+					(&program_hash.clone(), &public_inputs.clone()),
 					TaskInfo {
 						proof_id,
-						inputs,
+						public_inputs: public_inputs.clone(),
 						outputs,
 						program_hash,
 						is_task_finish: Some(TaskStatus::VerifiedTrue),
 						expiration: Some(expiration),
 					},
 				);
-				OngoingTasks::<T>::remove(who.clone(), class.clone());
-				Self::deposit_event(Event::ForceVerification(who, class, true));
+				OngoingTasks::<T>::remove(who.clone(), (program_hash.clone(), public_inputs.clone()));
+				Self::deposit_event(Event::ForceVerification(who, program_hash, public_inputs, true));
 			} else if nays >= threshold {
-				let TaskInfo { proof_id, inputs, outputs, program_hash, .. } =
-					Self::task_params(&who, &class);
+				let TaskInfo { proof_id, public_inputs, outputs, program_hash, .. } =
+					Self::task_params(&who, (&program_hash, &public_inputs));
 				let expiration = <frame_system::Pallet<T>>::block_number() + T::StorePeriod::get();
-				SettledTasks::<T>::insert(expiration, &(who.clone(), class.clone()), Some(false));
+				SettledTasks::<T>::insert(expiration, &(who.clone(), program_hash.clone(), public_inputs.clone()), Some(false));
 				<TaskParams<T>>::insert(
 					&who.clone(),
-					&class.clone(),
+					(&program_hash.clone(), &public_inputs.clone()),
 					TaskInfo {
 						proof_id,
-						inputs,
+						public_inputs: public_inputs.clone(),
 						outputs,
 						program_hash,
 						is_task_finish: Some(TaskStatus::VerifiedFalse),
 						expiration: Some(expiration),
 					},
 				);
-				OngoingTasks::<T>::remove(who.clone(), class.clone());
-				Self::deposit_event(Event::ForceVerification(who, class, false));
+				OngoingTasks::<T>::remove(who.clone(), (program_hash.clone(), public_inputs.clone()));
+				Self::deposit_event(Event::ForceVerification(who, program_hash, public_inputs, false));
 			} else {
-				Self::deposit_event(Event::StillNotFinishVerificaion(who, class));
+				Self::deposit_event(Event::StillNotFinishVerificaion(who, program_hash, public_inputs));
 			}
 			Ok(())
 		}

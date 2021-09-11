@@ -675,9 +675,7 @@ impl<T: Config> Pallet<T> {
 				http::Error::Unknown => {
 					proof_is_unknow = true;
 				},
-				_ => {
-					return Err(OffchainErr::FailedToFetchProof)
-				},
+				_ => return Err(OffchainErr::FailedToFetchProof),
 			}
 		}
 		let mut res = false;

@@ -4,9 +4,9 @@ use sp_core::{sr25519, Pair, Public};
 use sp_finality_grandpa::AuthorityId as GrandpaId;
 use sp_runtime::traits::{IdentifyAccount, Verify};
 use zcloak_runtime::{
-	AccountId, AuraConfig, BalancesConfig, GenesisConfig, GrandpaConfig, SessionConfig,
-	SessionKeys, Signature, CrowdfundngConfig, ClassRegisterConfig, StarksVerifierConfig,
-	SudoConfig, SystemConfig, ValidatorSetConfig, VerifierId, WASM_BINARY,
+	AccountId, AuraConfig, BalancesConfig, ClassRegisterConfig, CrowdfundngConfig, GenesisConfig,
+	GrandpaConfig, SessionConfig, SessionKeys, Signature, StarksVerifierConfig, SudoConfig,
+	SystemConfig, ValidatorSetConfig, VerifierId, WASM_BINARY,
 };
 
 // The URL for the telemetry server.

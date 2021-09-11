@@ -20,7 +20,7 @@ use sp_runtime::traits::AccountIdConversion;
 
 #[cfg(feature = "std")]
 use codec::{Decode, Encode};
-use primitives_catalog::{inspect::CheckError, regist::ClassTypeRegister, types::ClassType};
+use primitives_catalog::{inspect::CheckError, regist::ClassTypeRegister, types::{ClassType, ProgramOption, ProgramType, Range}};
 use sp_runtime::{traits::StaticLookup, RuntimeDebug};
 use sp_std::{
 	cmp::{Eq, PartialEq},
@@ -34,8 +34,9 @@ mod mock;
 #[cfg(all(feature = "std", test))]
 mod tests;
 
+
 #[derive(Encode, Decode, Default, PartialEq, Eq, RuntimeDebug)]
-pub struct CrowfundingStatus<AccountId, BlockNumber, Balance> {
+pub struct CrowdfundingStatus<AccountId, BlockNumber, Balance> {
 	// AssetId to get crowdfunding
 	// pub asset_id: Option<AssetId>,
 	// Admin's job is to dispense asset(e.g. Ztoken-1001)
@@ -54,11 +55,24 @@ pub struct CrowfundingStatus<AccountId, BlockNumber, Balance> {
 	pub is_funding_proceed: Option<bool>,
 	// ClassType of KYC
 	pub class_type: ClassType,
+	// The program_hash of this crowdfunding limitaion
+	pub program_hash: [u8; 32],
 	// ClassType with public inputs
 	pub public_inputs: Vec<u128>,
 	// For primitive version ratio stand for 1dot :xZtokens; e.g. ratio = 4, 1dot can buy 4Ztokens.
 	pub ratio: Balance,
+	// For storing logo and text information via IPFS
+	pub logo_and_text_information: Vec<u8>,
 }
+
+#[derive(Encode, Decode, Default, PartialEq, Eq, RuntimeDebug)]
+pub struct CrowdfundingDetail<Balance> {
+	// If true, then this account is creator of the asset
+	pub is_creator: bool,
+	// Amount of assets owned
+	pub total_balance: Option<Balance>,
+}
+
 // #[derive(Clone, Encode, Decode, PartialEq, Eq, Debug)]
 // pub struct IdentityLookup<T>(PhantomData<T>);
 
@@ -167,9 +181,31 @@ pub mod pallet {
 		_,
 		Twox64Concat,
 		T::AssetId,
-		CrowfundingStatus<T::AccountId, T::BlockNumber, T::Balance>,
+		CrowdfundingStatus<T::AccountId, T::BlockNumber, T::Balance>,
 		ValueQuery,
 	>;
+
+	#[pallet::storage]
+	#[pallet::getter(fn crowdfunding_participants)]
+	pub type CrowdfundingParticipants<T: Config> = StorageMap<
+ 		_,
+		Twox64Concat,
+		T::AssetId,
+		Vec<T::AccountId>,
+		ValueQuery,
+	>;
+
+	#[pallet::storage]
+	#[pallet::getter(fn my_crowdfunding)]
+	pub type MyCrowdfunding<T: Config> = StorageDoubleMap<
+		_,
+	Twox64Concat,
+	T::AccountId,
+	Twox64Concat,
+	T::AssetId,
+	CrowdfundingDetail<T::Balance>,
+	ValueQuery,
+>;
 
 	#[pallet::storage]
 	#[pallet::getter(fn settled_crowdfunding)]
@@ -199,7 +235,8 @@ pub mod pallet {
 	#[pallet::genesis_build]
 	impl<T: Config> GenesisBuild<T> for GenesisConfig<T> {
 		fn build(&self) {
-			Pallet::<T>::initialize_pallet_admin()
+			Pallet::<T>::initialize_pallet_admin();
+			Pallet::<T>::initialize_crowdfunding()
 		}
 	}
 
@@ -282,15 +319,15 @@ pub mod pallet {
 			ratio: T::Balance,
 			class_type: ClassType,
 			public_inputs: Vec<u128>,
+			logo_and_text_information: Vec<u8>,
 		) -> DispatchResult {
+
 			let who = ensure_signed(origin.clone())?;
 			let program_hash_result = T::ClassTypeRegister::get(&class_type);
 			ensure!(program_hash_result.is_ok(), Error::<T>::ClassNotRegistOrWrong);
-			let find_result =
-				T::Check::check(&who, program_hash_result.clone().unwrap(), public_inputs.clone());
-			ensure!(find_result.is_ok(), Error::<T>::ClassNotRegistOrWrong);
 
-			let CrowfundingStatus { is_funding_proceed, .. } = Self::crowdfunding_process(asset_id);
+						
+			let CrowdfundingStatus { is_funding_proceed, .. } = Self::crowdfunding_process(asset_id);
 			ensure!(is_funding_proceed == None, Error::<T>::CrowdFundingAlreadyGoingOn);
 			if crowdfunding_option == CrowdfundingOption::CreateAsset {
 				let res =
@@ -350,7 +387,7 @@ pub mod pallet {
 			//Insert new CrowdfundingStatus on-chain.
 			<CrowdfundingProcess<T>>::insert(
 				&asset_id,
-				CrowfundingStatus {
+				CrowdfundingStatus {
 					admin: Some(who.clone()),
 					funding_account: Some(funding_account.clone()),
 					funding_begin,
@@ -363,7 +400,21 @@ pub mod pallet {
 					class_type,
 					public_inputs,
 					ratio,
+					logo_and_text_information,
+					program_hash: program_hash_result.unwrap(),
 				},
+			);
+			<MyCrowdfunding<T>>::insert(
+				who.clone(),
+				asset_id.clone(),
+				CrowdfundingDetail{
+					is_creator: true,
+					total_balance: None,
+				}
+			);
+			<CrowdfundingParticipants<T>>::insert(
+				asset_id.clone(),
+				vec![who.clone()],
 			);
 			<Settledcrowdfunding<T>>::insert(
 				&funding_expiration,
@@ -391,7 +442,7 @@ pub mod pallet {
 				CrowdfundingProcess::<T>::try_get(&asset_id).is_ok(),
 				Error::<T>::CrowdfundingNotOnchain
 			);
-			let CrowfundingStatus {
+			let CrowdfundingStatus {
 				admin,
 				funding_account,
 				funding_begin,
@@ -402,6 +453,9 @@ pub mod pallet {
 				class_type,
 				public_inputs,
 				ratio,
+				logo_and_text_information,
+				program_hash,
+
 			} = Self::crowdfunding_process(asset_id);
 			ensure!(
 				funding_expiration > <frame_system::Pallet<T>>::block_number(),
@@ -460,7 +514,7 @@ pub mod pallet {
 				<FundingAccount<T>>::insert(&asset_id, &who, &ztoken_to_buy);
 				<CrowdfundingProcess<T>>::insert(
 					&asset_id,
-					CrowfundingStatus {
+					CrowdfundingStatus {
 						admin: admin.clone(),
 						funding_account,
 						funding_begin,
@@ -471,9 +525,39 @@ pub mod pallet {
 						class_type,
 						public_inputs,
 						ratio,
+						logo_and_text_information,
+						program_hash,
 					},
 				);
-			} else {
+				let res = MyCrowdfunding::<T>::try_get(who.clone(), asset_id.clone());
+				if res.is_err(){
+				// First time to buy this asset.
+				<MyCrowdfunding<T>>::insert(
+					who.clone(),
+					asset_id.clone(),
+					CrowdfundingDetail{
+						is_creator: false,
+						total_balance: Some(ztoken_to_buy),
+					}
+				);
+				let mut vec_to_store = CrowdfundingParticipants::<T>::get(asset_id);
+				vec_to_store.push(who.clone());
+				<CrowdfundingParticipants<T>>::insert(
+					asset_id.clone(),
+					vec_to_store,
+				)
+			}else{
+				let amount_before = res.unwrap().total_balance.unwrap();
+				<MyCrowdfunding<T>>::insert(
+					who.clone(),
+					asset_id.clone(),
+					CrowdfundingDetail{
+						is_creator: false,
+						total_balance: Some(amount_before + ztoken_to_buy),
+					}
+				)
+			};
+		} else {
 				let crowdfunding_err = check_result.err();
 				match crowdfunding_err {
 					Some(CheckError::VerifyFailedNotAllowed) => {
@@ -507,7 +591,7 @@ pub mod pallet {
 			delete_crowdfunding: bool,
 		) -> DispatchResult {
 			let who = ensure_signed(origin)?;
-			let CrowfundingStatus {
+			let CrowdfundingStatus {
 				admin,
 				funding_account,
 				funding_begin,
@@ -518,6 +602,8 @@ pub mod pallet {
 				class_type,
 				public_inputs,
 				ratio,
+				logo_and_text_information,
+				program_hash,
 			} = Self::crowdfunding_process(asset_id);
 			ensure!(
 				funding_expiration > <frame_system::Pallet<T>>::block_number(),
@@ -529,7 +615,7 @@ pub mod pallet {
 			if !delete_crowdfunding {
 				<CrowdfundingProcess<T>>::insert(
 					&asset_id,
-					CrowfundingStatus {
+					CrowdfundingStatus {
 						admin: admin.clone(),
 						funding_account,
 						funding_begin,
@@ -540,11 +626,13 @@ pub mod pallet {
 						class_type,
 						public_inputs,
 						ratio,
+						logo_and_text_information,
+						program_hash,
 					},
 				);
 				Self::deposit_event(Event::SwitchcrowdfundingStatusTo(
 					asset_id,
-					is_funding_proceed.unwrap(),
+					switch_to,
 				));
 			} else {
 				<CrowdfundingProcess<T>>::remove(asset_id);
@@ -565,9 +653,18 @@ pub mod pallet {
 	#[pallet::hooks]
 	impl<T: Config> Hooks<BlockNumberFor<T>> for Pallet<T> {
 		fn on_finalize(block: T::BlockNumber) {
+			let mut res = Settledcrowdfunding::<T>::iter_prefix(block).collect::<Vec<_>>();
+			let size = res.len();
+			for _i in 0..size{
+				let round = res.pop().unwrap();
+				let first = round.0;
+				let asset_to_del =first.1;
+				CrowdfundingProcess::<T>::remove(asset_to_del);
+			}
 			Settledcrowdfunding::<T>::remove_prefix(block, None);
 		}
 	}
+
 }
 impl<T: Config> Pallet<T> {
 	fn initialize_pallet_admin() {
@@ -576,6 +673,118 @@ impl<T: Config> Pallet<T> {
 		// This `100` is for debug ,will modify next version
 		let banlance3 = BalanceOf::<T>::saturated_from(balance2.unwrap());
 		let _res = T::Currency::deposit_creating(&Pallet::<T>::account_id(), banlance3);
+	}
+	
+	fn initialize_crowdfunding() {
+		let a: [u8;32] = hex_literal::hex!["d43593c715fdd31c61141abd04a99fd6822c8558854ccde39a5684e7a56da27d"].into();
+		let b: [u8;32] = hex_literal::hex!["8eaf04151687736326c9fea17e25fc5287613693c912909cb226aa4794f26a48"].into();
+		let c: [u8;32] = hex_literal::hex!["90b5ab205c6974c9ea841be688864633dc9ca8a357843eeacf2314649965fe22"].into();
+		let d: [u8;32] = hex_literal::hex!["306721211d5404bd9da88e0204360a1a9ab8b87c66c1bc2fcdd37f3c2222cc20"].into();
+
+		let alice = T::AccountId::decode(&mut &a[..]).unwrap_or_default();
+		let bob = T::AccountId::decode(&mut &b[..]).unwrap_or_default();
+		let charlie = T::AccountId::decode(&mut &c[..]).unwrap_or_default();
+		let dave = T::AccountId::decode(&mut &d[..]).unwrap_or_default();
+	
+		let ai: [u8; 4] = [233, 3, 0, 0];
+		let bi: [u8; 4] = [206, 25, 0, 0];
+		let ci: [u8; 4] = [223, 0, 0, 0];
+		let di: [u8; 4] = [97, 30, 0, 0];
+		let ei: [u8; 4] = [240, 33, 0, 0];
+		let fi: [u8; 4] = [104, 226, 13, 0];
+		
+		let asset_a = T::AssetId::decode(&mut &ai[..]).unwrap_or_default();
+		let asset_b = T::AssetId::decode(&mut &bi[..]).unwrap_or_default();
+		let asset_c = T::AssetId::decode(&mut &ci[..]).unwrap_or_default();
+		let asset_d = T::AssetId::decode(&mut &di[..]).unwrap_or_default();
+		let asset_e = T::AssetId::decode(&mut &ei[..]).unwrap_or_default();
+		let asset_f = T::AssetId::decode(&mut &fi[..]).unwrap_or_default();
+
+		let a_period: [u8; 4] = [184, 136, 0, 0];
+		let b_period: [u8; 4] = [128, 187, 0, 0];
+		let c_period: [u8; 4] = [224, 46, 0, 0];
+		let d_period: [u8; 4] = [208, 132, 0, 0];
+		let e_period: [u8; 4] = [64, 31, 0, 0];
+		let f_period: [u8; 4] = [224, 171, 0, 0];
+
+		let a_time = T::BlockNumber::decode(&mut &a_period[..]).unwrap_or_default();
+		let b_time = T::BlockNumber::decode(&mut &b_period[..]).unwrap_or_default();
+		let c_time = T::BlockNumber::decode(&mut &c_period[..]).unwrap_or_default();
+		let d_time = T::BlockNumber::decode(&mut &d_period[..]).unwrap_or_default();
+		let e_time = T::BlockNumber::decode(&mut &e_period[..]).unwrap_or_default();
+		let f_time = T::BlockNumber::decode(&mut &f_period[..]).unwrap_or_default();
+
+		let a_amount: [u8; 16] = [0, 0, 224, 118, 54, 164, 85, 129, 6, 0, 0, 0, 0, 0, 0, 0];
+		let b_amount: [u8; 16] = [0, 128, 31, 137, 246, 46, 117, 35, 0, 0, 0, 0, 0, 0, 0, 0];
+		let c_amount: [u8; 16] = [0, 0, 79, 140, 52, 232, 20, 2, 0, 0, 0, 0, 0, 0, 0, 0];
+		let d_amount: [u8; 16] = [0, 0, 216, 160, 249, 133, 200, 208, 29, 0, 0, 0, 0, 0, 0, 0];
+		let e_amount: [u8; 16] = [0, 0, 60, 164, 136, 163, 56, 1, 0, 0, 0, 0, 0, 0, 0, 0];
+		let f_amount: [u8; 16] = [0, 0, 64, 140, 181, 120, 29, 175, 21, 0, 0, 0, 0, 0, 0, 0];
+
+		let a_balance = T::Balance::decode(&mut &a_amount[..]).unwrap_or_default();
+		let b_balance = T::Balance::decode(&mut &b_amount[..]).unwrap_or_default();
+		let c_balance = T::Balance::decode(&mut &c_amount[..]).unwrap_or_default();
+		let d_balance = T::Balance::decode(&mut &d_amount[..]).unwrap_or_default();
+		let e_balance = T::Balance::decode(&mut &e_amount[..]).unwrap_or_default();
+		let f_balance = T::Balance::decode(&mut &f_amount[..]).unwrap_or_default();
+
+		let v_ratio: [u8; 16] = [0, 16, 165, 212, 232, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0];
+		let ratio = T::Balance::decode(&mut &v_ratio[..]).unwrap_or_default();
+		Self::initialize_storage(asset_a, alice.clone(), alice.clone(), a_time, a_balance, ClassType::X1(ProgramType::Age(ProgramOption::Range(Range::LargeThan))), [89, 115, 133, 225, 108, 141, 149, 171, 95, 56, 227, 119, 216, 249, 208, 2, 222, 113,212, 58, 200, 37, 30, 53, 50, 161, 222, 237, 90, 3, 236, 253], vec![20], ratio,b"QmTBSrXDjhogUuVPV4E21YhuXw1FB2hc5rZYoSKCdA21Vx".to_vec());
+		Self::initialize_storage(asset_b, bob.clone(), bob.clone(), b_time, b_balance, ClassType::X1(ProgramType::Age(ProgramOption::Range(Range::LargeThan))), [89, 115, 133, 225, 108, 141, 149, 171, 95, 56, 227, 119, 216, 249, 208, 2, 222, 113,212, 58, 200, 37, 30, 53, 50, 161, 222, 237, 90, 3, 236, 253], vec![18], ratio,b"QmZ6tf5gsqjQhTen9DGrizDgQHGSdMcJXvcjHsyuSsJpf4".to_vec());
+		Self::initialize_storage(asset_c, charlie.clone(), charlie.clone(), c_time, c_balance, ClassType::X1(ProgramType::Country(ProgramOption::Other("eastasia".as_bytes().to_vec()))), [253,174,66,193,191,97,25,173,194,45,106,148,168,131,36,92,193,54,159,37,13,31,235,147,93,140,136,186,4,250,144,25], vec![], ratio,b"QmUSXLqsmvPx3s47v9zDdZqLmonxWGLFZ4LJzM3ANSiNd8".to_vec());
+		Self::initialize_storage(asset_d, dave.clone(), dave.clone(), d_time, d_balance, ClassType::X1(ProgramType::Country(ProgramOption::Index(1_u32))), [131,88,90,167,212,163,30,194,98,142,76,33,216,242,13,208,160,222,41,89,8,71,94,105,52,55,12,122,7,196,50,60], vec![840], ratio,b"QmZ1pqVw92TovaXiK1y7zNrbX1TPzfXnpr6vqUKcfEE9KC".to_vec());
+		Self::initialize_storage(asset_e, alice.clone(), alice.clone(), e_time, e_balance, ClassType::X1(ProgramType::Country(ProgramOption::Index(2_u32))), [101,243,206,66,170,13,101,51,133,202,61,213,147,55,61,30,122,105,61,180,30,7,161,145,223,6,103,72,132,175,156,90], vec![826,250], ratio,b"QmXwp6KSBhkYBGqXtfH9aUT1qqAz3321HGpwi9Ef5sJtZ3".to_vec());
+		Self::initialize_storage(asset_f, dave.clone(), dave.clone(), f_time, f_balance, ClassType::X2(ProgramType::Age(ProgramOption::Range(Range::LargeThan)),ProgramType::Country(ProgramOption::Index(1_u32))), [96,66,104,233,134,175,69,174,13,195,146,42,132,156,137,53,206,208,189,23,254,48,107,30,245,215,123,96,204,205,157,105], vec![18,840], ratio,b"QmeFJ6FXxY3SeyRjfcfFWNkYhay41X2irueoHNeEZwV5Sb".to_vec());
+	}
+
+	fn initialize_storage(
+		asset_id: T::AssetId,
+		admin: T::AccountId,
+		funding_account: T::AccountId,
+		funding_expiration: T::BlockNumber,
+		total_funding: T::Balance,
+		class_type : ClassType,
+		program_hash: [u8; 32],
+		public_inputs: Vec<u128>,
+		ratio: T::Balance,
+		logo_and_text_information: Vec<u8>,
+		
+	){
+		<CrowdfundingProcess<T>>::insert(
+			&asset_id,
+			CrowdfundingStatus {
+				admin: Some(admin.clone()),
+				funding_account: Some(funding_account.clone()),
+				funding_begin: T::BlockNumber::default(),
+				funding_expiration,
+				total_funding: total_funding,
+				remain_funding: total_funding,
+				is_funding_proceed: Some(true),
+				class_type,
+				program_hash: program_hash,
+				public_inputs: public_inputs,
+				ratio,
+				logo_and_text_information,
+			},
+		);
+		<MyCrowdfunding<T>>::insert(
+			admin.clone(),
+			asset_id.clone(),
+			CrowdfundingDetail{
+				is_creator: true,
+				total_balance: None,
+			}
+		);
+		<CrowdfundingParticipants<T>>::insert(
+			asset_id.clone(),
+			vec![admin.clone()],
+		);
+		<Settledcrowdfunding<T>>::insert(
+			&funding_expiration,
+			&(admin.clone(), asset_id.clone()),
+			Some(false),
+		);
 	}
 }
 

@@ -81,7 +81,7 @@ pub mod pallet {
 	#[pallet::genesis_build]
 	impl<T: Config> GenesisBuild<T> for GenesisConfig<T> {
 		fn build(&self) {
-			Pallet::<T>::initialize_class_type_list()
+			Pallet::<T>::initialize_class_type_list();
 		}
 	}
 
@@ -167,24 +167,46 @@ impl<T: Config> ClassTypeRegister for Pallet<T> {
 		}
 	}
 }
+impl <T: Config> Pallet<T>{
+fn initialize_class_type_list() {
+		let age_larger_program_hash = [89, 115, 133, 225, 108, 141, 149, 171, 95, 56, 227, 119, 216, 249, 208, 2, 222, 113,
+		212, 58, 200, 37, 30, 53, 50, 161, 222, 237, 90, 3, 236, 253,
+		];
+		let country_eastasia_program_hash = [253,174,66,193,191,97,25,173,194,45,106,148,168,131,
+		36,92,193,54,159,37,13,31,235,147,93,140,136,186,4,250,144,25
+		];
+		let country_number_1_program_hash = [131,88,90,167,212,163,30,194,98,142,76,33,216,242,13,
+		208,160,222,41,89,8,71,94,105,52,55,12,122,7,196,50,60
+		];
+		let country_number_2_program_hash = [101,243,206,66,170,13,101,51,133,202,61,213,147,55,61,30,122,
+		105,61,180,30,7,161,145,223,6,103,72,132,175,156,90
+		];
+		let age_larger_country_number_1_program_hash = [96,66,104,233,134,175,69,174,13,195,146,42,132,156,137,53,
+		206,208,189,23,254,48,107,30,245,215,123,96,204,205,157,105
+		];
 
-impl<T: Config> Pallet<T> {
-	fn initialize_class_type_list() {
-		let age_program_hash = [
-			89, 115, 133, 225, 108, 141, 149, 171, 95, 56, 227, 119, 216, 249, 208, 2, 222, 113,
-			212, 58, 200, 37, 30, 53, 50, 161, 222, 237, 90, 3, 236, 253,
-		];
-		let country_program_hash = [
-			208, 194, 130, 197, 164, 24, 192, 43, 169, 199, 5, 5, 30, 49, 190, 137, 168, 29, 175,
-			111, 254, 108, 138, 242, 161, 201, 76, 10, 238, 140, 97, 14,
-		];
 		<ClassTypeList<T>>::insert(
 			ClassType::X1(ProgramType::Age(ProgramOption::Range(Range::LargeThan))),
-			age_program_hash,
+			age_larger_program_hash,
 		);
 		<ClassTypeList<T>>::insert(
+			ClassType::X1(ProgramType::Country(ProgramOption::Other("eastasia".as_bytes().to_vec()))),
+			country_eastasia_program_hash,
+        );
+		<ClassTypeList<T>>::insert(
 			ClassType::X1(ProgramType::Country(ProgramOption::Index(1_u32))),
-			country_program_hash,
+			country_number_1_program_hash,
+		);
+		<ClassTypeList<T>>::insert(
+			ClassType::X1(ProgramType::Country(ProgramOption::Index(2_u32))),
+			country_number_2_program_hash,
+		);
+        <ClassTypeList<T>>::insert(
+			ClassType::X2(ProgramType::Age(ProgramOption::Range(Range::LargeThan)),ProgramType::Country(ProgramOption::Index(1_u32))),
+			age_larger_country_number_1_program_hash,
 		);
 	}
 }
+
+
+

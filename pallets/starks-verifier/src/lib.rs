@@ -38,8 +38,6 @@ use sp_std::{borrow::ToOwned, collections::btree_set::BTreeSet, iter::FromIterat
 // use frame_system::{ensure_signed, ensure_none};
 use frame_system::offchain::{SendTransactionTypes, SubmitTransaction};
 
-use sp_runtime::offchain::storage::{MutateStorageError, StorageRetrievalError};
-
 use primitives_catalog::{
 	inspect::{CheckError, Inspect},
 	regist::ClassTypeRegister,
@@ -504,7 +502,7 @@ pub mod pallet {
 	#[pallet::hooks]
 	impl<T: Config> Hooks<BlockNumberFor<T>> for Pallet<T> {
 		fn on_finalize(block: T::BlockNumber) {
-			SettledTasks::<T>::remove_prefix(block, None);
+			SettledTasks::<T>::remove_prefix(block);
 		}
 
 		fn offchain_worker(now: T::BlockNumber) {
@@ -604,34 +602,28 @@ impl<T: Config> Pallet<T> {
 			let mut initial_local_tasks = BTreeSet::new();
 
 			let res = storage.mutate(
-				|tasks: Result<
-					Option<Option<BTreeSet<(T::AccountId, ([u8; 32], Vec<u128>))>>>,
-					StorageRetrievalError,
-				>| {
+				|tasks: Option<Option<BTreeSet<(T::AccountId, ([u8; 32], Vec<u128>))>>>| {
 					// Check if there is already a lock for that particular task.(hash)
 					// If there exists a vec of `local_tasks`,we will attempt to find a certian task which is
 					// stored on-chain(<OngoingTask>) but not verified locally yet.
 					// If such vec doesn't exist ,we will initialize it,with the fist task to be verified on-chain(<OngoingTask>)
 					match tasks {
-						Ok(Some(Some(mut local_tasks))) => {
+						Some(Some(mut local_tasks)) => {
 							task_id_tuple = Self::task_to_execute(&mut local_tasks)?;
 							// TODO: fetch_proof, verify, and submit
 							local_tasks.insert(task_id_tuple.clone());
-							Ok(Some(local_tasks))
+							Ok(local_tasks)
 						},
 						_ => {
 							task_id_tuple = Self::task_to_execute(&mut BTreeSet::new())?;
 							initial_local_tasks.insert(task_id_tuple.clone());
-							Ok(Some(initial_local_tasks))
+							Ok(initial_local_tasks)
 						},
 					}
 				},
-			);
-			if let Err(MutateStorageError::ValueFunctionFailed(err)) = res {
-				return Err(err)
-			}
+			)?;
 
-			let local_tasks = res.map_err(|_| OffchainErr::FailToAcquireLock)?;
+			let mut local_tasks = res.map_err(|_| OffchainErr::FailToAcquireLock)?;
 
 			// We got the lock, and do the fetch, verify, sign and send
 			let res =
@@ -639,10 +631,10 @@ impl<T: Config> Pallet<T> {
 
 			// Clear the lock in case we have failed to send transaction.
 			if res.is_err() {
-				storage.set(&local_tasks.unwrap().remove(&task_id_tuple));
+				// storage.set(&local_tasks.unwrap().remove(&task_id_tuple));
 
-				// local_tasks.remove(&task_id_tuple);
-				// storage.set(&local_tasks);
+				local_tasks.remove(&task_id_tuple);
+				storage.set(&local_tasks);
 			}
 			res
 		} else {

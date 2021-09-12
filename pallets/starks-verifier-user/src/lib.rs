@@ -274,7 +274,7 @@ pub mod pallet {
 	impl<T: Config> Hooks<BlockNumberFor<T>> for Pallet<T> {
 		//We don't need to remove any SettledTask
 		fn on_finalize(block: T::BlockNumber) {
-			SettledTasks::<T>::remove_prefix(block, None);
+			SettledTasks::<T>::remove_prefix(block);
 		}
 	}
 }

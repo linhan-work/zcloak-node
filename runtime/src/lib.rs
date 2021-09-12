@@ -161,7 +161,8 @@ parameter_types! {
 
 impl frame_system::Config for Runtime {
 	/// The basic call filter to use in dispatchable.
-	type BaseCallFilter = frame_support::traits::AllowAll;
+	// type BaseCallFilter = frame_support::traits::AllowAll;
+	type BaseCallFilter = ();
 	/// Block & extrinsics weights: base values and limits.
 	type BlockWeights = BlockWeights;
 	/// The maximum length of a block (in bytes).
@@ -212,7 +213,7 @@ impl frame_system::Config for Runtime {
 
 impl pallet_aura::Config for Runtime {
 	type AuthorityId = AuraId;
-	type DisabledValidators = ();
+	// type DisabledValidators = ();
 }
 
 impl pallet_grandpa::Config for Runtime {
@@ -255,8 +256,8 @@ impl pallet_balances::Config for Runtime {
 	type MaxLocks = MaxLocks;
 	/// The type for recording an account's balance.
 	type Balance = Balance;
-	type MaxReserves = ();
-	type ReserveIdentifier = [u8; 8];
+	// type MaxReserves = ();
+	// type ReserveIdentifier = [u8; 8];
 	/// The ubiquitous event type.
 	type Event = Event;
 	type DustRemoval = ();
@@ -385,7 +386,7 @@ parameter_types! {
 
 
 }
-impl pallet_randomness_collective_flip::Config for Runtime {}
+// impl pallet_randomness_collective_flip::Config for Runtime {}
 
 impl pallet_starks_verifier::Config for Runtime {
 	type AuthorityId = VerifierId;
@@ -417,18 +418,18 @@ pub type RegulatedCurrencyAdaptor = zcloak_support::currency::RegulatedCurrencyA
 	AccountId,
 >;
 
-impl pallet_crowdfunding::Config for Runtime {
-	type Event = Event;
-	type StorePeriod = StorePeriod;
-	type Check = StarksVerifier;
-	type Inspect = Assets;
-	type Transfer = Assets;
-	type CrowdFundingLimit = CrowdFundingLimit;
-	type CrowdFundingMetadataDepositBase = CrowdFundingMetadataDepositBase;
-	type MinBalance = MinBalance;
-	type PalletId = CrowdfundingPalletId;
-	type ClassTypeRegister = ClassRegister;
-}
+// impl pallet_crowdfunding::Config for Runtime {
+// 	type Event = Event;
+// 	type StorePeriod = StorePeriod;
+// 	type Check = StarksVerifier;
+// 	type Inspect = Assets;
+// 	type Transfer = Assets;
+// 	type CrowdFundingLimit = CrowdFundingLimit;
+// 	type CrowdFundingMetadataDepositBase = CrowdFundingMetadataDepositBase;
+// 	type MinBalance = MinBalance;
+// 	type PalletId = CrowdfundingPalletId;
+// 	type ClassTypeRegister = ClassRegister;
+// }
 
 impl pallet_regulated_balances::Config for Runtime {
 	type Event = Event;
@@ -470,7 +471,7 @@ construct_runtime!(
 		Session: pallet_session::{Pallet, Call, Storage, Event, Config<T>},
 		ValidatorSet: pallet_validator_set::{Pallet, Call, Storage, Event<T>, Config<T>},
 		StarksVerifier: pallet_starks_verifier::{Pallet, Call, Storage, Event<T>, ValidateUnsigned, Config<T>},
-		Crowdfundng: pallet_crowdfunding::{Pallet, Call, Storage, Event<T>, Config<T>},
+		// Crowdfundng: pallet_crowdfunding::{Pallet, Call, Storage, Event<T>, Config<T>},
 		RegulatedBalances: pallet_regulated_balances::{Pallet, Call, Storage, Event<T>},
 		ClassRegister: pallet_class_register::{Pallet, Call, Storage, Event<T>, Config<T>},
 		Aura: pallet_aura::{Pallet, Config<T>},
@@ -559,14 +560,18 @@ impl_runtime_apis! {
 		) -> sp_inherents::CheckInherentsResult {
 			data.check_extrinsics(&block)
 		}
+
+		fn random_seed() -> <Block as BlockT>::Hash {
+			RandomnessCollectiveFlip::random_seed().0
+		}
 	}
 	impl sp_transaction_pool::runtime_api::TaggedTransactionQueue<Block> for Runtime {
 		fn validate_transaction(
 			source: TransactionSource,
 			tx: <Block as BlockT>::Extrinsic,
-			block_hash: <Block as BlockT>::Hash,
+			// block_hash: <Block as BlockT>::Hash,
 		) -> TransactionValidity {
-			Executive::validate_transaction(source, tx, block_hash)
+			Executive::validate_transaction(source, tx)
 		}
 	}
 
@@ -603,9 +608,9 @@ impl_runtime_apis! {
 			Grandpa::grandpa_authorities()
 		}
 
-		fn current_set_id() -> fg_primitives::SetId {
-			Grandpa::current_set_id()
-		}
+		// fn current_set_id() -> fg_primitives::SetId {
+		// 	Grandpa::current_set_id()
+		// }
 
 		fn submit_report_equivocation_unsigned_extrinsic(
 			_equivocation_proof: fg_primitives::EquivocationProof<

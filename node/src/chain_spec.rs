@@ -5,7 +5,7 @@ use sp_finality_grandpa::AuthorityId as GrandpaId;
 use sp_runtime::traits::{IdentifyAccount, Verify};
 use zcloak_runtime::{
 	AccountId, AuraConfig, BalancesConfig, GenesisConfig, GrandpaConfig, SessionConfig,
-	SessionKeys, Signature, CrowdfundngConfig, ClassRegisterConfig, StarksVerifierConfig,
+	SessionKeys, Signature, ClassRegisterConfig, StarksVerifierConfig,
 	SudoConfig, SystemConfig, ValidatorSetConfig, VerifierId, WASM_BINARY,
 };
 
@@ -188,22 +188,21 @@ fn testnet_genesis(
 	_enable_println: bool,
 ) -> GenesisConfig {
 	GenesisConfig {
-		system: SystemConfig {
+		frame_system: SystemConfig {
 			// Add Wasm runtime to storage.
 			code: wasm_binary.to_vec(),
 			changes_trie_config: Default::default(),
 		},
-		balances: BalancesConfig {
+		pallet_balances: BalancesConfig {
 			// Configure endowed accounts with initial balance of 1 << 60.
 			balances: endowed_accounts.iter().cloned().map(|k| (k, 1 << 60)).collect(),
 		},
-		validator_set: ValidatorSetConfig {
+		pallet_validator_set: ValidatorSetConfig {
 			validators: initial_authorities.iter().map(|x| x.0.clone()).collect::<Vec<_>>(),
 		},
-		starks_verifier: StarksVerifierConfig::default(),
-		crowdfundng: CrowdfundngConfig::default(),
-		class_register: ClassRegisterConfig::default(),
-		session: SessionConfig {
+		pallet_starks_verifier: StarksVerifierConfig::default(),
+		pallet_class_register: ClassRegisterConfig::default(),
+		pallet_session: SessionConfig {
 			keys: initial_authorities
 				.iter()
 				.map(|x| {
@@ -211,9 +210,9 @@ fn testnet_genesis(
 				})
 				.collect::<Vec<_>>(),
 		},
-		aura: AuraConfig { authorities: vec![] },
-		grandpa: GrandpaConfig { authorities: vec![] },
-		sudo: SudoConfig {
+		pallet_aura: AuraConfig { authorities: vec![] },
+		pallet_grandpa: GrandpaConfig { authorities: vec![] },
+		pallet_sudo: SudoConfig {
 			// Assign network admin rights.
 			key: root_key,
 		},

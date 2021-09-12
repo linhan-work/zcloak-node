@@ -6,7 +6,7 @@ resolver = "2"
 
 members = [
     'node',
-    'pallets/*',
+    'pallets/starks-verifier-seperate',
     'runtime',
     'primitives/*',
     'frame/zcloak-support',

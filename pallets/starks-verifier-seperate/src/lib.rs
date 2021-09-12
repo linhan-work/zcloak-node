@@ -613,7 +613,7 @@ pub mod pallet {
 	impl<T: Config> Hooks<BlockNumberFor<T>> for Pallet<T> {
 		//We don't need to remove any SettledTask
 		fn on_finalize(block: T::BlockNumber) {
-			SettledTasks::<T>::remove_prefix(block, None);
+			SettledTasks::<T>::remove_prefix(block);
 			let expire_list = WhiteListTime::<T>::try_get(block - T::WhiteListPeriod::get());
 			if expire_list.is_ok() {
 				for i in expire_list.unwrap() {

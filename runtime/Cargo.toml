@@ -25,7 +25,7 @@ pallet-validator-set = { path = '../pallets/validator-set', default-features = f
 pallet-starks-verifier-user = { path = '../pallets/starks-verifier-user', default-features = false }
 pallet-starks-verifier-seperate = { path = '../pallets/starks-verifier-seperate', default-features = false }
 pallet-regulated-balances = { path = '../pallets/regulated-balances', default-features = false }
-pallet-crowdfunding = { path = '../pallets/crowdfunding', default-features = false }
+# pallet-crowdfunding = { path = '../pallets/crowdfunding', default-features = false }
 pallet-class-register = { path = '../pallets/class-register', default-features = false }
 
 # runtime 
@@ -97,7 +97,7 @@ std = [
     'pallet-starks-verifier-user/std',
     'pallet-starks-verifier-seperate/std',
     'pallet-validator-set/std',
-    "pallet-crowdfunding/std",
+    # "pallet-crowdfunding/std",
     "pallet-regulated-balances/std",
     "pallet-class-register/std",
     'pallet-timestamp/std',

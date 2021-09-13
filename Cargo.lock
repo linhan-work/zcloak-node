@@ -7286,6 +7286,7 @@ dependencies = [
  "rand_core 0.6.3",
  "serde",
  "serde_json",
+ "sha2 0.9.5",
  "sha3 0.8.2",
  "sp-io",
  "sp-std",

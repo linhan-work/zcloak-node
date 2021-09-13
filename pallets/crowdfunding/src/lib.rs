@@ -245,7 +245,7 @@ pub mod pallet {
 	#[pallet::metadata(T::AccountId = "AccountId")]
 	pub enum Event<T: Config> {
 		//Check KYC onchain, and verified pass
-		VerifySuccuss(T::AccountId),
+		VerifySuccess(T::AccountId),
 
 		VerifyFailedNotOnChain,
 		// KYC onchain, but not allowed to do crowdfunding
@@ -381,6 +381,10 @@ pub mod pallet {
 			);
 
 			let now = <frame_system::Pallet<T>>::block_number();
+
+
+
+
 			let funding_begin = now;
 			let funding_expiration = now + funding_period;
 
@@ -437,6 +441,7 @@ pub mod pallet {
 			asset_id: T::AssetId,
 			ztoken_to_buy: T::Balance,
 		) -> DispatchResult {
+			log::debug!(target:"starks-verifier","im in buyztoken, hi!");
 			let who = ensure_signed(origin)?;
 			ensure!(
 				CrowdfundingProcess::<T>::try_get(&asset_id).is_ok(),
@@ -474,7 +479,7 @@ pub mod pallet {
 			);
 			// The origin has the access to buy ztokens due to SuccessProved-KYC
 			if check_result.is_ok() {
-				Self::deposit_event(Event::VerifySuccuss(who.clone()));
+				Self::deposit_event(Event::VerifySuccess(who.clone()));
 
 				let dot_to_buy =
 					(ztoken_to_buy / ratio) * T::CrowdFundingMetadataDepositBase::get();
@@ -492,6 +497,7 @@ pub mod pallet {
 						&Self::account_id(),
 						ztoken_to_buy / T::CrowdFundingMetadataDepositBase::get(),
 					);
+
 				ensure!(
 					result == frame_support::traits::tokens::WithdrawConsequence::Success,
 					Error::<T>::CrowdfundingNotHaveEnoughZtoken
@@ -530,6 +536,7 @@ pub mod pallet {
 					},
 				);
 				let res = MyCrowdfunding::<T>::try_get(who.clone(), asset_id.clone());
+
 				if res.is_err(){
 				// First time to buy this asset.
 				<MyCrowdfunding<T>>::insert(
@@ -547,15 +554,32 @@ pub mod pallet {
 					vec_to_store,
 				)
 			}else{
-				let amount_before = res.unwrap().total_balance.unwrap();
-				<MyCrowdfunding<T>>::insert(
+					if res.as_ref().unwrap().total_balance == Option::None {
+						<MyCrowdfunding<T>>::insert(
 					who.clone(),
 					asset_id.clone(),
 					CrowdfundingDetail{
 						is_creator: false,
-						total_balance: Some(amount_before + ztoken_to_buy),
+						total_balance: Some(ztoken_to_buy),
+						}
+					);
+					// let mut vec_to_store = CrowdfundingParticipants::<T>::get(asset_id);
+					// vec_to_store.push(who.clone());
+					// <CrowdfundingParticipants<T>>::insert(
+					// 	asset_id.clone(),
+					// 	vec_to_store,
+					// 	)
+					}else{
+						let amount_before = res.unwrap().total_balance.unwrap();
+						<MyCrowdfunding<T>>::insert(
+							who.clone(),
+							asset_id.clone(),
+							CrowdfundingDetail{
+								is_creator: false,
+								total_balance: Some(amount_before + ztoken_to_buy),
+							}
+						)
 					}
-				)
 			};
 		} else {
 				let crowdfunding_err = check_result.err();
@@ -674,7 +698,7 @@ impl<T: Config> Pallet<T> {
 		let banlance3 = BalanceOf::<T>::saturated_from(balance2.unwrap());
 		let _res = T::Currency::deposit_creating(&Pallet::<T>::account_id(), banlance3);
 	}
-	
+
 	fn initialize_crowdfunding() {
 		let a: [u8;32] = hex_literal::hex!["d43593c715fdd31c61141abd04a99fd6822c8558854ccde39a5684e7a56da27d"].into();
 		let b: [u8;32] = hex_literal::hex!["8eaf04151687736326c9fea17e25fc5287613693c912909cb226aa4794f26a48"].into();
@@ -686,6 +710,7 @@ impl<T: Config> Pallet<T> {
 		let charlie = T::AccountId::decode(&mut &c[..]).unwrap_or_default();
 		let dave = T::AccountId::decode(&mut &d[..]).unwrap_or_default();
 	
+
 		let ai: [u8; 4] = [233, 3, 0, 0];
 		let bi: [u8; 4] = [206, 25, 0, 0];
 		let ci: [u8; 4] = [223, 0, 0, 0];
@@ -751,6 +776,30 @@ impl<T: Config> Pallet<T> {
 		logo_and_text_information: Vec<u8>,
 		
 	){
+		let res =
+					<<T as frame_system::Config>::Lookup as StaticLookup>::unlookup(admin.clone());
+
+		let caller_origin = <T as frame_system::Config>::Origin::from(frame_system::RawOrigin::Signed(admin.clone()));
+
+		let create_asset_result = <pallet_assets::Pallet<T>>::create(
+			caller_origin.clone(),
+			asset_id.clone(),
+			res.clone(),
+			T::MinBalance::get(),
+		);
+		let crowdfunding_account =
+		<<T as frame_system::Config>::Lookup as StaticLookup>::unlookup(
+			Self::account_id().clone(),
+		);
+
+		let mint_asset_result = <pallet_assets::Pallet<T>>::mint(
+			caller_origin.clone(),
+			asset_id.clone(),
+			crowdfunding_account.clone(),
+			total_funding / T::CrowdFundingMetadataDepositBase::get(),
+		);
+		// let block_begin: [u8; 4] = [1, 0, 0, 0];
+		// let block = T::BlockNumber::decode(&mut &block_begin[..]).unwrap_or_default();
 		<CrowdfundingProcess<T>>::insert(
 			&asset_id,
 			CrowdfundingStatus {

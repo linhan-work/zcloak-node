@@ -60,7 +60,7 @@ parameter_types! {
 	pub const MaxLocks: u32 = 50;
 }
 parameter_types! {
-	pub const StorePeriod: BlockNumber = 1024;
+	pub const StorePeriod: BlockNumber = 10;
 	pub const WhiteListPeriod: BlockNumber = 150;
 
 	pub const AssetDeposit: Balance = 100 ; // 100 DOLLARS deposit to create asset

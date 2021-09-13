@@ -808,6 +808,74 @@ pub fn parse_pmpath(
 	return Ok(true)
 }
 
+
+pub fn parse_rmerkle(program: &mut Vec<OpCode>, op: &[&str], step: usize) -> Result<bool, AssemblyError> {
+
+    let n = read_param(op, step)?;
+
+
+    if n < 2 || n > 256 {
+        return Err(AssemblyError::invalid_param_reason(op, step,
+            format!("parameter {} is invalid; value must be between 2 and 256", n)))
+    }
+
+    // move the first bit of the leaf's index and the first node in the Merkle onto the stack,
+    // position them correctly, and pad the stack to prepare it for hashing.
+    program.extend_from_slice(&[
+        // OpCode::Read2, OpCode::Swap2, OpCode::Read2, OpCode::Sha256,
+        // OpCode::Read2, OpCode::Swap2, OpCode::Read2, OpCode::CSwap2, OpCode::Pad2
+        OpCode::Read2, OpCode::Swap2, OpCode::Read2, OpCode::CSwap2, 
+        OpCode::Sha256
+
+    ]);
+
+
+
+    // pad with NOOPs to make sure hashing starts on a step which is a multiple of 16
+    let alignment = program.len() % HASH_OP_ALIGNMENT;
+    let pad_length = (HASH_OP_ALIGNMENT - alignment) % HASH_OP_ALIGNMENT;
+    program.resize(program.len() + pad_length, OpCode::Noop);
+
+    // repeat the following cycle of operations once for each remaining node:
+    // 1. compute hash of the 2 nodes on the stack
+    // 2. read the index of the next node in the authentication path
+    // 3. read the next node in the authentication path
+    // 4. base on position index bit = 1, swaps the nodes on the stack (using cswap2 instruction)
+    // 5. pad the stack to prepare it for the next round of hashing
+    // const SUB_CYCLE: [OpCode; 16] = [
+    //     OpCode::RescR, OpCode::RescR, OpCode::RescR,  OpCode::RescR,
+    //     OpCode::RescR, OpCode::RescR, OpCode::RescR,  OpCode::RescR,
+    //     OpCode::RescR, OpCode::RescR, OpCode::Drop4,  OpCode::Read2,
+    //     OpCode::Swap2, OpCode::Read2, OpCode::CSwap2, OpCode::Pad2,
+    // ];
+
+    // const SUB_CYCLE: [OpCode; 16] = [
+    //     OpCode::Sha256, OpCode::Noop, OpCode::Noop,  OpCode::Noop,
+    //     OpCode::Noop, OpCode::Noop, OpCode::Noop,  OpCode::Noop,
+    //     OpCode::Noop, OpCode::Noop, OpCode::Drop4,  OpCode::Read2,
+    //     OpCode::Swap2, OpCode::Read2, OpCode::CSwap2, OpCode::Pad2,
+    // ];
+
+    // const SUB_CYCLE: [OpCode; 16] = [
+    //     OpCode::Read2, OpCode::Swap2, OpCode::Read2, OpCode::Noop,
+    //     OpCode::Sha256, OpCode::Noop, OpCode::Noop,  OpCode::Noop,
+    //     OpCode::Noop, OpCode::Noop, OpCode::Noop,  OpCode::Noop,
+    //     OpCode::Noop, OpCode::Noop, OpCode::Noop,  OpCode::Noop,
+    // ];
+
+    const SUB_CYCLE: [OpCode; 16] = [
+        OpCode::Swap2, OpCode::Drop, OpCode::Drop,OpCode::Noop,
+        OpCode::Read2, OpCode::Swap2, OpCode::Read2, OpCode::CSwap2,
+        OpCode::Sha256, OpCode::Noop, OpCode::Noop,  OpCode::Noop,
+        OpCode::Noop, OpCode::Noop, OpCode::Noop,  OpCode::Noop,
+    ];
+
+    for _ in 0..(n - 2) {
+        program.extend_from_slice(&SUB_CYCLE);
+    }
+
+    return Ok(true);
+}
 // HELPER FUNCTIONS
 // ================================================================================================
 

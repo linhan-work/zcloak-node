@@ -255,6 +255,7 @@ fn parse_op_token(
 		"hash" => parse_hash(op_codes, &op, step),
 		"smpath" => parse_smpath(op_codes, &op, step),
 		"pmpath" => parse_pmpath(op_codes, op_hints, &op, step),
+        "rmerkle" => parse_rmerkle(op_codes, &op, step),
 
 		_ => return Err(AssemblyError::invalid_op(&op, step)),
 	}?;

@@ -27,7 +27,7 @@ pallet-assets = { default-features = false, git = "https://github.com/zCloak-Net
 pallet-balances = { default-features = false, git = "https://github.com/zCloak-Network/substrate" }
 zcloak-support = { path = "../../frame/zcloak-support", default-features = false }
 primitives-catalog = { path = "../../primitives/catalog", default-features = false }
-
+hex-literal = {default-features = false, version = '0.3.1' }
 [features]
 default = ["std"]
 std = [

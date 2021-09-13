@@ -3978,6 +3978,7 @@ version = "0.1.0"
 dependencies = [
  "frame-support",
  "frame-system",
+ "hex-literal",
  "log",
  "pallet-assets",
  "pallet-balances",
@@ -7285,6 +7286,7 @@ dependencies = [
  "rand_core 0.6.3",
  "serde",
  "serde_json",
+ "sha2 0.9.5",
  "sha3 0.8.2",
  "sp-io",
  "sp-std",

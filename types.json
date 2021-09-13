@@ -1,4 +1,8 @@
 {
+  "CrowdfundingDetail": {
+    "is_creator": "bool",
+    "total_balance": "Option<Balance>"
+  },
   "ClassType": {
     "_enum": {
       "Null": null,
@@ -78,7 +82,7 @@
   "AssetId": "u32",
   "LookupSource": "MultiAddress",
   "TAssetBalance": "u128",
-  "CrowfundingStatus": {
+  "CrowdfundingStatus": {
     "admin": "Option<AccountId>",
     "funding_account": "Option<AccountId>",
     "funding_begin": "BlockNumber",
@@ -87,8 +91,10 @@
     "remain_funding": "Balance",
     "is_funding_proceed": "Option<bool>",
     "class_type": "ClassType",
-    "public_inputs": "PublicInputs",
-    "ratio": "Balance"
+    "program_hash": "[u8; 32]",
+    "public_inputs": "Vec<u128>",
+    "ratio": "Balance",
+    "logo_and_text_information": "Vec<u8>"
   },
   "SeperateStatus": {
     "verifiers": "Vec<u32>",

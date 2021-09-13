@@ -503,7 +503,17 @@ pub mod pallet {
 	// Runs after every block.
 	#[pallet::hooks]
 	impl<T: Config> Hooks<BlockNumberFor<T>> for Pallet<T> {
-		fn on_finalize(block: T::BlockNumber) {
+		fn on_finalize(block: T::BlockNumber) {			
+			let mut res = SettledTasks::<T>::iter_prefix(block).collect::<Vec<_>>();
+			let size = res.len();
+			for _i in 0..size{
+				let round = res.pop().unwrap();
+				let first = round.0;
+				let account_id = first.0;
+				let program_hash = first.1;
+				let public_input = first.2;
+				TaskParams::<T>::remove(account_id, (program_hash, public_input));
+			}
 			SettledTasks::<T>::remove_prefix(block, None);
 		}
 
@@ -675,9 +685,7 @@ impl<T: Config> Pallet<T> {
 				http::Error::Unknown => {
 					proof_is_unknow = true;
 				},
-				_ => {
-					return Err(OffchainErr::FailedToFetchProof)
-				},
+				_ => return Err(OffchainErr::FailedToFetchProof),
 			}
 		}
 		let mut res = false;

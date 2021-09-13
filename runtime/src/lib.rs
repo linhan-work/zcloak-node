@@ -377,7 +377,7 @@ parameter_types! {
 	pub const MetadataDepositPerByte: Balance = 1 * constants::currency::DOLLARS;
 	pub const ApprovalDeposit: Balance = constants::currency::EXISTENTIAL_DEPOSIT;
 	pub const StringLimit: u32 = 50;
-	pub const CrowdFundingLimit: BlockNumber = 4096;
+	pub const CrowdFundingLimit: BlockNumber = 60000;
 	pub const CrowdFundingMetadataDepositBase: Balance = 1_000_000_000_000;
 	pub const MinBalance: Balance = 1;
 	pub const CrowdfundingPalletId: PalletId = PalletId(*b"py/crdfg");

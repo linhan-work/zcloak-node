@@ -77,6 +77,7 @@ pub enum UserOps {
 	Roll8 = 0b0_11_11100,  // no shift
 	BinAcc = 0b0_11_11101, // no shift
 	//???       = 0b0_11_11110,
+    Sha256 = 0b0_11_11110,
 
 	// high-degree operations
 	Push = 0b0_00_11111,  // right shift: 1
@@ -154,6 +155,8 @@ impl sp_std::fmt::Display for UserOps {
 			UserOps::BinAcc => write!(f, "binacc"),
 
 			UserOps::RescR => write!(f, "rescr"),
+			UserOps::Sha256 => write!(f, "sha256")
+
 		}
 	}
 }

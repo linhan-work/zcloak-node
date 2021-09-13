@@ -4,7 +4,7 @@ use sp_core::{sr25519, Pair, Public};
 use sp_finality_grandpa::AuthorityId as GrandpaId;
 use sp_runtime::traits::{IdentifyAccount, Verify};
 use zcloak_runtime::{
-	AccountId, AuraConfig, BalancesConfig, ClassRegisterConfig, CrowdfundngConfig, GenesisConfig,
+	AccountId, AuraConfig, BalancesConfig, ClassRegisterConfig, CrowdfundingConfig, GenesisConfig,
 	GrandpaConfig, SessionConfig, SessionKeys, Signature, StarksVerifierConfig, SudoConfig,
 	SystemConfig, ValidatorSetConfig, VerifierId, WASM_BINARY,
 };
@@ -93,12 +93,12 @@ pub fn zcloak_pc1_config() -> Result<ChainSpec, String> {
 		"zCloak PoC1",
 		// ID
 		"zcloak_poc1",
-		ChainType::Local,
+		ChainType::Live,
 		move || {
 			testnet_genesis(
 				wasm_binary,
 				// Initial PoA authorities
-				vec![authority_keys_from_seed("Alice"), authority_keys_from_seed("Bob")],
+				vec![authority_keys_from_seed("Alice"), authority_keys_from_seed("Bob"), authority_keys_from_seed("Charlie")],
 				// Sudo account
 				get_account_id_from_seed::<sr25519::Public>("Alice"),
 				// Pre-funded accounts
@@ -201,7 +201,7 @@ fn testnet_genesis(
 			validators: initial_authorities.iter().map(|x| x.0.clone()).collect::<Vec<_>>(),
 		},
 		starks_verifier: StarksVerifierConfig::default(),
-		crowdfundng: CrowdfundngConfig::default(),
+		crowdfunding: CrowdfundingConfig::default(),
 		class_register: ClassRegisterConfig::default(),
 		session: SessionConfig {
 			keys: initial_authorities
